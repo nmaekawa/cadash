@@ -5,6 +5,8 @@ from flask import render_template
 
 from cadash import public
 from cadash import user
+from cadash import redunlive
+from cadash import castatus
 from cadash.assets import assets
 from cadash.extensions import bcrypt
 from cadash.extensions import cache
@@ -48,6 +50,8 @@ def register_blueprints(app):
     """Register Flask blueprints."""
     app.register_blueprint(public.views.blueprint)
     app.register_blueprint(user.views.blueprint)
+    app.register_blueprint(redunlive.views.blueprint)
+    app.register_blueprint(castatus.views.blueprint)
     return None
 
 
