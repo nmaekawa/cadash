@@ -3,7 +3,6 @@
 import logging
 
 from flask import Blueprint
-from flask import current_app
 from flask import flash
 from flask import redirect
 from flask import render_template
@@ -13,12 +12,12 @@ from flask_login import login_required
 from flask_login import login_user
 from flask_login import logout_user
 
+from cadash import __version__ as app_version
 from cadash.extensions import login_manager
 from cadash.public.forms import LoginForm
 from cadash.user.forms import RegisterForm
 from cadash.user.models import User
 from cadash.utils import flash_errors
-from cadash import __version__ as app_version
 
 blueprint = Blueprint('public', __name__, static_folder='../static')
 

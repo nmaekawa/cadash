@@ -5,7 +5,6 @@ import datetime as dt
 import pytest
 
 from cadash.user.models import Role, User
-
 from tests.factories import UserFactory
 
 

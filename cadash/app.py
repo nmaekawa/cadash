@@ -20,7 +20,7 @@ from cadash.utils import setup_logging
 
 def create_app(config_object=ProdConfig, app_name=__name__):
     """
-    An application factory
+    An application factory.
 
     app factory explained here:
     http://flask.pocoo.org/docs/patterns/appfactories/.

@@ -21,7 +21,7 @@ def setup_logging(
         env_key='LOG_CONFIG',
         default_level=logging.ERROR):
     """
-    set up logging config
+    set up logging config.
 
     :param: config_file_path: yaml logging config; default=logging.yaml
     :param: env_key: env var with yaml logging config, takes precedence
@@ -30,6 +30,9 @@ def setup_logging(
     """
     path = config_file_path
     value = os.getenv(env_key, None)
+
+    if value:
+        path = value
 
     if os.path.exists(path):
         with open(path, 'rt') as f:

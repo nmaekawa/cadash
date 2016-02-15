@@ -1,0 +1,326 @@
+[
+    {
+        "address": "fake-epiphan017.dce.harvard.edu",
+        "ca_attributes": {
+            "channel_status": {
+                "activeInputs": "0",
+                "name": "SDI-A HDMI-B",
+                "state": "",
+                "totalInputs": "0",
+                "uptime": 0
+            },
+            "channels": {
+                "1": {
+                    "activeInputs": "0",
+                    "name": "SDI-A",
+                    "publish_type": "0",
+                    "state": "",
+                    "totalInputs": "0",
+                    "uptime": 0
+                },
+                "2": {
+                    "activeInputs": "0",
+                    "name": "SDI-B",
+                    "publish_type": "0",
+                    "state": "",
+                    "totalInputs": "0",
+                    "uptime": 0
+                },
+                "3": {
+                    "activeInputs": "0",
+                    "name": "MergedLive",
+                    "publish_type": "6",
+                    "state": "",
+                    "totalInputs": "0",
+                    "uptime": 0
+                },
+                "4": {
+                    "activeInputs": "0",
+                    "name": "MergedLive_LowBR",
+                    "publish_type": "6",
+                    "state": "",
+                    "totalInputs": "0",
+                    "uptime": 0
+                },
+                "m1": {
+                    "activeInputs": "0",
+                    "name": "SDI-A SDI-B",
+                    "publish_type": "0",
+                    "state": "",
+                    "totalInputs": "0",
+                    "uptime": 0
+                }
+            },
+            "config_updated": false,
+            "cpu_load": "7",
+            "disk_free_gb": 3,
+            "firmware_info": [
+                "FIRMWARE_VERSION=\"3.14.4e\"",
+                "FIRMWARE_BUILD_HOST=\"mzh-rMBPL 3.13.0-43-generic\"",
+                "FIRMWARE_BUILD_DATE=\"2015-05-13\"",
+                "FIRMWARE_PLATFORM=X86",
+                "FIRMWARE_ARCH=x86_64",
+                "FIRMWARE_SVNPATH=",
+                "FIRMWARE_SVNPATH=\"\"",
+                "BASE_REV=\"exported\"",
+                "VGA2USB_REV=\"30654\"",
+                "OSOURCE_REV=\"1742\""
+            ],
+            "mh_config": false,
+            "product_name": "Matterhorn",
+            "serial_number": "ED7TEST1"
+        },
+        "disabled": "false",
+        "jira_issue_count": 0,
+        "location": "Fake Room",
+        "mh_state": "unknown",
+        "name": "fake-epiphan033",
+        "note": "",
+        "pingable": true,
+        "role": "Secondary",
+        "vendor": "Epiphan"
+    },
+    {
+        "address": "fake-epiphan033.dce.harvard.edu",
+        "ca_attributes": {
+            "channel_status": {
+                "activeInputs": "0",
+                "name": "SDI-A HDMI-B",
+                "state": "",
+                "totalInputs": "0",
+                "uptime": 0
+            },
+            "channels": {
+                "1": {
+                    "activeInputs": "0",
+                    "name": "SDI-A",
+                    "publish_type": "0",
+                    "state": "",
+                    "totalInputs": "0",
+                    "uptime": 0
+                },
+                "2": {
+                    "activeInputs": "0",
+                    "name": "SDI-B",
+                    "publish_type": "0",
+                    "state": "",
+                    "totalInputs": "0",
+                    "uptime": 0
+                },
+                "3": {
+                    "activeInputs": "0",
+                    "name": "MergedLive",
+                    "publish_type": "0",
+                    "state": "",
+                    "totalInputs": "0",
+                    "uptime": 0
+                },
+                "4": {
+                    "activeInputs": "0",
+                    "name": "MergedLive_LowBR",
+                    "publish_type": "6",
+                    "state": "",
+                    "totalInputs": "0",
+                    "uptime": 0
+                },
+                "m1": {
+                    "activeInputs": "0",
+                    "name": "SDI-A SDI-B",
+                    "publish_type": "0",
+                    "state": "",
+                    "totalInputs": "0",
+                    "uptime": 0
+                }
+            },
+            "config_updated": false,
+            "cpu_load": "7",
+            "disk_free_gb": 3,
+            "firmware_info": [
+                "FIRMWARE_VERSION=\"3.14.4e\"",
+                "FIRMWARE_BUILD_HOST=\"mzh-rMBPL 3.13.0-43-generic\"",
+                "FIRMWARE_BUILD_DATE=\"2015-05-13\"",
+                "FIRMWARE_PLATFORM=X86",
+                "FIRMWARE_ARCH=x86_64",
+                "FIRMWARE_SVNPATH=",
+                "FIRMWARE_SVNPATH=\"\"",
+                "BASE_REV=\"exported\"",
+                "VGA2USB_REV=\"30654\"",
+                "OSOURCE_REV=\"1742\""
+            ],
+            "mh_config": false,
+            "product_name": "Matterhorn",
+            "serial_number": "ED7TEST2"
+        },
+        "disabled": "false",
+        "jira_issue_count": 0,
+        "location": "Fake Room",
+        "mh_state": "unknown",
+        "name": "fake-epiphan033",
+        "note": "",
+        "pingable": true,
+        "role": "Primary",
+        "vendor": "Epiphan"
+    },
+    {
+        "address": "fake-epiphan089.dce.harvard.edu",
+        "ca_attributes": {
+            "channel_status": {
+                "activeInputs": "0",
+                "name": "SDI-A HDMI-B",
+                "state": "",
+                "totalInputs": "0",
+                "uptime": 0
+            },
+            "channels": {
+                "1": {
+                    "activeInputs": "0",
+                    "name": "SDI-A",
+                    "publish_type": "0",
+                    "state": "",
+                    "totalInputs": "0",
+                    "uptime": 0
+                },
+                "2": {
+                    "activeInputs": "0",
+                    "name": "SDI-B",
+                    "publish_type": "0",
+                    "state": "",
+                    "totalInputs": "0",
+                    "uptime": 0
+                },
+                "3": {
+                    "activeInputs": "0",
+                    "name": "MergedLive",
+                    "publish_type": "0",
+                    "state": "",
+                    "totalInputs": "0",
+                    "uptime": 0
+                },
+                "4": {
+                    "activeInputs": "0",
+                    "name": "MergedLive_LowBR",
+                    "publish_type": "6",
+                    "state": "",
+                    "totalInputs": "0",
+                    "uptime": 0
+                },
+                "m1": {
+                    "activeInputs": "0",
+                    "name": "SDI-A SDI-B",
+                    "publish_type": "0",
+                    "state": "",
+                    "totalInputs": "0",
+                    "uptime": 0
+                }
+            },
+            "config_updated": false,
+            "cpu_load": "7",
+            "disk_free_gb": 3,
+            "firmware_info": [
+                "FIRMWARE_VERSION=\"3.14.4e\"",
+                "FIRMWARE_BUILD_HOST=\"mzh-rMBPL 3.13.0-43-generic\"",
+                "FIRMWARE_BUILD_DATE=\"2015-05-13\"",
+                "FIRMWARE_PLATFORM=X86",
+                "FIRMWARE_ARCH=x86_64",
+                "FIRMWARE_SVNPATH=",
+                "FIRMWARE_SVNPATH=\"\"",
+                "BASE_REV=\"exported\"",
+                "VGA2USB_REV=\"30654\"",
+                "OSOURCE_REV=\"1742\""
+            ],
+            "mh_config": false,
+            "product_name": "Matterhorn",
+            "serial_number": "ED7TEST3"
+        },
+        "disabled": "false",
+        "jira_issue_count": 0,
+        "location": "Fake Room",
+        "mh_state": "unknown",
+        "name": "fake-epiphan089",
+        "note": "",
+        "pingable": true,
+        "role": "Experimental",
+        "vendor": "Epiphan"
+    },
+    {
+        "address": "fake-epiphan088.dce.harvard.edu",
+        "ca_attributes": {
+            "channel_status": {
+                "activeInputs": "0",
+                "name": "SDI-A HDMI-B",
+                "state": "",
+                "totalInputs": "0",
+                "uptime": 0
+            },
+            "channels": {
+                "1": {
+                    "activeInputs": "0",
+                    "name": "SDI-A",
+                    "publish_type": "0",
+                    "state": "",
+                    "totalInputs": "0",
+                    "uptime": 0
+                },
+                "2": {
+                    "activeInputs": "0",
+                    "name": "SDI-B",
+                    "publish_type": "0",
+                    "state": "",
+                    "totalInputs": "0",
+                    "uptime": 0
+                },
+                "3": {
+                    "activeInputs": "0",
+                    "name": "MergedLive",
+                    "publish_type": "0",
+                    "state": "",
+                    "totalInputs": "0",
+                    "uptime": 0
+                },
+                "4": {
+                    "activeInputs": "0",
+                    "name": "MergedLive_LowBR",
+                    "publish_type": "6",
+                    "state": "",
+                    "totalInputs": "0",
+                    "uptime": 0
+                },
+                "m1": {
+                    "activeInputs": "0",
+                    "name": "SDI-A SDI-B",
+                    "publish_type": "0",
+                    "state": "",
+                    "totalInputs": "0",
+                    "uptime": 0
+                }
+            },
+            "config_updated": false,
+            "cpu_load": "7",
+            "disk_free_gb": 3,
+            "firmware_info": [
+                "FIRMWARE_VERSION=\"3.14.4e\"",
+                "FIRMWARE_BUILD_HOST=\"mzh-rMBPL 3.13.0-43-generic\"",
+                "FIRMWARE_BUILD_DATE=\"2015-05-13\"",
+                "FIRMWARE_PLATFORM=X86",
+                "FIRMWARE_ARCH=x86_64",
+                "FIRMWARE_SVNPATH=",
+                "FIRMWARE_SVNPATH=\"\"",
+                "BASE_REV=\"exported\"",
+                "VGA2USB_REV=\"30654\"",
+                "OSOURCE_REV=\"1742\""
+            ],
+            "mh_config": false,
+            "product_name": "Matterhorn",
+            "serial_number": "ED7TEST4"
+        },
+        "disabled": "false",
+        "jira_issue_count": 0,
+        "location": "Fake Room",
+        "mh_state": "unknown",
+        "name": "fake-epiphan088",
+        "note": "",
+        "pingable": true,
+        "role": "Experimental",
+        "vendor": "Epiphan"
+    }
+]

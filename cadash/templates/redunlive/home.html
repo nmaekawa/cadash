@@ -3,11 +3,62 @@
 
 {% block content %}
 <div class="body-content">
+    <h1>redunlive v-{{ version }}</h1>
+    {% for loc in locations %}
     <div class="row">
-      <h1>redunlive v-{{ version }}</h1>
-      <p>home page for toggling between primary and backup live stream.
-      </p>
+        <div class="col-md-3">
+            {{ loc.name }}
+        </div>
+        <div class="col-md-9">
+            {% if not loc.primary_ca is defined or not loc.primary_ca.name is defined %}
+                <p>not properly configured (missing primary)</p>
+            {% else %}
+            {% if not loc.secondary_ca is defined or not loc.secondary_ca.name is defined %}
+                <p>not properly configured (missing secondary)</p>
+            {% else %}
+            {% if not loc.active_livestream %}
+                <p>no active live stream at the moment</p>
+            {% else %}
+                <form method="post"
+                    action="{{ url_for('redunlive.home') }}">
+                <input type='hidden' name='loc_id' value='{{ loc.id }}'/>
+                {% if loc.active_livestream == 'primary' %}
+                <label class='btn btn-primary active'>
+                    <input type="radio" id="{{ loc.primary_ca.name }}"
+                    onChange='this.form.submit();'
+                    checked="checked"
+                    name="active_device" value="primary"/>
+                    Primary&#x00A;active
+                </label>
+                <label class='btn btn-default'>
+                    <input type="radio" id="{{ loc.secondary_ca.name }}"
+                    onChange='this.form.submit();'
+                    name="active_device" value="secondary"/>
+                    Secondary
+                </label>
+                {% else %}
+                <label class='btn btn-default'>
+                    <input type="radio" id="{{ loc.primary_ca.name }}"
+                    onChange='this.form.submit();'
+                    name="active_device" value="primary"/>
+                    Primary
+                </label>
+                <label class='btn btn-primary active'>
+                    <input type="radio" id="{{ loc.secondary_ca.name }}"
+                    onChange='this.form.submit();'
+                    checked="checked"
+                    name="active_device" value="secondary"/>
+                    Secondary&#x00A;active
+                </label>
+                {% endif %}
+                </form>
+            {% endif %}
+            {% endif %}
+            {% endif %}
+        </div>
+    <hr/>
     </div>
+    {% endfor %}
 </div>
 {% endblock %}
 

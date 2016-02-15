@@ -6,7 +6,6 @@ See: http://webtest.readthedocs.org/
 from flask import url_for
 
 from cadash.user.models import User
-
 from tests.factories import UserFactory
 
 
