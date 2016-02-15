@@ -25,6 +25,20 @@ class ProdConfig(Config):
     SQLALCHEMY_DATABASE_URI = 'postgresql://localhost/example'  # TODO: Change me
     DEBUG_TB_ENABLED = False  # Disable Debug toolbar
 
+    # ca_stats creds is mandatory
+    assert 'CA_STATS_JSON_URL' in os.environ.keys(), 'missing env var "CA_STATS_JSON_URL"'
+    assert 'CA_STATS_USER' in os.environ.keys(), 'missing env var "CA_STATS_USER"'
+    assert 'CA_STATS_PASSWD' in os.environ.keys(), 'missing env var "CA_STATS_PASSWD"'
+    CA_STATS_JSON_URL = os.environ['CA_STATS_JSON_URL']
+    CA_STATS_USER = os.environ['CA_STATS_USER']
+    CA_STATS_PASSWD = os.environ['CA_STATS_PASSWD']
+
+    # epipearl creds (to talk to capture agents) mandatory
+    assert 'EPIPEARL_USER' in os.environ.keys(), 'missing env var "EPIPEARL_USER"'
+    assert 'EPIPEARL_PASSWD' in os.environ.keys(), 'missing env var "EPIPEARL_PASSWD"'
+    EPIPEARL_USER = os.environ['EPIPEARL_USER']
+    EPIPEARL_PASSWD = os.environ['EPIPEARL_PASSWD']
+
 
 class DevConfig(Config):
     """Development configuration."""
@@ -39,6 +53,20 @@ class DevConfig(Config):
     ASSETS_DEBUG = True  # Don't bundle/minify static assets
     CACHE_TYPE = 'simple'  # Can be "memcached", "redis", etc.
 
+    # ca_stats creds is mandatory
+    assert 'CA_STATS_JSON_URL' in os.environ.keys(), 'missing env var "CA_STATS_JSON_URL"'
+    assert 'CA_STATS_USER' in os.environ.keys(), 'missing env var "CA_STATS_USER"'
+    assert 'CA_STATS_PASSWD' in os.environ.keys(), 'missing env var "CA_STATS_PASSWD"'
+    CA_STATS_JSON_URL = os.environ['CA_STATS_JSON_URL']
+    CA_STATS_USER = os.environ['CA_STATS_USER']
+    CA_STATS_PASSWD = os.environ['CA_STATS_PASSWD']
+
+    # epipearl creds (to talk to capture agents) mandatory
+    assert 'EPIPEARL_USER' in os.environ.keys(), 'missing env var "EPIPEARL_USER"'
+    assert 'EPIPEARL_PASSWD' in os.environ.keys(), 'missing env var "EPIPEARL_PASSWD"'
+    EPIPEARL_USER = os.environ['EPIPEARL_USER']
+    EPIPEARL_PASSWD = os.environ['EPIPEARL_PASSWD']
+
 
 class TestConfig(Config):
     """Test configuration."""
@@ -48,3 +76,12 @@ class TestConfig(Config):
     SQLALCHEMY_DATABASE_URI = 'sqlite://'
     BCRYPT_LOG_ROUNDS = 4  # For faster tests; needs at least 4 to avoid "ValueError: Invalid rounds"
     WTF_CSRF_ENABLED = False  # Allows form testing
+
+    # ca_stats creds to pull info on all capture agents
+    CA_STATS_JSON_URL = 'http://ca_stats_fake_url.com'
+    CA_STATS_USER = 'ca_stats_fake_user'
+    CA_STATS_PASSWD = 'ca_stats_fake_passwd'
+
+    # epipearl creds (to talk to capture agents) mandatory
+    EPIPEARL_USER = 'epipearl_fake_user'
+    EPIPEARL_PASSWD = 'epipearl_fake_passwd'

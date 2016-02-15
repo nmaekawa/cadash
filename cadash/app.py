@@ -3,10 +3,10 @@
 from flask import Flask
 from flask import render_template
 
-from cadash import public
-from cadash import user
-from cadash import redunlive
 from cadash import castatus
+from cadash import public
+from cadash import redunlive
+from cadash import user
 from cadash.assets import assets
 from cadash.extensions import bcrypt
 from cadash.extensions import cache
@@ -20,7 +20,9 @@ from cadash.utils import setup_logging
 
 def create_app(config_object=ProdConfig, app_name=__name__):
     """
-    An application factory, as explained here:
+    An application factory
+
+    app factory explained here:
     http://flask.pocoo.org/docs/patterns/appfactories/.
 
     :param config_object: The configuration object to use.
@@ -65,6 +67,3 @@ def register_errorhandlers(app):
     for errcode in [401, 404, 500]:
         app.errorhandler(errcode)(render_error)
     return None
-
-
-

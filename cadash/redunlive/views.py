@@ -38,8 +38,3 @@ def home():
 #    logout_user()
 #    flash('You are logged out.', 'info')
 #    return redirect(url_for('public.home'))
-
-
-
-
-

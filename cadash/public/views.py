@@ -33,16 +33,16 @@ def home():
     """Home page."""
     form = LoginForm(request.form)
 
-    # example of logger
-    logger = logging.getLogger(current_app.name)
-    logger.info('----- this is a log message from app: %s' % current_app.name)
+    # _always_ get logger in request context
+    logger = logging.getLogger(__name__)
+    logger.info('----- this is a log message from app: %s' % __name__)
 
     # Handle logging in
     if request.method == 'POST':
         if form.validate_on_submit():
             login_user(form.user)
             flash('You are logged in.', 'success')
-            redirect_url = request.args.get('next') or url_for('user.members')
+            redirect_url = request.args.get('next') or url_for('public.home')
             return redirect(redirect_url)
         else:
             flash_errors(form)
@@ -76,6 +76,3 @@ def about():
     """About page."""
     form = LoginForm(request.form)
     return render_template('public/about.html', form=form, version=app_version)
-
-
-
