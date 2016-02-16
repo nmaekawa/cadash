@@ -1,15 +1,29 @@
+
+# 16feb16
+
+- functional test for redunlive
+
+## ca_status
+
+- ca_stats.json needs to be protected
+- redesign status-board page to get protected ca_stats.json somehow ???
+- backend for status-boad:
+    * db for cas and their configs
+    * ui to edit ca configs in db (add notes, move cas to diff room)
+
+
 # 13feb16
 
 - DONE 13feb16: review cookiecutter to do version, logging
 - DONE 13feb16: figure out logging
-- add credits to about page
-- shape-up home page
+- DONE 16feb16: shape-up home page
 - write tests first
-- incorporate redunlive
+- DONE 16feb16: incorporate redunlive
 - incorporate ca_status
 - figure an admin view to create users?
 - create the master admin user in manage.py?
 - then integrate with ldap
+- documentation: add credits to about page
 
 
 
