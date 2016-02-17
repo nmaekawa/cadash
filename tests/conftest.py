@@ -7,6 +7,7 @@ from webtest import TestApp
 from cadash.app import create_app
 from cadash.database import db as _db
 from cadash.settings import TestConfig
+from cadash.settings import TestConfig_LoginDisabled
 
 from .factories import UserFactory
 
@@ -23,10 +24,28 @@ def app():
     ctx.pop()
 
 
+@pytest.yield_fixture(scope='function')
+def app_login_disabled():
+    """An application for the tests."""
+    _app_nologin = create_app(TestConfig_LoginDisabled)
+    ctx = _app_nologin.test_request_context()
+    ctx.push()
+
+    yield _app_nologin
+
+    ctx.pop()
+
+
 @pytest.fixture(scope='function')
 def testapp(app):
     """A Webtest app."""
     return TestApp(app)
+
+
+@pytest.fixture(scope='function')
+def testapp_login_disabled(app_login_disabled):
+    """A Webtest app."""
+    return TestApp(app_login_disabled)
 
 
 @pytest.yield_fixture(scope='function')

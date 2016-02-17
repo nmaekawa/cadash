@@ -20,7 +20,8 @@
                 <p>no active live stream at the moment</p>
             {% else %}
                 <form method="post"
-                    action="{{ url_for('redunlive.home') }}">
+                    action="{{ url_for('redunlive.home') }}"
+                    id="{{ loc.id }}">
                 <input type='hidden' name='loc_id' value='{{ loc.id }}'/>
                 {% if loc.active_livestream == 'primary' %}
                 <label class='btn btn-primary active'>

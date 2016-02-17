@@ -71,6 +71,7 @@ class DevConfig(Config):
 class TestConfig(Config):
     """Test configuration."""
 
+    ENV = 'test'
     TESTING = True
     DEBUG = True
     SQLALCHEMY_DATABASE_URI = 'sqlite://'
@@ -85,3 +86,11 @@ class TestConfig(Config):
     # epipearl creds (to talk to capture agents) mandatory
     EPIPEARL_USER = 'epipearl_fake_user'
     EPIPEARL_PASSWD = 'epipearl_fake_passwd'
+
+
+class TestConfig_LoginDisabled(TestConfig):
+    """Disabled login_required for unit tests."""
+    LOGIN_DISABLED = True
+
+    # see https://github.com/jarus/flask-testing/issues/21
+    PRESERVE_CONTEXT_ON_EXCEPTION = False

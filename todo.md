@@ -1,7 +1,7 @@
 
 # 16feb16
 
-- functional test for redunlive
+- DONE 16feb16: functional test for redunlive
 
 ## ca_status
 
