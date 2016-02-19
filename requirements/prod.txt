@@ -43,3 +43,5 @@ Flask-DebugToolbar==0.10.0
 # logging file format
 pyaml>=15.8.2
 
+# ldap for authentication/authorization
+ldap3>=1.0.4
