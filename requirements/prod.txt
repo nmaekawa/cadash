@@ -10,6 +10,11 @@ Werkzeug==0.10.4
 Jinja2==2.8
 itsdangerous==0.24
 
+# redunlive
+arrow>=0.7.0
+epipearl>=0.1.0
+requests>=2.9.1
+
 # Database
 Flask-SQLAlchemy==2.1
 SQLAlchemy==1.0.9
@@ -33,6 +38,7 @@ jsmin>=2.0.11
 # Auth
 Flask-Login==0.3.2
 Flask-Bcrypt==0.7.1
+ldap3>=1.0.4
 
 # Caching
 Flask-Cache>=0.13.1
@@ -42,6 +48,3 @@ Flask-DebugToolbar==0.10.0
 
 # logging file format
 pyaml>=15.8.2
-
-# ldap for authentication/authorization
-ldap3>=1.0.4
