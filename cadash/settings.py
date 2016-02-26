@@ -39,8 +39,18 @@ class ProdConfig(Config):
     EPIPEARL_USER = os.environ['EPIPEARL_USER']
     EPIPEARL_PASSWD = os.environ['EPIPEARL_PASSWD']
 
+    # ldap info is mandatory
+    assert 'LDAP_HOST' in os.environ.keys(), 'missing env var "LDAP_HOST"'
+    assert 'LDAP_BASE_SEARCH' in os.environ.keys(), 'missing env var "LDAP_BASE_SEARCH"'
+    assert 'LDAP_BIND_DN' in os.environ.keys(), 'missing env var "LDAP_BIND_DN"'
+    assert 'LDAP_BIND_PASSWD' in os.environ.keys(), 'missing env var "LDAP_BIND_PASSWD"'
+    LDAP_HOST = os.environ['LDAP_HOST']
+    LDAP_BASE_SEARCH = os.environ['LDAP_BASE_SEARCH']
+    LDAP_BIND_DN = os.environ['LDAP_BIND_DN']
+    LDAP_BIND_PASSWD = os.environ['LDAP_BIND_PASSWD']
 
-class DevConfig(Config):
+
+class DevConfig(ProdConfig):
     """Development configuration."""
 
     ENV = 'dev'
@@ -53,19 +63,6 @@ class DevConfig(Config):
     ASSETS_DEBUG = True  # Don't bundle/minify static assets
     CACHE_TYPE = 'simple'  # Can be "memcached", "redis", etc.
 
-    # ca_stats creds is mandatory
-    assert 'CA_STATS_JSON_URL' in os.environ.keys(), 'missing env var "CA_STATS_JSON_URL"'
-    assert 'CA_STATS_USER' in os.environ.keys(), 'missing env var "CA_STATS_USER"'
-    assert 'CA_STATS_PASSWD' in os.environ.keys(), 'missing env var "CA_STATS_PASSWD"'
-    CA_STATS_JSON_URL = os.environ['CA_STATS_JSON_URL']
-    CA_STATS_USER = os.environ['CA_STATS_USER']
-    CA_STATS_PASSWD = os.environ['CA_STATS_PASSWD']
-
-    # epipearl creds (to talk to capture agents) mandatory
-    assert 'EPIPEARL_USER' in os.environ.keys(), 'missing env var "EPIPEARL_USER"'
-    assert 'EPIPEARL_PASSWD' in os.environ.keys(), 'missing env var "EPIPEARL_PASSWD"'
-    EPIPEARL_USER = os.environ['EPIPEARL_USER']
-    EPIPEARL_PASSWD = os.environ['EPIPEARL_PASSWD']
 
 
 class TestConfig(Config):
@@ -86,6 +83,12 @@ class TestConfig(Config):
     # epipearl creds (to talk to capture agents) mandatory
     EPIPEARL_USER = 'epipearl_fake_user'
     EPIPEARL_PASSWD = 'epipearl_fake_passwd'
+
+    # ldap info is mandatory
+    LDAP_HOST = 'fake_ldap_server.fake.com'
+    LDAP_BASE_SEARCH = 'dc=fake,dc=com'
+    LDAP_BIND_DN = 'dn=fake_super_user,dc=fake,dc=com'
+    LDAP_BIND_PASSWD = 'passw0rd'
 
 
 class TestConfig_LoginDisabled(TestConfig):

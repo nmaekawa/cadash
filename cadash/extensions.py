@@ -6,6 +6,7 @@ from flask_debugtoolbar import DebugToolbarExtension
 from flask_login import LoginManager
 from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
+from cadash.ldap import LdapClient
 
 bcrypt = Bcrypt()
 login_manager = LoginManager()
@@ -13,3 +14,4 @@ db = SQLAlchemy()
 migrate = Migrate()
 cache = Cache()
 debug_toolbar = DebugToolbarExtension()
+ldap_cli = LdapClient()

@@ -5,7 +5,7 @@ from wtforms import PasswordField
 from wtforms import StringField
 from wtforms.validators import DataRequired
 
-from cadash.user.models import User
+from cadash.user.models import LdapUser
 
 
 class LoginForm(Form):
@@ -25,13 +25,9 @@ class LoginForm(Form):
         if not initial_validation:
             return False
 
-        self.user = User.query.filter_by(username=self.username.data).first()
+        self.user = LdapUser(username=self.username.data, password=self.password.data)
         if not self.user:
-            self.username.errors.append('Unknown username')
-            return False
-
-        if not self.user.check_password(self.password.data):
-            self.password.errors.append('Invalid password')
+            self.username.errors.append('Unknown username:password combination')
             return False
 
         if not self.user.active:

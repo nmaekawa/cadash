@@ -12,6 +12,7 @@ from cadash.extensions import bcrypt
 from cadash.extensions import cache
 from cadash.extensions import db
 from cadash.extensions import debug_toolbar
+from cadash.extensions import ldap_cli
 from cadash.extensions import login_manager
 from cadash.extensions import migrate
 from cadash.settings import ProdConfig
@@ -45,6 +46,7 @@ def register_extensions(app):
     login_manager.init_app(app)
     debug_toolbar.init_app(app)
     migrate.init_app(app, db)
+    ldap_cli.init_app(app)
     return None
 
 

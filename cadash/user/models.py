@@ -11,6 +11,7 @@ from cadash.database import db
 from cadash.database import reference_col
 from cadash.database import relationship
 from cadash.extensions import bcrypt
+from cadash.extensions import ldap_cli
 
 
 class Role(SurrogatePK, Model):
@@ -68,3 +69,32 @@ class User(UserMixin, SurrogatePK, Model):
     def __repr__(self):
         """Represent instance as a unique string."""
         return '<User({username!r})>'.format(username=self.username)
+
+
+class LdapUser(UserMixin):
+    """ldap user of the app."""
+
+    def __init__(self, username, password):
+        """init instance with an authenticated ldap user."""
+        if ldap_cli.is_authenticated(username,password):
+            self._id = username
+            self._groups = ldap_cli.fetch_groups(username)
+        else:
+            return None
+
+    @property
+    def username(self):
+        return self._id
+
+    def get_id(self):
+        return unicode(self._id)
+
+    def belongs_to_group(self, group):
+        """True if user belongs to `group`."""
+        return group in self._groups
+
+    def __repr__(self):
+        """represent nistance as a unique string."""
+        return '<LdapUser(%s)>' % self._id
+
+

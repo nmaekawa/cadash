@@ -1,10 +1,23 @@
 
+# 24feb16
+
+## ldap login
+
+- in login, need to authenticate with ldap
+- if authenticated, then pull info on groups
+- set user obj in cache, login user
+- view needs to authorize, according to groups
+- for user_loader, needs to pull from cache
+- when logout, clear entry from cache
+- cache timeout? 24h? force authentication for session older than 24h.
+
+
 # 19feb16
 
-- setup ldap test server as fixture
-- tests for ldap login
-- load_user using roles as authorization
-- vagrant environ for dev/prod updated
+- CANCELLED 24feb16: setup ldap test server as fixture -- it might be easier to just mock the ldap server
+- REPHRASE 24feb16: tests for ldap login
+- WRONG 24feb16: load_user using roles as authorization
+- POSTPONED 24feb16: vagrant environ for dev/prod updated
 
 
 # 16feb16

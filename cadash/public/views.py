@@ -8,15 +8,17 @@ from flask import redirect
 from flask import render_template
 from flask import request
 from flask import url_for
+from flask_login import current_user
 from flask_login import login_required
 from flask_login import login_user
 from flask_login import logout_user
 
 from cadash import __version__ as app_version
+from cadash.extensions import cache
 from cadash.extensions import login_manager
 from cadash.public.forms import LoginForm
 from cadash.user.forms import RegisterForm
-from cadash.user.models import User
+from cadash.user.models import LdapUser
 from cadash.utils import flash_errors
 
 blueprint = Blueprint('public', __name__, static_folder='../static')
@@ -24,7 +26,7 @@ blueprint = Blueprint('public', __name__, static_folder='../static')
 @login_manager.user_loader
 def load_user(user_id):
     """Load user by ID."""
-    return User.get_by_id(int(user_id))
+    return cache.get(user_id)
 
 
 @blueprint.route('/', methods=['GET', 'POST'])
@@ -39,6 +41,7 @@ def home():
     # Handle logging in
     if request.method == 'POST':
         if form.validate_on_submit():
+            cache.set(form.user.username, form.user, timeout=24 * 60)
             login_user(form.user)
             flash('You are logged in.', 'success')
             redirect_url = request.args.get('next') or url_for('public.home')
@@ -52,6 +55,7 @@ def home():
 @login_required
 def logout():
     """Logout."""
+    cache.delete(current_user.username)
     logout_user()
     flash('You are logged out.', 'info')
     return redirect(url_for('public.home'))
