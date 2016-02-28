@@ -18,7 +18,7 @@ from cadash.extensions import cache
 from cadash.extensions import login_manager
 from cadash.public.forms import LoginForm
 from cadash.user.forms import RegisterForm
-from cadash.user.models import LdapUser
+from cadash.user.models import BaseUser
 from cadash.utils import flash_errors
 
 blueprint = Blueprint('public', __name__, static_folder='../static')
@@ -41,7 +41,7 @@ def home():
     # Handle logging in
     if request.method == 'POST':
         if form.validate_on_submit():
-            cache.set(form.user.username, form.user, timeout=24 * 60)
+            cache.set(form.user.username, form.user, timeout=24 * 3600)
             login_user(form.user)
             flash('You are logged in.', 'success')
             redirect_url = request.args.get('next') or url_for('public.home')

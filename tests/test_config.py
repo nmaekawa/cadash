@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
 """Test configs."""
+from mock import patch
+
 from cadash.app import create_app
 from cadash.settings import DevConfig
 from cadash.settings import ProdConfig
 
-
-def test_production_config():
+@patch('cadash.ldap.LdapClient.is_authenticated', return_value=True)
+def test_production_config(mock_ldap_client):
     """Production config."""
     app = create_app(ProdConfig)
     assert app.config['ENV'] == 'prod'
@@ -14,7 +16,8 @@ def test_production_config():
     assert app.config['ASSETS_DEBUG'] is False
 
 
-def test_dev_config():
+@patch('cadash.ldap.LdapClient.is_authenticated', return_value=True)
+def test_dev_config(mock_ldap_client):
     """Development config."""
     app = create_app(DevConfig)
     assert app.config['ENV'] == 'dev'

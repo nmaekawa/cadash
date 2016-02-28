@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """Tests for `data_masseuse` module."""
 import os
+import pytest
 
 import json
 import httpretty
@@ -11,6 +12,7 @@ from cadash.redunlive.data_masseuse import map_redunlive_ca_loc
 data_filename = os.path.join(
         os.path.abspath(os.path.dirname(__file__)), 'ca_loc_shortmap.json')
 
+@pytest.mark.usefixtures('testapp')
 class TestDataMasseuse(object):
 
     def setup(self):

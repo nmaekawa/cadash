@@ -5,7 +5,8 @@ from wtforms import PasswordField
 from wtforms import StringField
 from wtforms.validators import DataRequired
 
-from cadash.user.models import LdapUser
+from cadash.extensions import ldap_cli
+from cadash.user.models import BaseUser
 
 
 class LoginForm(Form):
@@ -25,12 +26,30 @@ class LoginForm(Form):
         if not initial_validation:
             return False
 
-        self.user = LdapUser(username=self.username.data, password=self.password.data)
+        self.user = self._fetch_ldap_user(
+                usr=self.username.data,
+                pwd=self.password.data,
+                cli=ldap_cli)
         if not self.user:
             self.username.errors.append('Unknown username:password combination')
             return False
 
-        if not self.user.active:
+        if not self.user.is_active:
             self.username.errors.append('User not activated')
             return False
         return True
+
+
+    def _fetch_ldap_user(self, usr, pwd, cli):
+        """fetches user in ldap, and the groups user belongs to.
+
+        returns a BaseUser object or None if not authenticated or unknown
+        """
+        if cli.is_authenticated(usr, pwd):
+            u = BaseUser(usr, pwd)
+            groups = cli.fetch_groups(usr)
+            u.place_in_groups(groups)
+            return u
+        else:
+            return None
+

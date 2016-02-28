@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
 """Defines fixtures available to all tests."""
 
+from mock import patch
 import pytest
 from webtest import TestApp
 
 from cadash.app import create_app
 from cadash.database import db as _db
+from cadash.ldap import LdapClient
 from cadash.settings import TestConfig
 from cadash.settings import TestConfig_LoginDisabled
 
@@ -15,7 +17,8 @@ from .factories import UserFactory
 @pytest.yield_fixture(scope='function')
 def app():
     """An application for the tests."""
-    _app = create_app(TestConfig)
+    with patch.object(LdapClient, 'is_authenticated', return_value=True):
+        _app = create_app(TestConfig)
     ctx = _app.test_request_context()
     ctx.push()
 
@@ -27,7 +30,8 @@ def app():
 @pytest.yield_fixture(scope='function')
 def app_login_disabled():
     """An application for the tests."""
-    _app_nologin = create_app(TestConfig_LoginDisabled)
+    with patch.object(LdapClient, 'is_authenticated', return_value=True):
+        _app_nologin = create_app(TestConfig_LoginDisabled)
     ctx = _app_nologin.test_request_context()
     ctx.push()
 
