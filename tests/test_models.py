@@ -6,7 +6,7 @@ class TestBaseUser:
     """BaseUser tests."""
 
     def setup(self):
-        self.user = BaseUser('fake', 'passw0rd')
+        self.user = BaseUser('fake')
         self.user.place_in_groups(['can_read', 'can_edit', 'can_playdead'])
 
 

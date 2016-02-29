@@ -3,6 +3,7 @@
 import logging
 
 from flask import Blueprint
+from flask import current_app
 from flask import flash
 from flask import redirect
 from flask import render_template
@@ -34,7 +35,7 @@ def home():
 
     # _always_ get logger in request context
     logger = logging.getLogger(__name__)
-    logger.info('----- this is a log message from app: %s' % __name__)
+    logger.info('app: %s env: %s' % (__name__, current_app.config['ENV']))
 
     # Handle logging in
     if request.method == 'POST':
