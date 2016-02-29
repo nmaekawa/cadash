@@ -1,4 +1,12 @@
 
+# 29feb16
+
+- deploy to local vm with gunicorn, nginx, blah
+- recipes to install/deploy in ec2/opsworks
+- memcached for prod environment
+
+
+
 # 28feb16
 
 ## cleanup code

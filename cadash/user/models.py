@@ -5,10 +5,9 @@ from flask_login import UserMixin
 class BaseUser(UserMixin):
     """base user of the app."""
 
-    def __init__(self, username, password):
+    def __init__(self, username):
         """init user instance."""
         self._usr = username
-        self._pwd = password
         self._grp = []
 
     @property

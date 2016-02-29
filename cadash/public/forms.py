@@ -46,7 +46,7 @@ class LoginForm(Form):
         returns a BaseUser object or None if not authenticated or unknown
         """
         if cli.is_authenticated(usr, pwd):
-            u = BaseUser(usr, pwd)
+            u = BaseUser(usr)
             groups = cli.fetch_groups(usr)
             u.place_in_groups(groups)
             return u

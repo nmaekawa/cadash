@@ -25,6 +25,10 @@ class ProdConfig(Config):
     SQLALCHEMY_DATABASE_URI = 'postgresql://localhost/example'  # TODO: Change me
     DEBUG_TB_ENABLED = False  # Disable Debug toolbar
 
+    # memcached
+    CACHE_TYPE = 'memcached'
+    CACHE_MEMCACHED_SERVERS = ['localhost:8008']
+
     # ca_stats creds is mandatory
     assert 'CA_STATS_JSON_URL' in os.environ.keys(), 'missing env var "CA_STATS_JSON_URL"'
     assert 'CA_STATS_USER' in os.environ.keys(), 'missing env var "CA_STATS_USER"'
