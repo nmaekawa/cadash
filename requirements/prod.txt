@@ -42,6 +42,7 @@ ldap3>=1.0.4
 
 # Caching
 Flask-Cache>=0.13.1
+python-memcached>=1.57
 
 # Debug toolbar
 Flask-DebugToolbar==0.10.0
