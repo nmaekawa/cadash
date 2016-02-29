@@ -6,7 +6,6 @@ See: http://webtest.readthedocs.org/
 import os
 
 import httpretty
-import json
 from flask import url_for
 from mock import patch
 
@@ -16,7 +15,6 @@ data_filename = os.path.join(
 def get_json_data():
     txt = open(data_filename, 'r')
     raw_data = txt.read()
-    #json_data = json.loads(raw_data)
     txt.close()
     return raw_data
 
@@ -70,7 +68,7 @@ class TestRedunlive:
     """list location primary/backup ca's."""
 
     def test_displays_list_of_locations(self, testapp_login_disabled):
-        """displays primary/backup ca for all locations."""
+        """display primary/backup ca for all locations."""
         httpretty.enable()
         self.register_uri_for_http()
 
@@ -87,7 +85,7 @@ class TestRedunlive:
 
 
     def test_toggle_backup_to_primary(self, testapp_login_disabled):
-        """displays primary/backup ca for all locations."""
+        """display primary/backup ca for all locations."""
         httpretty.enable()
         self.register_uri_for_http()
 

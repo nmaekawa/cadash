@@ -4,17 +4,7 @@ import datetime as dt
 
 from flask_login import UserMixin
 
-from cadash.database import Column
-from cadash.database import Model
-from cadash.database import SurrogatePK
-from cadash.database import db
-from cadash.database import reference_col
-from cadash.database import relationship
-from cadash.extensions import bcrypt
 from cadash.extensions import ldap_cli
-
-
-
 
 class BaseUser(UserMixin):
     """base user of the app."""

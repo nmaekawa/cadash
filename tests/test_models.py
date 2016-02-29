@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
 """Model unit tests."""
-import pytest
-
 from cadash.user.models import BaseUser
 
 class TestBaseUser:
@@ -19,7 +17,7 @@ class TestBaseUser:
         assert self.user.is_in_group('can_edit')
 
     def test_negative_belong_to_group(self):
-        """does not belong to group."""
+        """do not belong to group."""
         assert not self.user.is_in_group('potty_trained')
         assert self.user.is_in_group('can_edit')
 

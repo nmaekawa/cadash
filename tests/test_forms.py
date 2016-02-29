@@ -3,7 +3,6 @@
 from mock import patch
 
 from cadash.public.forms import LoginForm
-from cadash.user.models import BaseUser
 
 
 @patch('cadash.ldap.LdapClient.is_authenticated', return_value=True)

@@ -41,7 +41,7 @@ class LoginForm(Form):
 
 
     def _fetch_ldap_user(self, usr, pwd, cli):
-        """fetches user in ldap, and the groups user belongs to.
+        """fetch user in ldap, and the groups user belongs to.
 
         returns a BaseUser object or None if not authenticated or unknown
         """

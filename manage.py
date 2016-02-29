@@ -12,7 +12,7 @@ from flask_script.commands import Clean, ShowUrls
 from cadash.app import create_app
 from cadash.database import db
 from cadash.settings import DevConfig, ProdConfig
-from cadash.user.models import User
+from cadash.user.models import BaseUser
 
 CONFIG = ProdConfig if os.environ.get('CADASH_ENV') == 'prod' else DevConfig
 HERE = os.path.abspath(os.path.dirname(__file__))
@@ -25,7 +25,7 @@ migrate = Migrate(app, db)
 
 def _make_context():
     """Return context dict for a shell session so you can access app, db, and the User model by default."""
-    return {'app': app, 'db': db, 'User': User}
+    return {'app': app, 'db': db, 'User': BaseUser}
 
 
 @manager.command

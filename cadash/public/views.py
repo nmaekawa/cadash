@@ -17,7 +17,6 @@ from cadash import __version__ as app_version
 from cadash.extensions import cache
 from cadash.extensions import login_manager
 from cadash.public.forms import LoginForm
-from cadash.user.models import BaseUser
 from cadash.utils import flash_errors
 
 blueprint = Blueprint('public', __name__, static_folder='../static')

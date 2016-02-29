@@ -40,36 +40,3 @@ def setup_logging(
         logging.config.dictConfig(config)
     else:
         logging.basicConfig(level=default_level)
-
-
-def ldap_example():
-    from ldap3 import Server, Connection, ALL, AUTH_SIMPLE, ALL_ATTRIBUTES
-
-    server = Server('ldap_server', use_ssl=True, get_info=ALL)
-    conn = Connection(server, 'user', 'passwd')
-    conn.open()
-    conn.start_tls()
-    conn.bind()
-
-    conn.search('dc=dce,dc=harvard,dc=edu', '(&(objectclass=posixAccount)(uid=nmaekawa))',
-            attributes=ALL_ATTRIBUTES)
-
-    if conn.entries:
-        for e in conn.entries:
-            print e
-    else:
-        print 'empty entries'
-
-    x = conn.compare('uid=nmaekawa,ou=Person,dc=dce,dc=harvard,dc=edu',
-                     'userPassword', 'pwd')
-    print "password is %s" % x
-
-    #conn.search('dc=dce,dc=harvard,dc=edu', '(objectclass=posixGroup)')
-    conn.search('dc=dce,dc=harvard,dc=edu', '(&(objectclass=posixGroup)(memberUid=nmaekawa))')
-    #        attributes=ALL_ATTRIBUTES)
-
-    if conn.entries:
-        for e in conn.entries:
-            print e
-    else:
-        print 'empty entries'
