@@ -33,7 +33,8 @@ class LdapClient(object):
 
     def is_authenticated(self, username, password):
         """authenticates user with ldap server."""
-        conn = Connection(self._server, username, password)
+        u = ('uid=%s,ou=People,' % username) + self._base_search
+        conn = Connection(self._server, user=u, password=password)
         conn.open()
         conn.start_tls()
         result = conn.bind()
@@ -54,8 +55,10 @@ class LdapClient(object):
                     '(&(objectclass=posixGroup)(memberUid=%s))' % username,
                     attributes=ALL_ATTRIBUTES)
             for e in conn.entries:
-                result.append(e['cn'])
+                result.append(unicode(e['cn']))
         else:
-            logger = logging.get_logger(__name__)
+            logger = logging.getLogger(__name__)
             logger.error('bind usr(%s):pwd unknown' % self._usr)
+
+        conn.unbind()
         return result

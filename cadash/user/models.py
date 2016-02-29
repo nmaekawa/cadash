@@ -1,10 +1,6 @@
 # -*- coding: utf-8 -*-
 """User models."""
-import datetime as dt
-
 from flask_login import UserMixin
-
-from cadash.extensions import ldap_cli
 
 class BaseUser(UserMixin):
     """base user of the app."""
