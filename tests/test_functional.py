@@ -10,9 +10,6 @@ import json
 from flask import url_for
 from mock import patch
 
-from cadash.user.models import User
-from tests.factories import UserFactory
-
 data_filename = os.path.join(
         os.path.abspath(os.path.dirname(__file__)), 'ca_loc_shortmap.json')
 
@@ -72,7 +69,7 @@ class TestLoggingIn:
 class TestRedunlive:
     """list location primary/backup ca's."""
 
-    def test_displays_list_of_locations(self, user, testapp_login_disabled):
+    def test_displays_list_of_locations(self, testapp_login_disabled):
         """displays primary/backup ca for all locations."""
         httpretty.enable()
         self.register_uri_for_http()
@@ -89,7 +86,7 @@ class TestRedunlive:
         httpretty.reset()
 
 
-    def test_toggle_backup_to_primary(self, user, testapp_login_disabled):
+    def test_toggle_backup_to_primary(self, testapp_login_disabled):
         """displays primary/backup ca for all locations."""
         httpretty.enable()
         self.register_uri_for_http()

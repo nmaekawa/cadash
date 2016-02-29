@@ -17,7 +17,6 @@ from cadash import __version__ as app_version
 from cadash.extensions import cache
 from cadash.extensions import login_manager
 from cadash.public.forms import LoginForm
-from cadash.user.forms import RegisterForm
 from cadash.user.models import BaseUser
 from cadash.utils import flash_errors
 
@@ -59,19 +58,6 @@ def logout():
     logout_user()
     flash('You are logged out.', 'info')
     return redirect(url_for('public.home'))
-
-
-@blueprint.route('/register/', methods=['GET', 'POST'])
-def register():
-    """Register new user."""
-    form = RegisterForm(request.form, csrf_enabled=False)
-    if form.validate_on_submit():
-        User.create(username=form.username.data, email=form.email.data, password=form.password.data, active=True)
-        flash('Thank you for registering. You can now log in.', 'success')
-        return redirect(url_for('public.home'))
-    else:
-        flash_errors(form)
-    return render_template('public/register.html', form=form)
 
 
 @blueprint.route('/about/')
