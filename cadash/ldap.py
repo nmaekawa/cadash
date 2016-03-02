@@ -54,7 +54,8 @@ class LdapClient(object):
                     self._base_search,
                     '(&(objectclass=posixGroup)(memberUid=%s))' % username,
                     attributes=ALL_ATTRIBUTES)
-            for e in conn.entries:
+            for entry in conn.entries:
+                e = entry.entry_get_attributes_dict()
                 result.append(unicode(e['cn']))
         else:
             logger = logging.getLogger(__name__)
