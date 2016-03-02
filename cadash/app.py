@@ -33,7 +33,7 @@ def create_app(config_object=ProdConfig, app_name=__name__):
     register_extensions(app)
     register_blueprints(app)
     register_errorhandlers(app)
-    setup_logging()
+    setup_logging(app)
     return app
 
 

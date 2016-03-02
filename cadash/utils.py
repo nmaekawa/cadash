@@ -17,25 +17,17 @@ def flash_errors(form, category='warning'):
 
 # from http://victorlin.me/posts/2012/08/26/good-logging-practice-in-python
 def setup_logging(
-        config_file_path='logging.yaml',
-        env_key='LOG_CONFIG',
-        default_level=logging.ERROR):
+        app,
+        default_level=logging.INFO):
     """
     set up logging config.
 
-    :param: config_file_path: yaml logging config; default=logging.yaml
-    :param: env_key: env var with yaml logging config, takes precedence
-            over `config_file_path`; default=LOG_CONFIG
-    :param: default_level: log level for basic config, default=ERROR
+    :param: app: application obj; relevant app.config['LOG_CONFIG']
+            which is the full path to the yaml file with configs for logs
+    :param: default_level: log level for basic config, default=INFO
     """
-    path = config_file_path
-    value = os.getenv(env_key, None)
-
-    if value:
-        path = value
-
-    if os.path.exists(path):
-        with open(path, 'rt') as f:
+    if os.path.exists(app.config['LOG_CONFIG']):
+        with open(app.config['LOG_CONFIG'], 'rt') as f:
             config = yaml.load(f.read())
         logging.config.dictConfig(config)
     else:
