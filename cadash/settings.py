@@ -26,9 +26,10 @@ class ProdConfig(Config):
     SQLALCHEMY_DATABASE_URI = 'postgresql://localhost/example'  # TODO: Change me
     DEBUG_TB_ENABLED = False  # Disable Debug toolbar
 
-    # memcached
-    CACHE_TYPE = 'memcached'
-    CACHE_MEMCACHED_SERVERS = ['localhost:8008']
+    # redis cache
+    CACHE_TYPE = 'redis'
+    CACHE_REDIS_HOST = 'localhost'
+    CACHE_REDIS_PORT = 6379
 
     # ca_stats creds is mandatory
     assert 'CA_STATS_JSON_URL' in os.environ.keys(), 'missing env var "CA_STATS_JSON_URL"'
@@ -66,8 +67,6 @@ class DevConfig(ProdConfig):
     SQLALCHEMY_DATABASE_URI = 'sqlite:///{0}'.format(DB_PATH)
     DEBUG_TB_ENABLED = True
     ASSETS_DEBUG = True  # Don't bundle/minify static assets
-    CACHE_TYPE = 'simple'  # Can be "memcached", "redis", etc.
-
 
 
 class TestConfig(Config):

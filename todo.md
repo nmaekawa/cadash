@@ -1,10 +1,29 @@
 
+# 10mar16
+
+- replace memcached with redis; test recipe, of course
+- straighten up git repo
+- check jay's pull request; refactoring usefull for my stuff
+- rotate logs; straighten up logs
+- readme in cadash repo
+
+
+# 04mar16
+
+- IN PROGRESS 10mar16: recipes to install/deploy in ec2/opsworks
+- DONE 10mar16: meio-de-campo with sysops about ca tools
+    * miguel says consolidate info on ca's is good
+    * sysops has not spent a lot of time thinking what "handoff ca" means
+- IN PROGRESS 10mar16: move from memcached to redis
+- start porting ca-stats?
+- jay to help with db (elastic search)
+
+
 # 29feb16
 
-- deploy to local vm with gunicorn, nginx, blah
+- DONE 02mar16: deploy to local vm with gunicorn, nginx, blah
 - recipes to install/deploy in ec2/opsworks
-- memcached for prod environment
-
+- DONE 02mar16: memcached for prod environment
 
 
 # 28feb16
