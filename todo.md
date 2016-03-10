@@ -1,11 +1,11 @@
 
 # 10mar16
 
-- replace memcached with redis; test recipe, of course
+- DONE 10mar16: replace memcached with redis; test recipe, of course
 - straighten up git repo
 - check jay's pull request; refactoring usefull for my stuff
-- rotate logs; straighten up logs
-- readme in cadash repo
+- DONE 10mar16: rotate logs; straighten up logs
+- DONE 10mar16: readme in cadash repo
 
 
 # 04mar16
