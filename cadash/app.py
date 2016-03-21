@@ -7,6 +7,7 @@ from cadash import castatus
 from cadash import public
 from cadash import redunlive
 from cadash import user
+from cadash import inventory
 from cadash.assets import assets
 from cadash.extensions import bcrypt
 from cadash.extensions import cache
@@ -15,9 +16,11 @@ from cadash.extensions import debug_toolbar
 from cadash.extensions import ldap_cli
 from cadash.extensions import login_manager
 from cadash.extensions import migrate
+from cadash.inventory.views import init_inventory_views
 from cadash.settings import ProdConfig
 from cadash.utils import setup_logging
 
+from flask_admin import Admin
 
 def create_app(config_object=ProdConfig, app_name=__name__):
     """
@@ -55,6 +58,9 @@ def register_blueprints(app):
     app.register_blueprint(public.views.blueprint)
     app.register_blueprint(redunlive.views.blueprint)
     app.register_blueprint(castatus.views.blueprint)
+
+    admin = Admin(app, template_mode='bootstrap3')
+    init_inventory_views(admin)
     return None
 
 
