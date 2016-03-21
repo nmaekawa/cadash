@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """Database module, including the SQLAlchemy database object and DB-related utilities."""
 from sqlalchemy.orm import relationship
+from sqlalchemy.orm import validates
 
 from cadash.compat import basestring
 from cadash.extensions import db
@@ -8,6 +9,7 @@ from cadash.extensions import db
 # Alias common SQLAlchemy names
 Column = db.Column
 relationship = relationship
+validates = validates
 
 
 class CRUDMixin(object):

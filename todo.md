@@ -1,9 +1,16 @@
 
+# 21mar16
+
+- check jay's pull request; refactoring usefull for my stuff
+- inventory - db and sqlalchemy for base identities
+- inventory - flask-admin for crud webui
+
+
 # 10mar16
 
 - DONE 10mar16: replace memcached with redis; test recipe, of course
 - straighten up git repo
-- check jay's pull request; refactoring usefull for my stuff
+- PUSHED: check jay's pull request; refactoring usefull for my stuff
 - DONE 10mar16: rotate logs; straighten up logs
 - DONE 10mar16: readme in cadash repo
 

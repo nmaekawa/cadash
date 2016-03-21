@@ -13,7 +13,6 @@ class Config(object):
     ASSETS_DEBUG = False
     DEBUG_TB_ENABLED = False  # Disable Debug toolbar
     DEBUG_TB_INTERCEPT_REDIRECTS = False
-    CACHE_TYPE = 'simple'  # Can be "memcached", "redis", etc.
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     LOG_CONFIG = os.environ.get('LOG_CONFIG', 'logging.yaml')
 
@@ -64,6 +63,7 @@ class DevConfig(ProdConfig):
     DB_NAME = 'dev.db'
     # Put the db file in project root
     DB_PATH = os.path.join(Config.PROJECT_ROOT, DB_NAME)
+    CACHE_TYPE = 'simple'  # Can be "memcached", "redis", etc.
     SQLALCHEMY_DATABASE_URI = 'sqlite:///{0}'.format(DB_PATH)
     DEBUG_TB_ENABLED = True
     ASSETS_DEBUG = True  # Don't bundle/minify static assets
@@ -76,6 +76,7 @@ class TestConfig(Config):
     TESTING = True
     DEBUG = True
     SQLALCHEMY_DATABASE_URI = 'sqlite://'
+    CACHE_TYPE = 'simple'  # Can be "memcached", "redis", etc.
     BCRYPT_LOG_ROUNDS = 4  # For faster tests; needs at least 4 to avoid "ValueError: Invalid rounds"
     WTF_CSRF_ENABLED = False  # Allows form testing
 
