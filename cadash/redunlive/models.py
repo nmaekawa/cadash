@@ -4,7 +4,7 @@ import arrow
 import logging
 import requests
 
-from cadash.redunlive import utils
+from cadash import utils
 
 
 class CaptureAgent(object):

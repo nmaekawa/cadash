@@ -12,7 +12,7 @@ from flask import request
 from flask_login import login_required
 
 from cadash import __version__ as app_version
-from cadash.redunlive.utils import pull_data
+from cadash.utils import pull_data
 from cadash.redunlive.data_masseuse import map_redunlive_ca_loc
 
 
