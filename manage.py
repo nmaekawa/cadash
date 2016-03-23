@@ -11,10 +11,10 @@ from flask_script.commands import Clean, ShowUrls
 
 from cadash.app import create_app
 from cadash.database import db
-from cadash.settings import DevConfig, ProdConfig
+from cadash.settings import Config
 from cadash.user.models import BaseUser
 
-CONFIG = ProdConfig if os.environ.get('CADASH_ENV') == 'prod' else DevConfig
+CONFIG = Config(environment=os.environ.get('CADASH_ENV'))
 HERE = os.path.abspath(os.path.dirname(__file__))
 TEST_PATH = os.path.join(HERE, 'tests')
 

@@ -17,12 +17,12 @@ from cadash.extensions import ldap_cli
 from cadash.extensions import login_manager
 from cadash.extensions import migrate
 from cadash.inventory.views import init_inventory_views
-from cadash.settings import ProdConfig
+from cadash.settings import Config
 from cadash.utils import setup_logging
 
 from flask_admin import Admin
 
-def create_app(config_object=ProdConfig, app_name=__name__):
+def create_app(config_object=None, app_name=__name__):
     """
     An application factory.
 
@@ -32,7 +32,10 @@ def create_app(config_object=ProdConfig, app_name=__name__):
     :param config_object: The configuration object to use.
     """
     app = Flask(app_name)
-    app.config.from_object(config_object)
+    if config_object is None:
+        app.config.from_object(Config())
+    else:
+        app.config.from_object(config_object)
     register_extensions(app)
     register_blueprints(app)
     register_errorhandlers(app)

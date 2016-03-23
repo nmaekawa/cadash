@@ -4,81 +4,21 @@ import os
 
 
 class Config(object):
-    """Base configuration."""
+    """configuration object."""
 
-    SECRET_KEY = os.environ.get('FLASK_SECRET', 'secret-key')  # TODO: Change me
+    SECRET_KEY = os.environ.get('FLASK_SECRET', 'secret-key')
     APP_DIR = os.path.abspath(os.path.dirname(__file__))  # This directory
     PROJECT_ROOT = os.path.abspath(os.path.join(APP_DIR, os.pardir))
-    BCRYPT_LOG_ROUNDS = 13
-    ASSETS_DEBUG = False
-    DEBUG_TB_ENABLED = False  # Disable Debug toolbar
+
+    DEBUG = True
+    ASSETS_DEBUG = True  # do not bundle/minify static assets
+    DEBUG_TB_ENABLED = True  # enable Debug toolbar
     DEBUG_TB_INTERCEPT_REDIRECTS = False
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     LOG_CONFIG = os.environ.get('LOG_CONFIG', 'logging.yaml')
 
-
-class ProdConfig(Config):
-    """Production configuration."""
-
-    ENV = 'prod'
-    DEBUG = False
-    SQLALCHEMY_DATABASE_URI = 'postgresql://localhost/example'  # TODO: Change me
-    DEBUG_TB_ENABLED = False  # Disable Debug toolbar
-
-    # redis cache
-    CACHE_TYPE = 'redis'
-    CACHE_REDIS_HOST = 'localhost'
-    CACHE_REDIS_PORT = 6379
-
-    # ca_stats creds is mandatory
-    assert 'CA_STATS_JSON_URL' in os.environ.keys(), 'missing env var "CA_STATS_JSON_URL"'
-    assert 'CA_STATS_USER' in os.environ.keys(), 'missing env var "CA_STATS_USER"'
-    assert 'CA_STATS_PASSWD' in os.environ.keys(), 'missing env var "CA_STATS_PASSWD"'
-    CA_STATS_JSON_URL = os.environ['CA_STATS_JSON_URL']
-    CA_STATS_USER = os.environ['CA_STATS_USER']
-    CA_STATS_PASSWD = os.environ['CA_STATS_PASSWD']
-
-    # epipearl creds (to talk to capture agents) mandatory
-    assert 'EPIPEARL_USER' in os.environ.keys(), 'missing env var "EPIPEARL_USER"'
-    assert 'EPIPEARL_PASSWD' in os.environ.keys(), 'missing env var "EPIPEARL_PASSWD"'
-    EPIPEARL_USER = os.environ['EPIPEARL_USER']
-    EPIPEARL_PASSWD = os.environ['EPIPEARL_PASSWD']
-
-    # ldap info is mandatory
-    assert 'LDAP_HOST' in os.environ.keys(), 'missing env var "LDAP_HOST"'
-    assert 'LDAP_BASE_SEARCH' in os.environ.keys(), 'missing env var "LDAP_BASE_SEARCH"'
-    assert 'LDAP_BIND_DN' in os.environ.keys(), 'missing env var "LDAP_BIND_DN"'
-    assert 'LDAP_BIND_PASSWD' in os.environ.keys(), 'missing env var "LDAP_BIND_PASSWD"'
-    LDAP_HOST = os.environ['LDAP_HOST']
-    LDAP_BASE_SEARCH = os.environ['LDAP_BASE_SEARCH']
-    LDAP_BIND_DN = os.environ['LDAP_BIND_DN']
-    LDAP_BIND_PASSWD = os.environ['LDAP_BIND_PASSWD']
-
-
-class DevConfig(ProdConfig):
-    """Development configuration."""
-
-    ENV = 'dev'
-    DEBUG = True
-    DB_NAME = 'dev.db'
-    # Put the db file in project root
-    DB_PATH = os.path.join(Config.PROJECT_ROOT, DB_NAME)
+    # app in-memory cache
     CACHE_TYPE = 'simple'  # Can be "memcached", "redis", etc.
-    SQLALCHEMY_DATABASE_URI = 'sqlite:///{0}'.format(DB_PATH)
-    DEBUG_TB_ENABLED = True
-    ASSETS_DEBUG = True  # Don't bundle/minify static assets
-
-
-class TestConfig(Config):
-    """Test configuration."""
-
-    ENV = 'test'
-    TESTING = True
-    DEBUG = True
-    SQLALCHEMY_DATABASE_URI = 'sqlite://'
-    CACHE_TYPE = 'simple'  # Can be "memcached", "redis", etc.
-    BCRYPT_LOG_ROUNDS = 4  # For faster tests; needs at least 4 to avoid "ValueError: Invalid rounds"
-    WTF_CSRF_ENABLED = False  # Allows form testing
 
     # ca_stats creds to pull info on all capture agents
     CA_STATS_JSON_URL = 'http://ca_stats_fake_url.com'
@@ -96,9 +36,80 @@ class TestConfig(Config):
     LDAP_BIND_PASSWD = 'passw0rd'
 
 
-class TestConfig_LoginDisabled(TestConfig):
-    """Disabled login_required for unit tests."""
-    LOGIN_DISABLED = True
+    def __init__(self, environment='prod', login_disabled=False):
+        """create instance."""
+        env = environment.lower()
 
-    # see https://github.com/jarus/flask-testing/issues/21
-    PRESERVE_CONTEXT_ON_EXCEPTION = False
+        if env == 'dev':
+            self.ENV = 'dev'
+
+            # Put the db file in project root
+            self.DB_NAME = 'dev.db'
+            self.DB_PATH = os.path.join(Config.PROJECT_ROOT, self.DB_NAME)
+            self.SQLALCHEMY_DATABASE_URI = 'sqlite:///{0}'.format(self.DB_PATH)
+
+            # ca_stats creds is mandatory
+            self.CA_STATS_JSON_URL = os.environ.get('CA_STATS_JSON_URL', 'http://ha.com')
+            self.CA_STATS_USER = os.environ.get('CA_STATS_USER', 'user1')
+            self.CA_STATS_PASSWD = os.environ.get('CA_STATS_PASSWD', 'pwd1')
+
+            # epipearl creds (to talk to capture agents) mandatory
+            self.EPIPEARL_USER = os.environ.get('EPIPEARL_USER', 'user2')
+            self.EPIPEARL_PASSWD = os.environ.get('EPIPEARL_PASSWD', 'pwd2')
+
+            # ldap info is mandatory
+            self.LDAP_HOST = os.environ.get('LDAP_HOST', 'ho.com')
+            self.LDAP_BASE_SEARCH = os.environ.get('LDAP_BASE_SEARCH', 'dc=ho,dc=com')
+            self.LDAP_BIND_DN = os.environ.get('LDAP_BIND_DN', 'dn=user3,dc=ho,dc=com')
+            self.LDAP_BIND_PASSWD = os.environ.get('LDAP_BIND_PASSWD', 'pwd3')
+
+        elif env == 'test':
+            self.ENV = 'test'
+            self.TESTING = True
+            self.SQLALCHEMY_DATABASE_URI = 'sqlite://'
+            self.CACHE_TYPE = 'simple'  # Can be "memcached", "redis", etc.
+            self.WTF_CSRF_ENABLED = False  # Allows form testing
+
+            if login_disabled:
+                # disabled login_required for unit tests
+                self.LOGIN_DISABLED = True
+                # see https://github.com/jarus/flask-testing/issues/21
+                self.PRESERVE_CONTEXT_ON_EXCEPTION = False
+
+        elif env == 'prod':
+            self.ENV = 'prod'
+            self.DEBUG = False
+            self.ASSETS_DEBUG = False
+            self.DEBUG_TB_ENABLED = False
+
+            # redis cache
+            self.CACHE_TYPE = 'redis'
+            self.CACHE_REDIS_HOST = 'localhost'
+            self.CACHE_REDIS_PORT = 6379
+
+            # ca_stats creds is mandatory
+            assert 'CA_STATS_JSON_URL' in os.environ.keys(), 'missing env var "CA_STATS_JSON_URL"'
+            assert 'CA_STATS_USER' in os.environ.keys(), 'missing env var "CA_STATS_USER"'
+            assert 'CA_STATS_PASSWD' in os.environ.keys(), 'missing env var "CA_STATS_PASSWD"'
+            self.CA_STATS_JSON_URL = os.environ['CA_STATS_JSON_URL']
+            self.CA_STATS_USER = os.environ['CA_STATS_USER']
+            self.CA_STATS_PASSWD = os.environ['CA_STATS_PASSWD']
+
+            # epipearl creds (to talk to capture agents) mandatory
+            assert 'EPIPEARL_USER' in os.environ.keys(), 'missing env var "EPIPEARL_USER"'
+            assert 'EPIPEARL_PASSWD' in os.environ.keys(), 'missing env var "EPIPEARL_PASSWD"'
+            self.EPIPEARL_USER = os.environ['EPIPEARL_USER']
+            self.EPIPEARL_PASSWD = os.environ['EPIPEARL_PASSWD']
+
+            # ldap info is mandatory
+            assert 'LDAP_HOST' in os.environ.keys(), 'missing env var "LDAP_HOST"'
+            assert 'LDAP_BASE_SEARCH' in os.environ.keys(), 'missing env var "LDAP_BASE_SEARCH"'
+            assert 'LDAP_BIND_DN' in os.environ.keys(), 'missing env var "LDAP_BIND_DN"'
+            assert 'LDAP_BIND_PASSWD' in os.environ.keys(), 'missing env var "LDAP_BIND_PASSWD"'
+            self.LDAP_HOST = os.environ['LDAP_HOST']
+            self.LDAP_BASE_SEARCH = os.environ['LDAP_BASE_SEARCH']
+            self.LDAP_BIND_DN = os.environ['LDAP_BIND_DN']
+            self.LDAP_BIND_PASSWD = os.environ['LDAP_BIND_PASSWD']
+
+        else:
+            raise ValueError('unknown environment: %s' % env)

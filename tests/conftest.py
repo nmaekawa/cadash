@@ -8,15 +8,14 @@ from webtest import TestApp
 from cadash.app import create_app
 from cadash.database import db as _db
 from cadash.ldap import LdapClient
-from cadash.settings import TestConfig
-from cadash.settings import TestConfig_LoginDisabled
+from cadash.settings import Config
 
 
 @pytest.yield_fixture(scope='function')
 def app():
     """An application for the tests."""
     with patch.object(LdapClient, 'is_authenticated', return_value=True):
-        _app = create_app(TestConfig)
+        _app = create_app(Config(environment='test', login_disabled=False))
     ctx = _app.test_request_context()
     ctx.push()
 
@@ -29,7 +28,7 @@ def app():
 def app_login_disabled():
     """An application for the tests."""
     with patch.object(LdapClient, 'is_authenticated', return_value=True):
-        _app_nologin = create_app(TestConfig_LoginDisabled)
+        _app_nologin = create_app(Config(environment='test', login_disabled=True))
     ctx = _app_nologin.test_request_context()
     ctx.push()
 

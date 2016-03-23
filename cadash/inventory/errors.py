@@ -4,6 +4,6 @@
 from cadash.errors import Error
 
 
-class InvalidMhClusterEnvironment(Error):
+class InvalidMhClusterEnvironmentError(Error):
     """mh cluster environment value is invalid."""
 
