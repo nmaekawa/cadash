@@ -56,7 +56,8 @@ class LdapClient(object):
                     attributes=ALL_ATTRIBUTES)
             for entry in conn.entries:
                 e = entry.entry_get_attributes_dict()
-                result.append(unicode(e['cn']))
+                group = e['cn'][0] if isinstance(e['cn'], list) else e['cn']
+                result.append(unicode(group))
         else:
             logger = logging.getLogger(__name__)
             logger.error('bind usr(%s):pwd unknown' % self._usr)
