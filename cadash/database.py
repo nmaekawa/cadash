@@ -5,6 +5,7 @@ from sqlalchemy.orm import validates
 
 from cadash.compat import basestring
 from cadash.extensions import db
+import cadash.utils as utils
 
 # Alias common SQLAlchemy names
 Column = db.Column
@@ -64,6 +65,20 @@ class SurrogatePK(object):
         ):
             return cls.query.get(int(record_id))
         return None
+
+
+class NameIdMixin(object):
+    """mixin that adds a name_id property as alphanum version of `name` column."""
+
+    @property
+    def name_id(self):
+        try:
+            return utils.clean_name(self.name)
+        except AttributeError:
+            return None
+
+    def __repr__(self):
+        return self.name_id
 
 
 def reference_col(tablename, nullable=False, pk_name='id', **kwargs):

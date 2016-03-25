@@ -12,7 +12,6 @@ from cadash.inventory.models import MhCluster
 class CaptureAgentModelView(ModelView):
     """view for capture agent model."""
     create_modal = True
-    edit_modal = True
 
 
 class LocationModelView(ModelView):
@@ -28,7 +27,6 @@ class VendorModelView(ModelView):
 class MhClusterModelView(ModelView):
     """view for mh cluster model view."""
     create_modal = True
-    edit_modal = True
 
 
 def init_inventory_views(admin):

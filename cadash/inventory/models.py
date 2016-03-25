@@ -5,6 +5,7 @@ import datetime as dt
 
 from cadash.database import Column
 from cadash.database import Model
+from cadash.database import NameIdMixin
 from cadash.database import SurrogatePK
 from cadash.database import db
 from cadash.database import reference_col
@@ -14,36 +15,29 @@ from cadash.inventory.errors import InvalidMhClusterEnvironmentError
 import cadash.utils as utils
 
 
-class Location(SurrogatePK, Model):
+class Location(SurrogatePK, NameIdMixin, Model):
     """a room where a capture agent is installed."""
 
-    __tablename__ = 'ca_location'
+    __tablename__ = 'location'
     created_at = Column(db.DateTime, nullable=False, default=dt.datetime.utcnow)
     name = Column(db.String(80), unique=True, nullable=False)
-    name_id = Column(db.String(80), unique=True, nullable=False)
-
-    def __init__(self, name, **kwargs):
-        """create instance."""
-        db.Model.__init__(self, name=name, **kwargs)
-        self.name_id = utils.clean_name(name)
+    capture_agents = relationship('Ca', back_populates='location')
 
 
-class Ca(SurrogatePK, Model):
+class Ca(SurrogatePK, NameIdMixin, Model):
     """a capture agent."""
 
     __tablename__ = 'ca'
     created_at = Column(db.DateTime, nullable=False, default=dt.datetime.utcnow)
     name = Column(db.String(80), unique=True, nullable=False)
-    name_id = Column(db.String(80), unique=True, nullable=False)
     address = Column(db.String(124), unique=True, nullable=False)
     serial_number = Column(db.String(80), unique=True, nullable=True)
-
-    def __init__(self, name, address, serial_number=None, **kwargs):
-        """create instance."""
-        db.Model.__init__(
-                self, name=name, address=address,
-                serial_number=serial_number, **kwargs)
-        self.name_id = utils.clean_name(name)
+    vendor_id = Column(db.Integer, db.ForeignKey('vendor.id'))
+    vendor = relationship('Vendor')
+    location_id = Column(db.Integer, db.ForeignKey('location.id'))
+    location = relationship('Location', back_populates='capture_agents')
+    cluster_id = Column(db.Integer, db.ForeignKey('mhcluster.id'))
+    cluster = relationship('MhCluster', back_populates='capture_agents')
 
 
 class Vendor(SurrogatePK, Model):
@@ -52,35 +46,33 @@ class Vendor(SurrogatePK, Model):
     __tablename__ = 'vendor'
     created_at = Column(db.DateTime, nullable=False, default=dt.datetime.utcnow)
     name = Column(db.String(80), unique=False, nullable=False)
-    name_id = Column(db.String(80), unique=True, nullable=False)
     model = Column(db.String(80), unique=False, nullable=False)
+    capture_agents = relationship('Ca', back_populates='vendor')
 
-    def __init__(self, name, model, **kwargs):
-        """create instance."""
-        db.Model.__init__(self, name=name, model=model, **kwargs)
-        self.name_id = "%s_%s" % (utils.clean_name(name), utils.clean_name(model))
+    @property
+    def name_id(self):
+        return "%s_%s" % (utils.clean_name(self.name), utils.clean_name(self.model))
+
+    def __repr__(self):
+        return self.name_id
 
 
-class MhCluster(SurrogatePK, Model):
+class MhCluster(SurrogatePK, NameIdMixin, Model):
     """a mh cluster that a capture agent pull schedule from."""
 
     __tablename__ = 'mhcluster'
     created_at = Column(db.DateTime, nullable=False, default=dt.datetime.utcnow)
     name = Column(db.String(80), unique=True, nullable=False)
-    name_id = Column(db.String(80), unique=True, nullable=False)
     admin_host = Column(db.String(124), unique=True, nullable=False)
     env = Column(db.String(80), unique=False, nullable=False)
+    capture_agents = relationship('Ca', back_populates='cluster')
 
-    def __init__(self, name, admin_host, env, **kwargs):
-        """create instance."""
-        db.Model.__init__(self, name=name, admin_host=admin_host,
-                env=MhCluster.get_valid_env(env), **kwargs)
-        self.name_id = utils.clean_name(name)
-
-
-    @staticmethod
-    def get_valid_env(env):
+    @validates('env')
+    def validate_env(self, key, env):
         """returns valid env value: ['prod'|'dev'|'stage']."""
+        if env is None:
+            raise InvalidMhClusterEnvironmentError('missing mh cluster environment')
+
         environment = env.lower()
         if environment in ['prod', 'dev', 'stage']:
             return environment
