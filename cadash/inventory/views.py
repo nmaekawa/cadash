@@ -15,6 +15,7 @@ from cadash.inventory.models import Ca
 from cadash.inventory.models import Location
 from cadash.inventory.models import Vendor
 from cadash.inventory.models import MhCluster
+from cadash.inventory.models import Role
 
 class CadashInventoryModelView(ModelView):
     """base model view for inventory."""
@@ -42,7 +43,7 @@ class CadashInventoryModelView(ModelView):
 
 class CaptureAgentModelView(CadashInventoryModelView):
     """view for capture agent model."""
-    create_modal = True
+    can_delete = False
 
 
 class LocationModelView(CadashInventoryModelView):
@@ -57,7 +58,12 @@ class VendorModelView(CadashInventoryModelView):
 
 class MhClusterModelView(CadashInventoryModelView):
     """view for mh cluster model view."""
-    create_modal = True
+    can_delete = False
+
+
+class RoleModelView(CadashInventoryModelView):
+    """view for capture agent role in room."""
+    can_delete = True
 
 
 def init_inventory_views(admin):
@@ -65,3 +71,4 @@ def init_inventory_views(admin):
     admin.add_view(LocationModelView(Location, db.session))
     admin.add_view(VendorModelView(Vendor, db.session))
     admin.add_view(MhClusterModelView(MhCluster, db.session))
+    admin.add_view(RoleModelView(Role, db.session))

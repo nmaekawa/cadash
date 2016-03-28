@@ -21,7 +21,19 @@ class Location(SurrogatePK, NameIdMixin, Model):
     __tablename__ = 'location'
     created_at = Column(db.DateTime, nullable=False, default=dt.datetime.utcnow)
     name = Column(db.String(80), unique=True, nullable=False)
-    capture_agents = relationship('Ca', back_populates='location')
+    capture_agents = relationship('Role', back_populates='location')
+
+
+class Role(SurrogatePK, NameIdMixin, Model):
+    """role for a ca in a room."""
+
+    __tablename__ = 'role'
+    location_id = Column(db.Integer, db.ForeignKey('location.id'))
+    location = relationship('Location', back_populates='capture_agents')
+    ca_id = Column(db.Integer, db.ForeignKey('ca.id'))
+    ca = relationship('Ca', back_populates='role')
+    created_at = Column(db.DateTime, nullable=False, default=dt.datetime.utcnow)
+    name = Column(db.String(16), nullable=False)
 
 
 class Ca(SurrogatePK, NameIdMixin, Model):
@@ -34,10 +46,9 @@ class Ca(SurrogatePK, NameIdMixin, Model):
     serial_number = Column(db.String(80), unique=True, nullable=True)
     vendor_id = Column(db.Integer, db.ForeignKey('vendor.id'))
     vendor = relationship('Vendor')
-    location_id = Column(db.Integer, db.ForeignKey('location.id'))
-    location = relationship('Location', back_populates='capture_agents')
     cluster_id = Column(db.Integer, db.ForeignKey('mhcluster.id'))
     cluster = relationship('MhCluster', back_populates='capture_agents')
+    role = relationship('Role', back_populates='ca', uselist=False)
 
 
 class Vendor(SurrogatePK, Model):
