@@ -7,6 +7,7 @@ from webtest import TestApp
 
 from cadash.app import create_app
 from cadash.database import db as _db
+from cadash.inventory.models import Role
 from cadash.ldap import LdapClient
 from cadash.settings import Config
 
@@ -93,4 +94,20 @@ def simple_db(db):
         mini_db['cluster'].append(MhClusterFactory())
 
     db.session.commit()
+
+    role_p1 = Role.create(location=mini_db['room'][0],
+            ca=mini_db['ca'][0],
+            cluster=mini_db['cluster'][0],
+            name='experimental')
+    role_p2 = Role.create(location=mini_db['room'][0],
+            ca=mini_db['ca'][1],
+            cluster=mini_db['cluster'][0],
+            name='experimental')
+    role_p3 = Role.create(location=mini_db['room'][0],
+            ca=mini_db['ca'][2],
+            cluster=mini_db['cluster'][0],
+            name='primary')
+
+    db.session.commit()
+
     return mini_db

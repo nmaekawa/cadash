@@ -59,4 +59,3 @@ class VendorFactory(BaseFactory):
     class Meta:
         """factory configuration."""
         model = Vendor
-
