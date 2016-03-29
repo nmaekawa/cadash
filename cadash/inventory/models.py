@@ -11,9 +11,9 @@ from cadash.database import db
 from cadash.database import reference_col
 from cadash.database import relationship
 from cadash.database import validates
+from cadash.inventory.errors import InvalidCaRoleError
 from cadash.inventory.errors import InvalidMhClusterEnvironmentError
 import cadash.utils as utils
-
 
 class Location(SurrogatePK, NameIdMixin, Model):
     """a room where a capture agent is installed."""
@@ -24,16 +24,20 @@ class Location(SurrogatePK, NameIdMixin, Model):
     capture_agents = relationship('Role', back_populates='location')
 
 
+
 class Role(SurrogatePK, NameIdMixin, Model):
     """role for a ca in a room."""
 
     __tablename__ = 'role'
-    location_id = Column(db.Integer, db.ForeignKey('location.id'))
-    location = relationship('Location', back_populates='capture_agents')
+    name = Column(db.String(16), nullable=False)
     ca_id = Column(db.Integer, db.ForeignKey('ca.id'))
     ca = relationship('Ca', back_populates='role')
+    location_id = Column(db.Integer, db.ForeignKey('location.id'))
+    location = relationship('Location', back_populates='capture_agents')
+    cluster_id = Column(db.Integer, db.ForeignKey('mhcluster.id'))
+    cluster = relationship('MhCluster',
+            back_populates='capture_agents', uselist=False)
     created_at = Column(db.DateTime, nullable=False, default=dt.datetime.utcnow)
-    name = Column(db.String(16), nullable=False)
 
 
 class Ca(SurrogatePK, NameIdMixin, Model):
@@ -46,8 +50,6 @@ class Ca(SurrogatePK, NameIdMixin, Model):
     serial_number = Column(db.String(80), unique=True, nullable=True)
     vendor_id = Column(db.Integer, db.ForeignKey('vendor.id'))
     vendor = relationship('Vendor')
-    cluster_id = Column(db.Integer, db.ForeignKey('mhcluster.id'))
-    cluster = relationship('MhCluster', back_populates='capture_agents')
     role = relationship('Role', back_populates='ca', uselist=False)
 
 
@@ -76,13 +78,14 @@ class MhCluster(SurrogatePK, NameIdMixin, Model):
     name = Column(db.String(80), unique=True, nullable=False)
     admin_host = Column(db.String(124), unique=True, nullable=False)
     env = Column(db.String(80), unique=False, nullable=False)
-    capture_agents = relationship('Ca', back_populates='cluster')
+    capture_agents = relationship('Role', back_populates='cluster')
 
     @validates('env')
     def validate_env(self, key, env):
         """returns valid env value: ['prod'|'dev'|'stage']."""
         if env is None:
-            raise InvalidMhClusterEnvironmentError('missing mh cluster environment')
+            raise InvalidMhClusterEnvironmentError(
+                    'missing mh cluster environment')
 
         environment = env.lower()
         if environment in ['prod', 'dev', 'stage']:

@@ -7,9 +7,15 @@ from epipearl import Epipearl
 
 from cadash.inventory.models import Ca
 from cadash.inventory.models import Location
-from cadash.inventory.models import Vendor
 from cadash.inventory.models import MhCluster
+from cadash.inventory.models import Role
+from cadash.inventory.models import Vendor
 from cadash.inventory.errors import InvalidMhClusterEnvironmentError
+
+from tests.factories import CaFactory
+from tests.factories import LocationFactory
+from tests.factories import MhClusterFactory
+from tests.factories import VendorFactory
 
 @pytest.mark.usefixtures('db')
 class TestCaptureAgentModel(object):
@@ -115,3 +121,45 @@ class TestMhClusterModel(object):
         cluster = MhCluster(name='zupT', admin_host='host.same.where', env='PRod')
         cluster.save()
         assert cluster.env == 'prod'
+
+
+@pytest.mark.usefixtures('db', 'simple_db')
+class TestRoleRelationshipModel(object):
+    """test for relationship role."""
+
+    def test_vendor_ca_relationship(self, simple_db):
+        """test 1-many vendor-ca relationship."""
+        ca_per_vendor = simple_db['vendor'].capture_agents
+        assert bool(ca_per_vendor)
+        assert len(ca_per_vendor) == 5
+
+        ca = simple_db['ca'][0]
+        assert bool(ca.vendor)
+        assert ca.vendor.name_id == 'vendor0_model0'
+
+
+    def test_location_primary_relationship(self, simple_db):
+        """test location-role relationship."""
+        r1 = simple_db['room'][0]
+        c1 = simple_db['ca'][0]
+        c2 = simple_db['ca'][1]
+        role_p1 = Role(location_id=r1.id, ca_id=c1.id, name='primary')
+        role_p1.save()
+        role_p2 = Role(location_id=r1.id, ca_id=c2.id, name='primary')
+        role_p2.save()
+
+        assert len(r1.capture_agents) == 1
+
+
+
+
+
+
+
+
+
+
+
+
+
+

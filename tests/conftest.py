@@ -10,6 +10,11 @@ from cadash.database import db as _db
 from cadash.ldap import LdapClient
 from cadash.settings import Config
 
+from tests.factories import CaFactory
+from tests.factories import LocationFactory
+from tests.factories import MhClusterFactory
+from tests.factories import VendorFactory
+
 
 @pytest.yield_fixture(scope='function')
 def app():
@@ -61,3 +66,31 @@ def db(app):
     # Explicitly close DB connection
     _db.session.close()
     _db.drop_all()
+
+
+@pytest.fixture(scope='function')
+def simple_db(db):
+    """a set of ca, location, mh, and vendor for tests."""
+    mini_db = {}
+
+    # create vendor
+    v = VendorFactory()
+    mini_db['vendor'] = v
+
+    # create a bunch of capture agents
+    mini_db['ca'] = []
+    for i in range(5):
+        mini_db['ca'].append(CaFactory(vendor=mini_db['vendor']))
+
+    # create a bunch of rooms
+    mini_db['room'] = []
+    for i in range(5):
+        mini_db['room'].append(LocationFactory())
+
+    # create a bunch of clusters
+    mini_db['cluster'] = []
+    for i in range(3):
+        mini_db['cluster'].append(MhClusterFactory())
+
+    db.session.commit()
+    return mini_db
