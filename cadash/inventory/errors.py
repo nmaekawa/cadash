@@ -10,3 +10,11 @@ class InvalidMhClusterEnvironmentError(Error):
 
 class InvalidCaRoleError(Error):
     """role must be in cadash.inventory.models.CA_ROLES."""
+
+
+class InvalidOperationError(Error):
+    """can't execute given operation in this object."""
+
+
+class AssociationError(Error):
+    """can't associate entities due to some constraint."""

@@ -10,7 +10,10 @@ from cadash.inventory.models import Location
 from cadash.inventory.models import MhCluster
 from cadash.inventory.models import Role
 from cadash.inventory.models import Vendor
+from cadash.inventory.errors import AssociationError
+from cadash.inventory.errors import InvalidCaRoleError
 from cadash.inventory.errors import InvalidMhClusterEnvironmentError
+from cadash.inventory.errors import InvalidOperationError
 
 from tests.factories import CaFactory
 from tests.factories import LocationFactory
@@ -23,7 +26,10 @@ class TestCaptureAgentModel(object):
 
     def test_get_by_id(self):
         """get ca by id."""
-        ca = Ca(name='fake-epiphan', address='fake-epiphan.blah.bloh.net')
+        v = Vendor(name='ultramax', model='plus')
+        v.save()
+        ca = Ca(name='fake-epiphan', vendor_id=v.id,
+                address='fake-epiphan.blah.bloh.net')
         ca.save()
         retrieved = Ca.get_by_id(ca.id)
         assert retrieved == ca
@@ -31,14 +37,20 @@ class TestCaptureAgentModel(object):
 
     def test_created_at_defaults_to_datetime(self):
         """test creation date."""
-        ca = Ca(name='fake-epiphan', address='fake-epiphan.blah.bloh.net')
+        v = Vendor(name='ultramax', model='plus')
+        v.save()
+        ca = Ca(name='fake-epiphan', vendor_id=v.id,
+                address='fake-epiphan.blah.bloh.net')
         ca.save()
         assert bool(ca.created_at)
         assert isinstance(ca.created_at, dt.datetime)
 
     def test_name_id(self):
         """test name_id is populated."""
-        ca = Ca(name='fake-epiphan[A]', address='fake-epiphan.blah.bloh.net')
+        v = Vendor(name='ultramax', model='plus')
+        v.save()
+        ca = Ca(name='fake-epiphan[A]', vendor_id=v.id,
+                address='fake-epiphan.blah.bloh.net')
         ca.save()
         assert ca.name_id == 'fake_epiphan_a_'
 
@@ -109,13 +121,15 @@ class TestMhClusterModel(object):
         assert isinstance(cluster.created_at, dt.datetime)
 
     def test_name_id(self):
-        cluster = MhCluster(name='zupT dee da', admin_host='host.some.where', env='dev')
+        cluster = MhCluster(name='zupT dee da',
+                admin_host='host.some.where', env='dev')
         cluster.save()
         assert cluster.name_id == 'zupt_dee_da'
 
     def test_invalid_env_value(self):
         with pytest.raises(InvalidMhClusterEnvironmentError):
-            cluster = MhCluster(name='zupT', admin_host='host.some.where', env='test')
+            cluster = MhCluster(name='zupT',
+                    admin_host='host.some.where', env='test')
 
     def test_valid_env_value(self):
         cluster = MhCluster(name='zupT', admin_host='host.same.where', env='PRod')
@@ -138,24 +152,72 @@ class TestRoleRelationshipModel(object):
         assert ca.vendor.name_id == 'vendor0_model0'
 
 
-    def test_location_primary_relationship(self, simple_db):
-        """test location-role relationship."""
+    def test_invalid_role(self, simple_db):
+        """test if role name is valid."""
+        r1 = simple_db['room'][0]
+        c1 = simple_db['ca'][0]
+        m1 = simple_db['cluster'][0]
+
+        with pytest.raises(InvalidCaRoleError):
+            role_p1 = Role(location_id=r1.id, ca_id=c1.id,
+                    cluster_id=m1.id, name='funky')
+
+
+    def test_location_duplicate_primary(self, simple_db):
+        """test constraint one primary per location."""
         r1 = simple_db['room'][0]
         c1 = simple_db['ca'][0]
         c2 = simple_db['ca'][1]
-        role_p1 = Role(location_id=r1.id, ca_id=c1.id, name='primary')
+        m1 = simple_db['cluster'][0]
+        role_p1 = Role(location_id=r1.id, ca_id=c1.id,
+                cluster_id=m1.id, name='primary')
         role_p1.save()
-        role_p2 = Role(location_id=r1.id, ca_id=c2.id, name='primary')
+
+        with pytest.raises(AssociationError):
+            role_p2 = Role(location_id=r1.id, ca_id=c2.id,
+                    cluster_id=m1.id, name='primary')
+
+
+    def test_location_duplicate_experimental(self, simple_db):
+        """ test constraint many experimental per location."""
+        r1 = simple_db['room'][0]
+        c1 = simple_db['ca'][0]
+        c2 = simple_db['ca'][1]
+        m1 = simple_db['cluster'][0]
+        role_p1 = Role(location_id=r1.id, ca_id=c1.id,
+                cluster_id=m1.id, name='experimental')
+        role_p1.save()
+        role_p2 = Role(location_id=r1.id, ca_id=c2.id,
+                cluster_id=m1.id, name='experimental')
         role_p2.save()
-
-        assert len(r1.capture_agents) == 1
-
+        assert len(r1.get_ca_by_role('experimental')) == 2
 
 
+    def test_ca_already_has_role(self, simple_db):
+        """test constraint one role per capture agent."""
+        r1 = simple_db['room'][0]
+        c1 = simple_db['ca'][0]
+        m1 = simple_db['cluster'][0]
+        role_p1 = Role(location_id=r1.id, ca_id=c1.id,
+                cluster_id=m1.id, name='experimental')
+        role_p1.save()
+
+        with pytest.raises(AssociationError):
+            role_p2 = Role(location_id=r1.id, ca_id=c1.id,
+                    cluster_id=m1.id, name='experimental')
 
 
+    def test_update_role_disabled(self, simple_db):
+        """test that updating role relationship is not allowed."""
+        r1 = simple_db['room'][0]
+        c1 = simple_db['ca'][0]
+        m1 = simple_db['cluster'][0]
+        role_p1 = Role(location_id=r1.id, ca_id=c1.id,
+                cluster_id=m1.id, name='experimental')
+        role_p1.save()
 
-
+        with pytest.raises(InvalidOperationError):
+            role_p1.update(name='primary')
 
 
 
