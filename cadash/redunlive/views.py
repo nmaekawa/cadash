@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Public section, including homepage and signup."""
+"""redunlive section"""
 import json
 import logging
 import time

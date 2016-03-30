@@ -72,13 +72,14 @@ class NameIdMixin(object):
 
     @property
     def name_id(self):
+        """note that `name_id` might not be unique even when `name` is."""
         try:
             return utils.clean_name(self.name)
         except AttributeError:
             return None
 
     def __repr__(self):
-        return self.name_id
+        return self.name
 
 
 def reference_col(tablename, nullable=False, pk_name='id', **kwargs):

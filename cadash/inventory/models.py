@@ -19,6 +19,7 @@ import cadash.utils as utils
 
 # FIXME: make sure can't append a spurious value to this
 CA_ROLES = ['primary', 'secondary', 'experimental']
+MH_ENVS = ['prod', 'dev', 'stage']
 
 class Location(SurrogatePK, NameIdMixin, Model):
     """a room where a capture agent is installed."""
@@ -113,7 +114,7 @@ class Ca(SurrogatePK, NameIdMixin, Model):
     __tablename__ = 'ca'
     created_at = Column(db.DateTime, nullable=False, default=dt.datetime.utcnow)
     name = Column(db.String(80), unique=True, nullable=False)
-    address = Column(db.String(124), unique=True, nullable=False)
+    address = Column(db.String(128), unique=True, nullable=False)
     serial_number = Column(db.String(80), unique=True, nullable=True)
     vendor_id = Column(db.Integer, db.ForeignKey('vendor.id'), nullable=False)
     vendor = relationship('Vendor')
@@ -142,7 +143,6 @@ class Ca(SurrogatePK, NameIdMixin, Model):
             return self.role.cluster
         return None
 
-
     def delete(self, commit=True):
         """override to undo all role relationships involving this ca."""
         self.role.delete()
@@ -154,24 +154,19 @@ class Vendor(SurrogatePK, Model):
 
     __tablename__ = 'vendor'
     created_at = Column(db.DateTime, nullable=False, default=dt.datetime.utcnow)
-    name = Column(db.String(80), unique=False, nullable=False)
-    model = Column(db.String(80), unique=False, nullable=False)
+    name = Column(db.String(64), unique=False, nullable=False)
+    model = Column(db.String(64), unique=False, nullable=False)
+    name_id = Column(db.String(128), unique=True, nullable=False)
     capture_agents = relationship('Ca', back_populates='vendor')
 
     def __init__(self, name, model):
         """create instance."""
-        db.Model.__init__(self, name=name, model=model)
-
-
-    @property
-    def name_id(self):
-        return "%s_%s" % (utils.clean_name(self.name),
-                utils.clean_name(self.model))
-
+        name_id = "%s_%s" % (utils.clean_name(name),
+                utils.clean_name(model))
+        db.Model.__init__(self, name=name, model=model, name_id=name_id)
 
     def __repr__(self):
-        return self.name_id
-
+        return '%s_%s' % (self.name, self.model)
 
     def delete(self, commit=True):
         """override to disable deletion of vendors."""
@@ -184,7 +179,7 @@ class MhCluster(SurrogatePK, NameIdMixin, Model):
     __tablename__ = 'mhcluster'
     created_at = Column(db.DateTime, nullable=False, default=dt.datetime.utcnow)
     name = Column(db.String(80), unique=True, nullable=False)
-    admin_host = Column(db.String(124), unique=True, nullable=False)
+    admin_host = Column(db.String(128), unique=True, nullable=False)
     env = Column(db.String(80), unique=False, nullable=False)
     capture_agents = relationship('Role', back_populates='cluster')
 
@@ -215,13 +210,6 @@ class MhCluster(SurrogatePK, NameIdMixin, Model):
         return super(MhCluster, self).delete(commit)
 
 
-    # FIXME: decide if going to validate via alchemy or in constructor
-    @validates('env')
-    def validate_env(self, key, env):
-        """returns valid env value: ['prod'|'dev'|'stage']."""
-        return self._get_valid_env(env)
-
-
     def _get_valid_env(self, env):
         """returns valid env value: ['prod'|'dev'|'stage']."""
         if env is None:
@@ -229,7 +217,8 @@ class MhCluster(SurrogatePK, NameIdMixin, Model):
                     'missing mh cluster environment')
 
         environment = env.lower()
-        if environment in ['prod', 'dev', 'stage']:
+        if environment in MH_ENVS:
             return environment
         raise InvalidMhClusterEnvironmentError(
-                'mh cluster env value not in [prod, dev, stage]: %s' % env)
+                'mh cluster env value not in [%s]: %s' %
+                (','.join(MH_ENVS), env))
