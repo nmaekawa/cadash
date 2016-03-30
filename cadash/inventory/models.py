@@ -143,6 +143,12 @@ class Ca(SurrogatePK, NameIdMixin, Model):
         return None
 
 
+    def delete(self, commit=True):
+        """override to undo all role relationships involving this ca."""
+        self.role.delete()
+        return super(Ca, self).delete(commit)
+
+
 class Vendor(SurrogatePK, Model):
     """a capture agent vendor."""
 
@@ -165,6 +171,11 @@ class Vendor(SurrogatePK, Model):
 
     def __repr__(self):
         return self.name_id
+
+
+    def delete(self, commit=True):
+        """override to disable deletion of vendors."""
+        raise InvalidOperationError('not allowed to delete `vendor`')
 
 
 class MhCluster(SurrogatePK, NameIdMixin, Model):
@@ -195,6 +206,13 @@ class MhCluster(SurrogatePK, NameIdMixin, Model):
         """return list of capture-agents with given role."""
         result = [r.ca for r in self.capture_agents if r.name == role_name]
         return result
+
+
+    def delete(self, commit=True):
+        """override to undo all role relationships involving this cluster."""
+        for c in self.capture_agents:
+            c.delete()
+        return super(MhCluster, self).delete(commit)
 
 
     # FIXME: decide if going to validate via alchemy or in constructor

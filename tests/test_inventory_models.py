@@ -215,9 +215,24 @@ class TestDelete(object):
 
     def test_delete_cluster(self, simple_db):
         """delete cluster and undo associations."""
-        pass
+        assert len(simple_db['cluster'][0].get_ca_by_role('experimental')) == 2
+        assert len(simple_db['cluster'][0].get_ca()) == 3
+        cluster_id = simple_db['cluster'][0].id
+        simple_db['cluster'][0].delete()
+        assert not bool(MhCluster.get_by_id(cluster_id))
+        assert simple_db['ca'][0].role_name == None
+        assert simple_db['ca'][1].role_name == None
+        assert simple_db['ca'][2].role_name == None
+        assert len(simple_db['cluster'][0].get_ca()) == 0
 
 
+    def test_delete_vendor(self, simple_db):
+        """delete associated ca's and ca's associations."""
+        with pytest.raises(InvalidOperationError):
+            simple_db['vendor'].delete()
 
-
+    def test_delete_ca(self, simple_db):
+        ca_id = simple_db['ca'][0].id
+        simple_db['ca'][0].delete()
+        assert Ca.get_by_id(ca_id) is None
 
