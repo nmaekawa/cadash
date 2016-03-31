@@ -16,7 +16,6 @@ from cadash.extensions import debug_toolbar
 from cadash.extensions import ldap_cli
 from cadash.extensions import login_manager
 from cadash.extensions import migrate
-from cadash.inventory.views import init_inventory_views
 from cadash.settings import Config
 from cadash.utils import setup_logging
 
@@ -61,9 +60,7 @@ def register_blueprints(app):
     app.register_blueprint(public.views.blueprint)
     app.register_blueprint(redunlive.views.blueprint)
     app.register_blueprint(castatus.views.blueprint)
-
-    admin = Admin(app, template_mode='bootstrap3')
-    init_inventory_views(admin)
+    app.register_blueprint(inventory.views.blueprint)
     return None
 
 
