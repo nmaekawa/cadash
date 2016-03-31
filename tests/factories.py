@@ -24,7 +24,7 @@ class BaseFactory(SQLAlchemyModelFactory):
 class CaFactory(BaseFactory):
     """capture agent factory."""
     name = Sequence(lambda n: 'ca%s' % n)
-    address = Sequence(lambda n: 'ca%s.fake.test' %n)
+    address = Sequence(lambda n: 'http://ca%s.fake.test' %n)
 
     class Meta:
         """factory configuration."""
@@ -43,7 +43,7 @@ class LocationFactory(BaseFactory):
 class MhClusterFactory(BaseFactory):
     """mh cluster factory."""
     name = Sequence(lambda n: 'cluster %s' % n)
-    admin_host = Sequence(lambda n: 'cluster%s.fake.test' % n)
+    admin_host = Sequence(lambda n: 'http://cluster%s.fake.test' % n)
     env = 'dev'
 
     class Meta:
