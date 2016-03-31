@@ -18,8 +18,8 @@ from cadash.inventory.errors import InvalidOperationError
 import cadash.utils as utils
 
 # FIXME: make sure can't append a spurious value to this
-CA_ROLES = ['primary', 'secondary', 'experimental']
-MH_ENVS = ['prod', 'dev', 'stage']
+CA_ROLES = [u'primary', u'secondary', u'experimental']
+MH_ENVS = [u'prod', u'dev', u'stage']
 
 class Location(SurrogatePK, NameIdMixin, Model):
     """a room where a capture agent is installed."""

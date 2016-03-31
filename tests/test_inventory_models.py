@@ -1,9 +1,7 @@
 # -*- coding: utf-8 -*-
 """Tests for `models` in redunlive webapp."""
 import datetime as dt
-import httpretty
 import pytest
-from epipearl import Epipearl
 
 from cadash.inventory.models import Ca
 from cadash.inventory.models import Location
