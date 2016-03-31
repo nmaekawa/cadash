@@ -131,7 +131,7 @@ class TestRelationship(object):
 
         ca = simple_db['ca'][0]
         assert bool(ca.vendor)
-        assert ca.vendor.name_id == 'vendor0_model0'
+        assert ca.vendor.name_id == simple_db['vendor'].name_id
 
 
     def test_invalid_role(self, simple_db):
