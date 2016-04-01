@@ -19,7 +19,6 @@ from cadash.extensions import migrate
 from cadash.settings import Config
 from cadash.utils import setup_logging
 
-from flask_admin import Admin
 
 def create_app(config_object=None, app_name=__name__):
     """

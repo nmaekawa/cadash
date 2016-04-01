@@ -16,7 +16,6 @@ epipearl>=0.1.0
 requests>=2.9.1
 
 # Database
-Flask-Admin>=1.4
 Flask-SQLAlchemy>=2.1
 SQLAlchemy>=1.0.9
 psycopg2>=2.6.1
