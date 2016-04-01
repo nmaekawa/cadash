@@ -1,5 +1,20 @@
 {% extends "inventory/home.html" %}
 
 {% block inventory_content %}
-    <h2>capture agent forms</h2>
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead>
+                <th>name</th>
+                <th>address</th>
+                <th>serial</th>
+            </thead>
+            <tbody>
+            {% for ca in ca_list %}
+                <td>{{ ca.name }}</td>
+                <td>{{ ca.address }}</td>
+                <td>{{ ca.serial_number }}</td>
+            {% endfor %}
+            </tbody>
+        </table>
+    </div>
 {% endblock %}

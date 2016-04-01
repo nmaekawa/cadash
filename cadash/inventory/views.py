@@ -15,6 +15,12 @@ from flask_login import login_required
 from cadash import __version__ as app_version
 from cadash.utils import pull_data
 
+from cadash.inventory.models import Ca
+from cadash.inventory.models import Location
+from cadash.inventory.models import MhCluster
+from cadash.inventory.models import Role
+from cadash.inventory.models import Vendor
+
 AUTHORIZED_GROUP = 'deadmin'
 
 blueprint = Blueprint(
@@ -49,7 +55,9 @@ def ca_list():
         flash('You need to login, or have no access to inventory pages', 'info')
         return redirect(url_for('public.home', next=request.url))
 
-    return render_template('inventory/capture_agent.html', version=app_version)
+    ca_list = Ca.query.order_by(Ca.name)
+    return render_template('inventory/capture_agent.html',
+            version=app_version, ca_list=ca_list)
 
 
 @blueprint.route('/vendor', methods=['GET'])
