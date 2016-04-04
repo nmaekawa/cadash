@@ -2,6 +2,7 @@
 """The app module, containing the app factory function."""
 from flask import Flask
 from flask import render_template
+from flask_restful import Api
 
 from cadash import castatus
 from cadash import public
@@ -16,6 +17,7 @@ from cadash.extensions import debug_toolbar
 from cadash.extensions import ldap_cli
 from cadash.extensions import login_manager
 from cadash.extensions import migrate
+from cadash.inventory.resources import register_resources
 from cadash.settings import Config
 from cadash.utils import setup_logging
 
@@ -50,7 +52,13 @@ def register_extensions(app):
     login_manager.init_app(app)
     debug_toolbar.init_app(app)
     migrate.init_app(app, db)
+
+    # ldap cli for authentication/authorization
     ldap_cli.init_app(app)
+
+    # flask-restful initialization
+    api = Api(app)
+    register_resources(api)
     return None
 
 

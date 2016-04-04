@@ -21,7 +21,7 @@ def get_json_data():
 
 @patch('cadash.ldap.LdapClient.is_authenticated', return_value=True)
 @patch('cadash.ldap.LdapClient.fetch_groups', return_value=['can_bow','can_rollover'])
-class TestLoggingIn:
+class TestLoggingIn(object):
     """Login."""
 
     def test_can_log_in_returns_200(self, mock_groups, mock_auth, testapp):
@@ -64,7 +64,7 @@ class TestLoggingIn:
         assert 'Unknown username:password combination' in res
 
 
-class TestRedunlive:
+class TestRedunlive(object):
     """list location primary/backup ca's."""
 
     def test_displays_list_of_locations(self, testapp_login_disabled):

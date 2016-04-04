@@ -18,3 +18,7 @@ class InvalidOperationError(Error):
 
 class AssociationError(Error):
     """can't associate entities due to some constraint."""
+
+
+class MissingVendorError(Error):
+    """vendor is not in inventory."""

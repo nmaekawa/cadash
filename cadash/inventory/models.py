@@ -15,6 +15,7 @@ from cadash.inventory.errors import AssociationError
 from cadash.inventory.errors import InvalidCaRoleError
 from cadash.inventory.errors import InvalidMhClusterEnvironmentError
 from cadash.inventory.errors import InvalidOperationError
+from cadash.inventory.errors import MissingVendorError
 import cadash.utils as utils
 
 # FIXME: make sure can't append a spurious value to this
@@ -121,9 +122,17 @@ class Ca(SurrogatePK, NameIdMixin, Model):
     role = relationship('Role', back_populates='ca', uselist=False)
 
 
-    def __init__(self, name, address, vendor):
+    def __init__(self, name, address, vendor, serial_number=None):
         """create instance."""
-        db.Model.__init__(self, name=name, address=address, vendor=vendor)
+        # fail if unknown vendor
+
+        # fail if duplicate name
+
+        # fail if duplicate address
+
+        # fail if duplicate serial_number
+        db.Model.__init__(self, name=name, address=address,
+                vendor=vendor, serial_number=serial_number)
 
     @property
     def role_name(self):
@@ -142,6 +151,14 @@ class Ca(SurrogatePK, NameIdMixin, Model):
         if bool(self.role):
             return self.role.cluster
         return None
+
+
+    @classmethod
+    def create(cls, **kwargs):
+        """override to validate and throw custom errors."""
+
+        return super(Ca, cls).create(**kwargs)
+
 
     def delete(self, commit=True):
         """override to undo all role relationships involving this ca."""

@@ -109,3 +109,11 @@ def default_useragent():
         '%s/%s' % (__name__, __version__),
         '%s/%s' % (_implementation, _implementation_version),
         '%s/%s' % (p_system, p_release)])
+
+
+def is_authorized(user, groups):
+    """returns True if `user` in any group of list `groups`."""
+    for g in groups:
+        if user.is_in_group(g):
+            return True
+    return False
