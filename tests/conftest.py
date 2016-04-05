@@ -77,11 +77,12 @@ def simple_db(db):
     # create vendor
     v = VendorFactory()
     mini_db['vendor'] = v
+    db.session.commit() # need the vendor.id to create ca
 
     # create a bunch of capture agents
     mini_db['ca'] = []
     for i in range(5):
-        mini_db['ca'].append(CaFactory(vendor=mini_db['vendor']))
+        mini_db['ca'].append(CaFactory(vendor_id=mini_db['vendor'].id))
 
     # create a bunch of rooms
     mini_db['room'] = []

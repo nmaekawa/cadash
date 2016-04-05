@@ -12,15 +12,23 @@ from cadash.database import reference_col
 from cadash.database import relationship
 from cadash.database import validates
 from cadash.inventory.errors import AssociationError
+from cadash.inventory.errors import DuplicateCaptureAgentNameError
+from cadash.inventory.errors import DuplicateCaptureAgentAddressError
+from cadash.inventory.errors import DuplicateCaptureAgentSerialNumberError
+from cadash.inventory.errors import DuplicateLocationNameError
+from cadash.inventory.errors import DuplicateMhClusterAdminHostError
+from cadash.inventory.errors import DuplicateMhClusterNameError
+from cadash.inventory.errors import DuplicateVendorNameModelError
 from cadash.inventory.errors import InvalidCaRoleError
+from cadash.inventory.errors import InvalidEmptyValueError
 from cadash.inventory.errors import InvalidMhClusterEnvironmentError
 from cadash.inventory.errors import InvalidOperationError
 from cadash.inventory.errors import MissingVendorError
 import cadash.utils as utils
 
-# FIXME: make sure can't append a spurious value to this
-CA_ROLES = [u'primary', u'secondary', u'experimental']
-MH_ENVS = [u'prod', u'dev', u'stage']
+CA_ROLES = frozenset([u'primary', u'secondary', u'experimental'])
+MH_ENVS = frozenset([u'prod', u'dev', u'stage'])
+UPDATEABLE_CA_FIELDS = frozenset([u'name', u'address', u'serial_number'])
 
 class Location(SurrogatePK, NameIdMixin, Model):
     """a room where a capture agent is installed."""
@@ -32,6 +40,10 @@ class Location(SurrogatePK, NameIdMixin, Model):
 
     def __init__(self, name):
         """create instance."""
+        l = Location.query.filter_by(name=name).first()
+        if not l is None:
+            raise DuplicateLocationNameError(
+                    'duplicate location name(%s)' % name)
         db.Model.__init__(self, name=name)
 
 
@@ -77,7 +89,7 @@ class Role(Model):
         if role_name not in CA_ROLES:
             raise InvalidCaRoleError(
                     'invalid ca-role(%s) - valid values: [%s]' %
-                    (role_name, ','.join(CA_ROLES)))
+                    (role_name, ','.join(list(CA_ROLES))))
 
         # ca already has a role?
         if bool(ca.role):
@@ -106,7 +118,7 @@ class Role(Model):
 
     def update(self, commit=True, **kwargs):
         """overrides to disable updates in role relationship."""
-        raise InvalidOperationError('cannot update `role` relatioship')
+        raise InvalidOperationError('not allowed update `role` relatioship')
 
 
 class Ca(SurrogatePK, NameIdMixin, Model):
@@ -122,17 +134,59 @@ class Ca(SurrogatePK, NameIdMixin, Model):
     role = relationship('Role', back_populates='ca', uselist=False)
 
 
-    def __init__(self, name, address, vendor, serial_number=None):
+    def __init__(self, name, address, vendor_id, serial_number=None):
         """create instance."""
-        # fail if unknown vendor
+        if self._check_ca_constraints(name=name,
+                address=address, vendor_id=vendor_id,
+                serial_number=serial_number):
+            db.Model.__init__(self, name=name, address=address,
+                        vendor_id=vendor_id, serial_number=serial_number)
 
-        # fail if duplicate name
 
-        # fail if duplicate address
+    def _check_ca_constraints(self, **kwargs):
+        """throw an error if args violate ca constraints."""
+        for key, value in kwargs.items():
+            # fail if unknown vendor
+            if key == 'vendor_id':
+                if not value:
+                    raise InvalidEmptyValueError(
+                            'not allowed empty value for `vendor_id`')
+                v = Vendor.get_by_id(value)
+                if v is None:
+                    raise MissingVendorError(
+                            'not in inventory: vendor_id(%i)' % value)
+                next
 
-        # fail if duplicate serial_number
-        db.Model.__init__(self, name=name, address=address,
-                vendor=vendor, serial_number=serial_number)
+            # fail if duplicate name
+            if key == 'name':
+                if not value:
+                    raise InvalidEmptyValueError(
+                            'not allowed empty value for `name`')
+                c = Ca.query.filter_by(name=value).first()
+                if not c is None:
+                    raise DuplicateCaptureAgentNameError(
+                            'duplicate ca name(%s)' % value)
+                next
+
+            # fail if duplicate address
+            if key == 'address':
+                if not value:
+                    raise InvalidEmptyValueError(
+                            'not allowed empty value for `address`')
+                c = Ca.query.filter_by(address=value).first()
+                if not c is None:
+                    raise DuplicateCaptureAgentAddressError(
+                            'duplicate ca address(%s)' % value)
+                next
+
+            # fail if duplicate serial_number
+            if key == 'serial_number':
+                c = Ca.query.filter_by(serial_number=value).first()
+                if not c is None:
+                    raise DuplicateCaptureAgentSerialNumberError(
+                            'duplicate ca serial_number(%s)' % value)
+        return True
+
 
     @property
     def role_name(self):
@@ -153,11 +207,15 @@ class Ca(SurrogatePK, NameIdMixin, Model):
         return None
 
 
-    @classmethod
-    def create(cls, **kwargs):
-        """override to validate and throw custom errors."""
+    def update(self, **kwargs):
+        """override to check ca constraints."""
+        x = set(kwargs.keys()).difference(UPDATEABLE_CA_FIELDS)
+        if len(x) > 0:
+            raise InvalidOperationError(
+                    'not allowed to update fields: %s' % ','.join(list(x)))
 
-        return super(Ca, cls).create(**kwargs)
+        if self._check_ca_constraints(**kwargs):
+            return super(Ca, self).update(**kwargs)
 
 
     def delete(self, commit=True):
@@ -180,10 +238,14 @@ class Vendor(SurrogatePK, Model):
         """create instance."""
         name_id = "%s_%s" % (utils.clean_name(name),
                 utils.clean_name(model))
+        v = Vendor.query.filter_by(name_id=name_id).first()
+        if not v is None:
+            raise DuplicateVendorNameModelError(
+                    'duplicate vendor name-model(%s)' % name_id)
         db.Model.__init__(self, name=name, model=model, name_id=name_id)
 
     def __repr__(self):
-        return '%s_%s' % (self.name, self.model)
+        return self.name_id
 
     def delete(self, commit=True):
         """override to disable deletion of vendors."""
@@ -204,6 +266,17 @@ class MhCluster(SurrogatePK, NameIdMixin, Model):
     def __init__(self, name, admin_host, env):
         """create instance."""
         environment = self._get_valid_env(env)
+
+        c = MhCluster.query.filter_by(name=name).first()
+        if not c is None:
+            raise DuplicateMhClusterNameError(
+                    'duplicate mh-cluster name(%s)' % name)
+
+        c = MhCluster.query.filter_by(admin_host=admin_host).first()
+        if not c is None:
+            raise DuplicateMhClusterAdminHostError(
+                    'duplicate mh-cluster admin host(%s)' % admin_host)
+
         db.Model.__init__(self, name=name, admin_host=admin_host,
                 env=environment)
 
@@ -238,4 +311,4 @@ class MhCluster(SurrogatePK, NameIdMixin, Model):
             return environment
         raise InvalidMhClusterEnvironmentError(
                 'mh cluster env value not in [%s]: %s' %
-                (','.join(MH_ENVS), env))
+                (','.join(list(MH_ENVS)), env))

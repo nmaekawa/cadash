@@ -17,6 +17,10 @@ from flask_restful import marshal_with
 from flask_restful import reqparse
 
 from cadash import __version__ as app_version
+from cadash.inventory.errors import DuplicateCaptureAgentNameError
+from cadash.inventory.errors import DuplicateCaptureAgentAddressError
+from cadash.inventory.errors import DuplicateCaptureAgentSerialNumberError
+from cadash.inventory.errors import MissingVendorError
 from cadash.inventory.models import Ca
 from cadash.inventory.models import Location
 from cadash.inventory.models import MhCluster
@@ -82,10 +86,15 @@ class CaAPI(Resource):
         parser.add_argument('serial_number', type=str, location='json')
         args = parser.parse_args()
 
-        # FIXME: catch errors to return some usr-friendly msg
-        ca.update(name=args['name'], address=args['address'],
-                serial_number=args['serial_number'])
-        return marshal(ca, Ca), 201
+        try:
+            ca.update(**args)
+
+        except (DuplicateCaptureAgentNameError,
+                DuplicateCaptureAgentAddressError,
+                DuplicateCaptureAgentSerialNumberError) as e:
+            abort(400, message=e.message)
+        else:
+            return marshal(ca, ca_fields), 201
 
 
     def delete(self, ca_id):
@@ -116,13 +125,18 @@ class CaListAPI(Resource):
         parser.add_argument('vendor_id', type=int, location='json')
         args = parser.parse_args()
 
-        # 404 if vendor not in inventory
-        vendor = Vendor.get_by_id(args['vendor_id'])
-        abort_if_none(vendor, args['vendor_id'])
+        try:
+            ca = Ca.create(name=args['name'],
+                    address=args['address'],
+                    serial_number=args['serial_number'],
+                    vendor_id=args['vendor_id'])
 
-        # FIXME: catch errors to return some usr-friendly msg
-        ca = Ca.create(name=args['name'],
-                address=args['address'],
-                serial_number=args['serial_number'],
-                vendor=vendor)
-        return marshal(ca, ca_fields), 201
+        except MissingVendorError as e:
+            abort(404, message=e.message)
+
+        except (DuplicateCaptureAgentNameError,
+                DuplicateCaptureAgentAddressError,
+                DuplicateCaptureAgentSerialNumberError) as e:
+            abort(400, message=e.message)
+        else:
+            return marshal(ca, ca_fields), 201

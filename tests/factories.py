@@ -25,6 +25,7 @@ class CaFactory(BaseFactory):
     """capture agent factory."""
     name = Sequence(lambda n: 'ca%s' % n)
     address = Sequence(lambda n: 'http://ca%s.fake.test' %n)
+    serial_number = Sequence(lambda n: '123456789%s' %n)
 
     class Meta:
         """factory configuration."""

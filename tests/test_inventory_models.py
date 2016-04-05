@@ -2,6 +2,8 @@
 """Tests for `models` in redunlive webapp."""
 import datetime as dt
 import pytest
+from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import SQLAlchemyError
 
 from cadash.inventory.models import Ca
 from cadash.inventory.models import Location
@@ -9,44 +11,111 @@ from cadash.inventory.models import MhCluster
 from cadash.inventory.models import Role
 from cadash.inventory.models import Vendor
 from cadash.inventory.errors import AssociationError
+from cadash.inventory.errors import DuplicateCaptureAgentNameError
+from cadash.inventory.errors import DuplicateCaptureAgentAddressError
+from cadash.inventory.errors import DuplicateCaptureAgentSerialNumberError
+from cadash.inventory.errors import DuplicateLocationNameError
+from cadash.inventory.errors import DuplicateMhClusterAdminHostError
+from cadash.inventory.errors import DuplicateMhClusterNameError
+from cadash.inventory.errors import DuplicateVendorNameModelError
 from cadash.inventory.errors import InvalidCaRoleError
+from cadash.inventory.errors import InvalidEmptyValueError
 from cadash.inventory.errors import InvalidMhClusterEnvironmentError
 from cadash.inventory.errors import InvalidOperationError
+from cadash.inventory.errors import MissingVendorError
 
 from tests.factories import CaFactory
 from tests.factories import LocationFactory
 from tests.factories import MhClusterFactory
 from tests.factories import VendorFactory
 
-@pytest.mark.usefixtures('db')
+@pytest.mark.usefixtures('db', 'simple_db')
 class TestCaptureAgentModel(object):
     """capture agent tests."""
 
-    def test_get_by_id(self):
+    def test_get_by_id(self, simple_db):
         """get ca by id."""
-        v = Vendor.create(name='ultramax', model='plus')
-        ca = Ca.create(name='fake-epiphan', vendor=v,
+        ca = Ca.create(name='fake-epiphan',
+                vendor_id=simple_db['vendor'].id,
                 address='fake-epiphan.blah.bloh.net')
         retrieved = Ca.get_by_id(ca.id)
         assert retrieved == ca
 
-    def test_created_at_defaults_to_datetime(self):
+    def test_created_at_defaults_to_datetime(self, simple_db):
         """test creation date."""
-        v = Vendor.create(name='ultramax', model='plus')
-        ca = Ca.create(name='fake-epiphan', vendor=v,
+        ca = Ca.create(name='fake-epiphan',
+                vendor_id=simple_db['vendor'].id,
                 address='fake-epiphan.blah.bloh.net')
         assert bool(ca.created_at)
         assert isinstance(ca.created_at, dt.datetime)
 
-    def test_name_id(self):
+    def test_name_id(self, simple_db):
         """test name_id is populated."""
-        v = Vendor.create(name='ultramax', model='plus')
-        ca = Ca.create(name='fake-epiphan[A]', vendor=v,
+        ca = Ca.create(name='fake-epiphan[A]',
+                vendor_id=simple_db['vendor'].id,
                 address='fake-epiphan.blah.bloh.net')
         assert ca.name_id == 'fake_epiphan_a_'
 
+    def test_should_fail_when_create_ca_missing_vendor(self, simple_db):
+        """vendor is mandatory for every capture agent."""
+        with pytest.raises(MissingVendorError):
+            ca = Ca.create(name='fake-epiphan',
+                    vendor_id=999999,
+                    address='fake-epiphan.blah.bloh.net')
 
-@pytest.mark.usefixtures('db')
+    def test_should_fail_when_create_ca_duplicate_name(self, simple_db):
+        """ca name is unique."""
+        with pytest.raises(DuplicateCaptureAgentNameError):
+            ca = Ca.create(name=simple_db['ca'][0].name,
+                    vendor_id=simple_db['vendor'].id,
+                    address='fake-epiphan.blah.bloh.net')
+
+    def test_should_fail_when_create_ca_duplicate_address(self, simple_db):
+        """ca address is unique."""
+        with pytest.raises(DuplicateCaptureAgentAddressError):
+            ca = Ca.create(name='fake-epiphan',
+                    vendor_id=simple_db['vendor'].id,
+                    address=simple_db['ca'][0].address)
+
+    def test_should_fail_when_create_ca_duplicate_serial_number(self, simple_db):
+        """ca serial_number is unique."""
+        with pytest.raises(DuplicateCaptureAgentSerialNumberError):
+            ca = Ca.create(name='fake-epiphan',
+                    vendor_id=simple_db['vendor'].id,
+                    address='fake-epiphan.blah.bloh.net',
+                    serial_number=simple_db['ca'][0].serial_number)
+
+    def test_update_ca_name(self, simple_db):
+        """test update ca - happy path."""
+        ca = Ca.get_by_id(simple_db['ca'][0].id)
+        ca.update(name='new-name')
+        assert ca.name == 'new-name'
+
+        ca.update(name='blah', address='blah.some.domain', serial_number='xxx')
+        assert ca.name == 'blah'
+        assert ca.address == 'blah.some.domain'
+        assert ca.serial_number == 'xxx'
+
+    def test_should_fail_when_update_empty_ca_address(self, simple_db):
+        """ca address is mandatory."""
+        ca = Ca.get_by_id(simple_db['ca'][2].id)
+        ca.update(serial_number='')
+        assert ca.serial_number == ''
+
+        with pytest.raises(InvalidEmptyValueError) as e:
+            ca.update(address='')
+        assert 'not allowed empty value for `address`' in str(e.value)
+
+    def test_should_fail_when_update_not_updateable_ca_field(self, simple_db):
+        """vendor_id is not allowed to be updated."""
+        ca = Ca.get_by_id(simple_db['ca'][1].id)
+        with pytest.raises(InvalidOperationError) as e:
+            ca.update(vendor_id=simple_db['vendor'].id)
+        assert 'not allowed to update fields: vendor_id' in str(e.value)
+
+
+
+@pytest.mark.usefixtures('db', 'simple_db')
 class TestLocationModel(object):
     """location tests."""
 
@@ -67,8 +136,13 @@ class TestLocationModel(object):
         loc = Location.create(name='room A')
         assert loc.name_id == 'room_a'
 
+    def test_should_fail_when_create_location_duplicate_name(self, simple_db):
+        """location name is unique."""
+        with pytest.raises(DuplicateLocationNameError):
+            loc = Location.create(name=simple_db['room'][0].name)
 
-@pytest.mark.usefixtures('db')
+
+@pytest.mark.usefixtures('db', 'simple_db')
 class TestVendorModel(object):
     """tests for capture agent vendor."""
 
@@ -85,6 +159,12 @@ class TestVendorModel(object):
     def test_name_id(self):
         vendor = Vendor.create(name='epiPoinG for', model='drumPf!')
         assert vendor.name_id == 'epipoing_for_drumpf_'
+
+    def test_should_fail_when_create_vendor_duplicate_name(self, simple_db):
+        """vendor name_model is unique."""
+        with pytest.raises(DuplicateVendorNameModelError):
+            vendor = Vendor.create(name=simple_db['vendor'].name,
+                    model=simple_db['vendor'].model)
 
 
 @pytest.mark.usefixtures('db')

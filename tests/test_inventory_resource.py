@@ -26,7 +26,7 @@ class TestCaResource(object):
         json_data = json.loads(res.body)
         assert len(json_data) == 5
         assert json_data[3]['name'] == simple_db['ca'][3].name
-        assert json_data[3]['serial_number'] == 'not available'
+        assert json_data[3]['serial_number'] == simple_db['ca'][3].serial_number
 
 
     def test_get_ca(self, testapp_login_disabled, simple_db):
@@ -66,7 +66,7 @@ class TestCaResource(object):
         res = testapp_login_disabled.post_json(
                 '/inventory/api/cas', params=new_ca, expect_errors=True)
         assert res.status_int == 404
-        error_msg = 'resource not found (%i)' % new_ca['vendor_id']
+        error_msg = 'not in inventory: vendor_id(%i)' % new_ca['vendor_id']
         assert error_msg in res.body
 
 
@@ -76,4 +76,52 @@ class TestCaResource(object):
                 vendor_id=simple_db['vendor'].id, serial_number='ABC123')
         res = testapp_login_disabled.post_json(
                 '/inventory/api/cas', params=new_ca, expect_errors=True)
-        assert res.status_int
+        assert res.status_int == 400
+        error_msg = 'duplicate ca name(%s)' % new_ca['name']
+        assert error_msg in res.body
+
+
+    def test_should_fail_to_create_duplicate_ca_address(
+            self, testapp_login_disabled, simple_db):
+        new_ca = dict(name='fake-ca', address=simple_db['ca'][0].address,
+                vendor_id=simple_db['vendor'].id, serial_number='ABC123')
+        res = testapp_login_disabled.post_json(
+                '/inventory/api/cas', params=new_ca, expect_errors=True)
+        assert res.status_int == 400
+        error_msg = 'duplicate ca address(%s)' % new_ca['address']
+        assert error_msg in res.body
+
+
+    def test_should_fail_to_create_duplicate_ca_serial_number(
+            self, testapp_login_disabled, simple_db):
+        new_ca = dict(name='fake-ca', address='fake-ca.some.url',
+                vendor_id=simple_db['vendor'].id,
+                serial_number=simple_db['ca'][1].serial_number)
+        res = testapp_login_disabled.post_json(
+                '/inventory/api/cas', params=new_ca, expect_errors=True)
+        assert res.status_int == 400
+        error_msg = 'duplicate ca serial_number(%s)' % new_ca['serial_number']
+        assert error_msg in res.body
+
+
+    def test_should_fail_to_update_duplicate_name_ca(
+            self, testapp_login_disabled, simple_db):
+        ca = dict(name=simple_db['ca'][0].name, address='fake-ca.some.url',
+                vendor_id=simple_db['vendor'].id, serial_number='ABC123')
+        res = testapp_login_disabled.put_json(
+                '/inventory/api/cas/%i' % simple_db['ca'][1].id,
+                params=ca, expect_errors=True)
+        assert res.status_int == 400
+        error_msg = 'duplicate ca name(%s)' % ca['name']
+        assert error_msg in res.body
+
+
+    def test_should_fail_to_update_name_ca(
+            self, testapp_login_disabled, simple_db):
+        ca = dict(name='fake-name')
+        res = testapp_login_disabled.put_json(
+                '/inventory/api/cas/%i' % simple_db['ca'][1].id,
+                params=ca, expect_errors=True)
+        assert res.status_int == 400
+        error_msg = 'duplicate ca name(%s)' % ca['name']
+        assert error_msg in res.body
