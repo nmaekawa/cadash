@@ -81,14 +81,16 @@ class CaAPI(Resource):
         abort_if_none(ca, 'capture_agent[%s]' % ca_id)
 
         parser = reqparse.RequestParser()
-        parser.add_argument('name', type=str, location='json')
-        parser.add_argument('address', type=str, location='json')
-        parser.add_argument('serial_number', type=str, location='json')
+        parser.add_argument('name', type=str,
+                location='json', store_missing=False)
+        parser.add_argument('address', type=str,
+                location='json', store_missing=False)
+        parser.add_argument('serial_number', type=str,
+                location='json', store_missing=False)
         args = parser.parse_args()
 
         try:
             ca.update(**args)
-
         except (DuplicateCaptureAgentNameError,
                 DuplicateCaptureAgentAddressError,
                 DuplicateCaptureAgentSerialNumberError) as e:
@@ -118,19 +120,17 @@ class CaListAPI(Resource):
     def post(self):
         parser = reqparse.RequestParser()
         parser.add_argument('name', type=str, required=True,
-            help='`name` cannot be blank', location='json')
+                help='`name` cannot be blank', location='json')
         parser.add_argument('address', type=str, required=True,
-            help='`address` cannot be blank', location='json')
-        parser.add_argument('serial_number', type=str, location='json')
-        parser.add_argument('vendor_id', type=int, location='json')
+                help='`address` cannot be blank', location='json')
+        parser.add_argument('vendor_id', type=int, required=True,
+                help='`vendor` cannet be blank', location='json')
+        parser.add_argument('serial_number', type=str,
+                location='json', store_missing=False)
         args = parser.parse_args()
 
         try:
-            ca = Ca.create(name=args['name'],
-                    address=args['address'],
-                    serial_number=args['serial_number'],
-                    vendor_id=args['vendor_id'])
-
+            ca = Ca.create(**args)
         except MissingVendorError as e:
             abort(404, message=e.message)
 

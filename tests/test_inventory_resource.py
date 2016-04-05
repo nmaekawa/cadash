@@ -116,12 +116,11 @@ class TestCaResource(object):
         assert error_msg in res.body
 
 
-    def test_should_fail_to_update_name_ca(
+    def test_update_name_ca(
             self, testapp_login_disabled, simple_db):
         ca = dict(name='fake-name')
         res = testapp_login_disabled.put_json(
-                '/inventory/api/cas/%i' % simple_db['ca'][1].id,
-                params=ca, expect_errors=True)
-        assert res.status_int == 400
-        error_msg = 'duplicate ca name(%s)' % ca['name']
-        assert error_msg in res.body
+                '/inventory/api/cas/%i' % simple_db['ca'][1].id, params=ca)
+        assert res.status_int == 201
+        ca_updated = Ca.get_by_id(simple_db['ca'][1].id)
+        assert ca_updated.name == ca['name']
