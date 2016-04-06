@@ -29,6 +29,9 @@ import cadash.utils as utils
 CA_ROLES = frozenset([u'primary', u'secondary', u'experimental'])
 MH_ENVS = frozenset([u'prod', u'dev', u'stage'])
 UPDATEABLE_CA_FIELDS = frozenset([u'name', u'address', u'serial_number'])
+UPDATEABLE_CLUSTER_FIELDS = frozenset([u'name', u'admin_host', u'env'])
+UPDATEABLE_LOCATION_FIELDS = frozenset([u'name'])
+UPDATEABLE_VENDOR_FIELDS = frozenset([u'name', u'model'])
 
 class Location(SurrogatePK, NameIdMixin, Model):
     """a room where a capture agent is installed."""
@@ -40,30 +43,47 @@ class Location(SurrogatePK, NameIdMixin, Model):
 
     def __init__(self, name):
         """create instance."""
-        l = Location.query.filter_by(name=name).first()
-        if not l is None:
-            raise DuplicateLocationNameError(
-                    'duplicate location name(%s)' % name)
-        db.Model.__init__(self, name=name)
-
+        if self._check_constraints(name=name):
+            db.Model.__init__(self, name=name)
 
     def get_ca(self):
         """return all capture agents installed in location."""
         result = [r.ca for r in self.capture_agents]
         return result
 
-
     def get_ca_by_role(self, role_name):
         """return list of capture-agents with given role."""
         result = [r.ca for r in self.capture_agents if r.name == role_name]
         return result
-
 
     def delete(self, commit=True):
         """override to undo all relationships involving this location."""
         for c in self.capture_agents:
             c.delete()
         return super(Location, self).delete(commit)
+
+    def update(self, **kwargs):
+        """override to check location constraints."""
+        x = set(kwargs.keys()).difference(UPDATEABLE_LOCATION_FIELDS)
+        if len(x):
+            raise InvalidOperationError(
+                    'not allowed to update location fields: %s' %
+                    ', '.join(list(x)))
+        if self._check_constraints(**kwargs):
+            return super(Location, self).update(**kwargs)
+
+    def _check_constraints(self, **kwargs):
+        """throws an error if args violate location constraints."""
+        for k, value in kwargs.items():
+            if k == 'name':
+                if not value:
+                    raise InvalidEmptyValueError(
+                            'not allowed empty value for `name`')
+                l = Location.query.filter_by(name=value).first()
+                if not l is None:
+                    raise DuplicateLocationNameError(
+                            'duplicate location name(%s)' % value)
+        return True
 
 
 class Role(Model):
@@ -83,7 +103,7 @@ class Role(Model):
 
 
     def __init__(self, ca, location, cluster, name):
-        """validate constraints and create instance."""
+        """validates constraints and create instance."""
         # role name is valid?
         role_name = name.lower()
         if role_name not in CA_ROLES:
@@ -136,15 +156,50 @@ class Ca(SurrogatePK, NameIdMixin, Model):
 
     def __init__(self, name, address, vendor_id, serial_number=None):
         """create instance."""
-        if self._check_ca_constraints(name=name,
+        if self._check_constraints(name=name,
                 address=address, vendor_id=vendor_id,
                 serial_number=serial_number):
             db.Model.__init__(self, name=name, address=address,
                         vendor_id=vendor_id, serial_number=serial_number)
 
+    @property
+    def role_name(self):
+        if bool(self.role):
+            return self.role.name
+        return None
 
-    def _check_ca_constraints(self, **kwargs):
-        """throw an error if args violate ca constraints."""
+    @property
+    def location(self):
+        if bool(self.role):
+            return self.role.location
+        return None
+
+    @property
+    def mh_cluster(self):
+        if bool(self.role):
+            return self.role.cluster
+        return None
+
+
+    def update(self, **kwargs):
+        """override to check ca constraints."""
+        x = set(kwargs.keys()).difference(UPDATEABLE_CA_FIELDS)
+        if len(x) > 0:
+            raise InvalidOperationError(
+                    'not allowed to update ca fields: %s' % ', '.join(list(x)))
+
+        if self._check_constraints(**kwargs):
+            return super(Ca, self).update(**kwargs)
+
+
+    def delete(self, commit=True):
+        """override to undo all role relationships involving this ca."""
+        self.role.delete()
+        return super(Ca, self).delete(commit)
+
+
+    def _check_constraints(self, **kwargs):
+        """throws an error if args violate ca constraints."""
         for key, value in kwargs.items():
             # fail if unknown vendor
             if key == 'vendor_id':
@@ -188,42 +243,6 @@ class Ca(SurrogatePK, NameIdMixin, Model):
         return True
 
 
-    @property
-    def role_name(self):
-        if bool(self.role):
-            return self.role.name
-        return None
-
-    @property
-    def location(self):
-        if bool(self.role):
-            return self.role.location
-        return None
-
-    @property
-    def mh_cluster(self):
-        if bool(self.role):
-            return self.role.cluster
-        return None
-
-
-    def update(self, **kwargs):
-        """override to check ca constraints."""
-        x = set(kwargs.keys()).difference(UPDATEABLE_CA_FIELDS)
-        if len(x) > 0:
-            raise InvalidOperationError(
-                    'not allowed to update fields: %s' % ','.join(list(x)))
-
-        if self._check_ca_constraints(**kwargs):
-            return super(Ca, self).update(**kwargs)
-
-
-    def delete(self, commit=True):
-        """override to undo all role relationships involving this ca."""
-        self.role.delete()
-        return super(Ca, self).delete(commit)
-
-
 class Vendor(SurrogatePK, Model):
     """a capture agent vendor."""
 
@@ -236,13 +255,9 @@ class Vendor(SurrogatePK, Model):
 
     def __init__(self, name, model):
         """create instance."""
-        name_id = "%s_%s" % (utils.clean_name(name),
-                utils.clean_name(model))
-        v = Vendor.query.filter_by(name_id=name_id).first()
-        if not v is None:
-            raise DuplicateVendorNameModelError(
-                    'duplicate vendor name-model(%s)' % name_id)
-        db.Model.__init__(self, name=name, model=model, name_id=name_id)
+        if self._check_constraints(name=name, model=model):
+            db.Model.__init__(self, name=name, model=model,
+                    name_id=Vendor.computed_name_id(name, model))
 
     def __repr__(self):
         return self.name_id
@@ -250,6 +265,36 @@ class Vendor(SurrogatePK, Model):
     def delete(self, commit=True):
         """override to disable deletion of vendors."""
         raise InvalidOperationError('not allowed to delete `vendor`')
+
+    def update(self, **kwargs):
+        """override to check vendor constraints."""
+        x = set(kwargs.keys()).difference(UPDATEABLE_VENDOR_FIELDS)
+        if len(x) > 0:
+            raise InvalidOperationError(
+                    'not allowed to update vendor fields: %s' %
+                    ', '.join(list(x)))
+
+        if self._check_constraints(**kwargs):
+            # update name,model in vendor model
+            super(Vendor, self).update(commit=False, **kwargs)
+            # persist name,model,name_id
+            return super(Vendor, self).update(
+                    name_id=self.computed_name_id(self.name, self.model))
+
+    def _check_constraints(self, **kwargs):
+        """throws an error if args violate vendor constraints."""
+        n = kwargs['name'] if 'name' in kwargs.keys() else self.name
+        m = kwargs['model'] if 'model' in kwargs.keys() else self.model
+        nm = Vendor.computed_name_id(n, m)
+        v = Vendor.query.filter_by(name_id=nm).first()
+        if not v is None:
+            raise DuplicateVendorNameModelError(
+                    'duplicate vendor name_model(%s)' % nm)
+        return True
+
+    @classmethod
+    def computed_name_id(cls, name, model):
+        return '%s_%s' % (utils.clean_name(name), utils.clean_name(model))
 
 
 class MhCluster(SurrogatePK, NameIdMixin, Model):
@@ -266,32 +311,19 @@ class MhCluster(SurrogatePK, NameIdMixin, Model):
     def __init__(self, name, admin_host, env):
         """create instance."""
         environment = self._get_valid_env(env)
-
-        c = MhCluster.query.filter_by(name=name).first()
-        if not c is None:
-            raise DuplicateMhClusterNameError(
-                    'duplicate mh-cluster name(%s)' % name)
-
-        c = MhCluster.query.filter_by(admin_host=admin_host).first()
-        if not c is None:
-            raise DuplicateMhClusterAdminHostError(
-                    'duplicate mh-cluster admin host(%s)' % admin_host)
-
-        db.Model.__init__(self, name=name, admin_host=admin_host,
-                env=environment)
-
+        if self._check_constraints(name=name, admin_host=admin_host):
+            db.Model.__init__(self, name=name, admin_host=admin_host,
+                    env=environment)
 
     def get_ca(self):
         """return all capture agents configured for this cluster."""
         result = [r.ca for r in self.capture_agents]
         return result
 
-
     def get_ca_by_role(self, role_name):
         """return list of capture-agents with given role."""
         result = [r.ca for r in self.capture_agents if r.name == role_name]
         return result
-
 
     def delete(self, commit=True):
         """override to undo all role relationships involving this cluster."""
@@ -299,13 +331,49 @@ class MhCluster(SurrogatePK, NameIdMixin, Model):
             c.delete()
         return super(MhCluster, self).delete(commit)
 
+    def update(self, **kwargs):
+        """override to check mh cluster constraints."""
+        x = set(kwargs.keys()).difference(UPDATEABLE_CLUSTER_FIELDS)
+        if len(x) > 0:
+            raise InvalidOperationError(
+                    'not allowed to update mh_cluster fields: %s' %
+                    ', '.join(list(x)))
+
+        if self._check_constraints(**kwargs):
+            r = super(MhCluster, self).update(commit=False, **kwargs)
+            # ensure persisted `env` value is valid
+            if 'env' in kwargs.keys():
+                self.env = self._get_valid_env(kwargs['env'])
+            return self.save()
+
+    def _check_constraints(self, **kwargs):
+        """throws an error if args violate mh cluster constraints."""
+        for k, value in kwargs.items():
+            if k == 'name':
+                if not value:
+                    raise InvalidEmptyValueError(
+                            'not allowed empty value for `name`')
+                c = MhCluster.query.filter_by(name=value).first()
+                if not c is None:
+                    raise DuplicateMhClusterNameError(
+                            'duplicate mh-cluster name(%s)' % value)
+                next
+
+            if k == 'admin_host':
+                if not value:
+                    raise InvalidEmptyValueError(
+                            'not allowed empty value for `admin_host`')
+                c = MhCluster.query.filter_by(admin_host=value).first()
+                if not c is None:
+                    raise DuplicateMhClusterAdminHostError(
+                            'duplicate mh-cluster admin host(%s)' % value)
+        return True
 
     def _get_valid_env(self, env):
         """returns valid env value: ['prod'|'dev'|'stage']."""
         if env is None:
             raise InvalidMhClusterEnvironmentError(
                     'missing mh cluster environment')
-
         environment = env.lower()
         if environment in MH_ENVS:
             return environment

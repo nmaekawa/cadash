@@ -5,6 +5,7 @@ import pytest
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.exc import SQLAlchemyError
 
+from cadash import utils
 from cadash.inventory.models import Ca
 from cadash.inventory.models import Location
 from cadash.inventory.models import MhCluster
@@ -111,7 +112,7 @@ class TestCaptureAgentModel(object):
         ca = Ca.get_by_id(simple_db['ca'][1].id)
         with pytest.raises(InvalidOperationError) as e:
             ca.update(vendor_id=simple_db['vendor'].id)
-        assert 'not allowed to update fields: vendor_id' in str(e.value)
+        assert 'not allowed to update ca fields: vendor_id' in str(e.value)
 
 
 
@@ -141,6 +142,25 @@ class TestLocationModel(object):
         with pytest.raises(DuplicateLocationNameError):
             loc = Location.create(name=simple_db['room'][0].name)
 
+    def test_update(self, simple_db):
+        """update happy path."""
+        l = Location.get_by_id(simple_db['room'][0].id)
+        l.update(name='new_name_for_room')
+        l2 = Location.get_by_id(simple_db['room'][0].id)
+        assert l2.name == 'new_name_for_room'
+
+    def test_should_fail_when_update_location_duplicate_name(self, simple_db):
+        """name is unique."""
+        l = Location.get_by_id(simple_db['room'][0].id)
+        with pytest.raises(DuplicateLocationNameError):
+            l.update(name=simple_db['room'][1].name)
+
+    def test_should_fail_when_update_not_updateable_field(self, simple_db):
+        """capture_agents is not updateable."""
+        l = Location.get_by_id(simple_db['room'][0].id)
+        with pytest.raises(InvalidOperationError):
+            l.update(capture_agents=[simple_db['ca'][3]])
+
 
 @pytest.mark.usefixtures('db', 'simple_db')
 class TestVendorModel(object):
@@ -166,8 +186,28 @@ class TestVendorModel(object):
             vendor = Vendor.create(name=simple_db['vendor'].name,
                     model=simple_db['vendor'].model)
 
+    def test_update_vendor(self, simple_db):
+        """test update happy path."""
+        vendor = Vendor.get_by_id(simple_db['vendor'].id)
+        vendor.update(name='fake')
+        assert vendor.name_id == 'fake_%s' % utils.clean_name(vendor.model)
 
-@pytest.mark.usefixtures('db')
+    def test_should_fail_when_update_duplicate_name_id(self, simple_db):
+        """name_id unique."""
+        vendor = Vendor.create(name=simple_db['vendor'].name, model='bloft')
+        with pytest.raises(DuplicateVendorNameModelError):
+            vendor.update(model=simple_db['vendor'].model)
+
+    def test_should_fail_when_update_not_updateable_fields(self, simple_db):
+        """name_id not updateable in vendor."""
+        vendor = Vendor.get_by_id(simple_db['vendor'].id)
+        with pytest.raises(InvalidOperationError) as e:
+            vendor.update(name_id='fake-vendor')
+        assert 'not allowed to update vendor fields: name_id' in str(e.value)
+
+
+
+@pytest.mark.usefixtures('db', 'simple_db')
 class TestMhClusterModel(object):
     """test for mh cluster."""
 
@@ -197,6 +237,34 @@ class TestMhClusterModel(object):
         cluster = MhCluster.create(name='zupT',
                 admin_host='host.same.where', env='PRod')
         assert cluster.env == 'prod'
+
+    def test_update_location(self, simple_db):
+        """update happy path."""
+        c = MhCluster.get_by_id(simple_db['cluster'][1].id)
+        c.update(env='PrOd')
+        assert simple_db['cluster'][1].env == 'prod'
+
+    def test_should_fail_when_update_duplicate_name(self, simple_db):
+        """name is unique."""
+        c = MhCluster.get_by_id(simple_db['cluster'][0].id)
+        with pytest.raises(DuplicateMhClusterNameError) as e:
+            c.update(name=simple_db['cluster'][1].name)
+        assert 'duplicate mh-cluster name(%s)' % \
+                simple_db['cluster'][1].name in str(e.value)
+
+    def test_should_fail_when_update_not_updateable_fields(self, simple_db):
+        """capture_agents is not updateable."""
+        c = MhCluster.get_by_id(simple_db['cluster'][0].id)
+        with pytest.raises(InvalidOperationError) as e:
+            c.update(capture_agents=[simple_db['ca'][1]])
+        assert 'not allowed to update mh_cluster fields: capture_agents' \
+                in str(e.value)
+
+    def test_should_fail_when_update_invalid_env(self, simple_db):
+        """env values are restricted to cadash.inventory.models.MH_ENV."""
+        c = MhCluster.get_by_id(simple_db['cluster'][0].id)
+        with pytest.raises(InvalidMhClusterEnvironmentError):
+            c.update(env='BriteClass')
 
 
 @pytest.mark.usefixtures('db', 'simple_db')
@@ -313,4 +381,3 @@ class TestDelete(object):
         ca_id = simple_db['ca'][0].id
         simple_db['ca'][0].delete()
         assert Ca.get_by_id(ca_id) is None
-
