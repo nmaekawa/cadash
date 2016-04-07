@@ -8,35 +8,21 @@
     </div>
     <div class="row">
         <ul class="nav nav-tabs">
-            <li class="active"><a href="{{ url_for('inventory.ca_list') }}">
-                capture agent <span class="sr-only">(current)</span></a></li>
+            <li class="active">
+            <a href="#">
+                capture agent
+            <span class="sr-only">(current)</span></a></li>
             <li><a href="{{ url_for('inventory.vendor_list') }}">
                 vendor</a></li>
             <li><a href="{{ url_for('inventory.location_list') }}">
                 location</a></li>
             <li><a href="{{ url_for('inventory.cluster_list') }}">
-            mh cluster</a></li>
+                mh cluster</a></li>
         </ul>
-
-
-        <div class="table-responsive">
-        <table class="table table-hover">
-            <thead>
-                <th>name</th>
-                <th>address</th>
-                <th>serial</th>
-            </thead>
-            <tbody>
-            {% for ca in ca_list %}
-                <td>{{ ca.name }}</td>
-                <td>{{ ca.address }}</td>
-                <td>{{ ca.serial_number }}</td>
-            {% endfor %}
-            </tbody>
-        </table>
-        </div>
-
     </div>
+
+    {% block ca_content %}{% endblock %}
+
 </div>
 {% endblock %}
 

@@ -1,0 +1,33 @@
+{% extends "inventory/capture_agent.html" %}
+
+{% block ca_content %}
+    <div class="row">
+        <ul class="nav nav-tabs">
+            <li class="active">
+            <a href="#">
+                list
+            <span class="sr-only">(current)</span></a></li>
+            <li><a href="{{ url_for('inventory.ca_create') }}">
+                create</a></li>
+        </ul>
+    </div>
+
+    <div class="row">
+    <div class="table-responsive">
+    <table class="table table-hover">
+        <thead>
+            <th>name</th>
+            <th>address</th>
+            <th>serial</th>
+        </thead>
+        <tbody>
+        {% for ca in ca_list %}
+            <td>{{ ca.name }}</td>
+            <td>{{ ca.address }}</td>
+            <td>{{ ca.serial_number }}</td>
+        {% endfor %}
+        </tbody>
+    </table>
+    </div>
+    </div>
+{% endblock %}

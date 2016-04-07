@@ -1,0 +1,28 @@
+{% extends "inventory/capture_agent.html" %}
+
+{% block ca_content %}
+    <div class="row">
+        <ul class="nav nav-tabs">
+            <li><a href="{{ url_for('inventory.ca_list') }}">
+                list</a>
+            </li>
+            {% if mode == 'edit' %}
+            <li><a href="{{ url_for('inventory.ca_create') }}">
+                create</a>
+            </li>
+            <li class="active"><a href="#">
+                 edit
+            <span class="sr-only">(current)</span></a></li>
+            {% else %}
+            <li class="active"><a href="#">
+                 create
+            <span class="sr-only">(current)</span></a></li>
+            {% endif %}
+        </ul>
+    </div>
+
+    <div class="row">
+        <h2>capture agent form</h2>
+    </div>
+
+{% endblock %}

@@ -17,9 +17,9 @@ from cadash import utils
 class CaForm(Form):
     """form for capture agent."""
 
-    vendor_id = SelectField('vendor', coerce=int, validators=[DataRequired()])
-    name = StringField('name', validators=[DataRequired()])
-    address = StringField('address', validators=[DataRequired(),URL()])
+    vendor_id = SelectField('vendor', coerce=int)
+    name = StringField('name')
+    address = StringField('address', validators=[URL()])
     serial_number = StringField('serial_number')
 
     def validate(self):
@@ -28,23 +28,26 @@ class CaForm(Form):
         if not initial_validation:
             return False
 
-        ca = Ca.query.filter_by(serial_number=self.serial_number.data).first()
-        if ca:
-            self.serial_number.errors.append(
-                    'ca with same serial number already in inventory')
-            return False
+        if self.serial_number.data:
+            ca = Ca.query.filter_by(serial_number=self.serial_number.data).first()
+            if ca:
+                self.serial_number.errors.append(
+                        'ca with same serial number already in inventory')
+                return False
 
-        ca = Ca.query.filter_by(address=self.address.data).first()
-        if ca:
-            self.address.errors.append(
-                    'ca with same address already in inventory')
-            return False
+        if self.address.data:
+            ca = Ca.query.filter_by(address=self.address.data).first()
+            if ca:
+                self.address.errors.append(
+                        'ca with same address already in inventory')
+                return False
 
-        ca = Ca.query.filter_by(name=self.name.data).first()
-        if ca:
-            self.name.errors.append(
-                    'ca with same name already in inventory')
-            return False
+        if self.name.data:
+            ca = Ca.query.filter_by(name=self.name.data).first()
+            if ca:
+                self.name.errors.append(
+                        'ca with same name already in inventory')
+                return False
 
         return True
 
