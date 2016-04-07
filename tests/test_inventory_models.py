@@ -249,7 +249,7 @@ class TestMhClusterModel(object):
         c = MhCluster.get_by_id(simple_db['cluster'][0].id)
         with pytest.raises(DuplicateMhClusterNameError) as e:
             c.update(name=simple_db['cluster'][1].name)
-        assert 'duplicate mh-cluster name(%s)' % \
+        assert 'duplicate mh_cluster name(%s)' % \
                 simple_db['cluster'][1].name in str(e.value)
 
     def test_should_fail_when_update_not_updateable_fields(self, simple_db):

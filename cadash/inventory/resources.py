@@ -17,9 +17,18 @@ from flask_restful import marshal_with
 from flask_restful import reqparse
 
 from cadash import __version__ as app_version
+from cadash.inventory.errors import AssociationError
 from cadash.inventory.errors import DuplicateCaptureAgentNameError
 from cadash.inventory.errors import DuplicateCaptureAgentAddressError
 from cadash.inventory.errors import DuplicateCaptureAgentSerialNumberError
+from cadash.inventory.errors import DuplicateLocationNameError
+from cadash.inventory.errors import DuplicateMhClusterAdminHostError
+from cadash.inventory.errors import DuplicateMhClusterNameError
+from cadash.inventory.errors import DuplicateVendorNameModelError
+from cadash.inventory.errors import InvalidCaRoleError
+from cadash.inventory.errors import InvalidEmptyValueError
+from cadash.inventory.errors import InvalidMhClusterEnvironmentError
+from cadash.inventory.errors import InvalidOperationError
 from cadash.inventory.errors import MissingVendorError
 from cadash.inventory.models import Ca
 from cadash.inventory.models import Location
@@ -28,115 +37,258 @@ from cadash.inventory.models import Role
 from cadash.inventory.models import Vendor
 
 
+# dicts to define output json objects
+# for flask_restful.marshal_with
+RESOURCE_FIELDS = {
+        'Vendor': {
+            'id': fields.Integer,
+            'name_id': fields.String,
+            'name': fields.String,
+            'model': fields.String,
+        },
+        'Ca': {
+            'id': fields.Integer,
+            'name': fields.String,
+            'name_id': fields.String,
+            'address': fields.String,
+            'serial_number': fields.String(default='not available'),
+            'vendor_name_id': fields.String(attribute='vendor.name_id'),
+        },
+        'Location': {
+            'id': fields.Integer,
+            'name_id': fields.String,
+            'name': fields.String,
+        },
+        'MhCluster': {
+            'id': fields.Integer,
+            'name_id': fields.String,
+            'name': fields.String,
+            'admin_host': fields.String,
+            'env': fields.String,
+        },
+}
+
 def register_resources(api):
     """add resources to rest-api."""
-    api.add_resource(CaAPI, '/inventory/api/cas/<int:ca_id>', endpoint='api_ca')
-    api.add_resource(CaListAPI, '/inventory/api/cas', endpoint='api_calist')
+    api.add_resource(Ca_API,
+            '/inventory/api/cas/<int:r_id>', endpoint='api_ca')
+    api.add_resource(Ca_ListAPI,
+            '/inventory/api/cas', endpoint='api_calist')
+    api.add_resource(Location_API,
+            '/inventory/api/locations/<int:r_id>', endpoint='api_location')
+    api.add_resource(Location_ListAPI,
+            '/inventory/api/locations', endpoint='api_locationlist')
+    api.add_resource(Vendor_API,
+            '/inventory/api/vendors/<int:r_id>', endpoint='api_vendor')
+    api.add_resource(Vendor_ListAPI,
+            '/inventory/api/vendors', endpoint='api_vendorlist')
+    api.add_resource(MhCluster_API,
+            '/inventory/api/clusters/<int:r_id>', endpoint='api_cluster')
+    api.add_resource(MhCluster_ListAPI,
+            '/inventory/api/clusters', endpoint='api_clusterlist')
 
-
-def abort_if_none(resource, resource_id):
+def abort_404_if_resource_none(resource, resource_id):
     """ return 404."""
     if resource is None:
         abort(404, message='resource not found (%s)' % resource_id)
 
-# dicts to define output json objects
-# for flask_restful.marshal_with
-vendor_fields = {
-        'id': fields.Integer,
-        'name': fields.String,
-        'model': fields.String,
-        'name_id': fields.String
-        }
-ca_fields = {
-        'id': fields.Integer,
-        'name': fields.String,
-        'address': fields.String,
-        'serial_number': fields.String(default='not available'),
-        'vendor_name_id': fields.String(attribute='vendor.name_id')
-        }
-location_fields = {
-        'id': fields.Integer,
-        'name': fields.String
-        }
-cluster_fields = {
-        'id': fields.Integer,
-        'name': fields.String,
-        'admin_host': fields.String,
-        'env': fields.String
-        }
+
+class Resource_API(Resource):
+    """base resource for rest api: get, put, delete."""
+
+    def __init__(self):
+        """create instance."""
+        super(Resource_API, self).__init__()
+
+        # name of the model class this resource is based on
+        self._resource_model_class_name = type(self).__name__.split('_')[0]
+        # actual model class object this resource is based on
+        self._resource_model_class = globals()[self._resource_model_class_name]
+        # arg parser for updates - must be init'd by child class
+        self._parser_update = reqparse.RequestParser()
 
 
-class CaAPI(Resource):
-    """capture agent resource."""
-
-    @marshal_with(ca_fields)
-    def get(self, ca_id):
-        ca = Ca.get_by_id(ca_id)
-        abort_if_none(ca, 'capture_agent[%s]' % ca_id)
-        return ca
+    def get(self, r_id):
+        resource = self._resource_model_class.get_by_id(r_id)
+        abort_404_if_resource_none(resource,
+                '%s[%i]' % (self._resource_model_class_name, r_id))
+        return marshal(resource,
+                RESOURCE_FIELDS[self._resource_model_class_name]), 200
 
 
-    def put(self, ca_id):
-        ca = Ca.get_by_id(ca_id)
-        abort_if_none(ca, 'capture_agent[%s]' % ca_id)
+    def put(self, r_id):
+        resource = self._resource_model_class.get_by_id(r_id)
+        abort_404_if_resource_none(resource,
+                '%s[%i]' % (self._resource_model_class_name, r_id))
 
-        parser = reqparse.RequestParser()
-        parser.add_argument('name', type=str,
-                location='json', store_missing=False)
-        parser.add_argument('address', type=str,
-                location='json', store_missing=False)
-        parser.add_argument('serial_number', type=str,
-                location='json', store_missing=False)
-        args = parser.parse_args()
-
+        args = self._parser_update.parse_args()
         try:
-            ca.update(**args)
-        except (DuplicateCaptureAgentNameError,
+            resource.update(**args)
+        except (AssociationError,
+                DuplicateCaptureAgentNameError,
                 DuplicateCaptureAgentAddressError,
-                DuplicateCaptureAgentSerialNumberError) as e:
+                DuplicateCaptureAgentSerialNumberError,
+                DuplicateLocationNameError,
+                DuplicateMhClusterAdminHostError,
+                DuplicateMhClusterNameError,
+                DuplicateVendorNameModelError,
+                InvalidCaRoleError,
+                InvalidEmptyValueError,
+                InvalidMhClusterEnvironmentError,
+                InvalidOperationError,
+                MissingVendorError) as e:
             abort(400, message=e.message)
         else:
-            return marshal(ca, ca_fields), 201
+            return marshal(resource,
+                    RESOURCE_FIELDS[self._resource_model_class_name]), 200
 
-
-    def delete(self, ca_id):
-        ca = Ca.get_by_id(ca_id)
-        if not ca is None:
-            ca.delete()
+    def delete(self, r_id):
+        resource = self._resource_model_class.get_by_id(r_id)
+        if not resource:
+            resource.delete()
         return '', 204
 
 
-class CaListAPI(Resource):
-    """capture agent list resource."""
+class Resource_ListAPI(Resource):
+    """base resource for rest api: get list, post."""
 
-    @marshal_with(ca_fields)
+    def __init__(self):
+        """create instance."""
+        super(Resource_ListAPI, self).__init__()
+
+        # name of the model class this resource is based on
+        self._resource_model_class_name = type(self).__name__.split('_')[0]
+        # actual model class object this resource is based on
+        self._resource_model_class = globals()[self._resource_model_class_name]
+        # arg parser for creates - must be init'd by child class
+        self._parser_create = reqparse.RequestParser()
+
+
     def get(self):
-        ca_list = Ca.query.order_by(Ca.name).all()
-        logger = logging.getLogger(__name__)
-        logger.debug('ca_list is %s' % ca_list)
-        return ca_list
-
+        resource_list = self._resource_model_class.query.all()
+        return marshal(resource_list,
+                RESOURCE_FIELDS[self._resource_model_class_name]), 200
 
     def post(self):
-        parser = reqparse.RequestParser()
-        parser.add_argument('name', type=str, required=True,
-                help='`name` cannot be blank', location='json')
-        parser.add_argument('address', type=str, required=True,
-                help='`address` cannot be blank', location='json')
-        parser.add_argument('vendor_id', type=int, required=True,
-                help='`vendor` cannet be blank', location='json')
-        parser.add_argument('serial_number', type=str,
-                location='json', store_missing=False)
-        args = parser.parse_args()
-
+        args = self._parser_create.parse_args()
         try:
-            ca = Ca.create(**args)
-        except MissingVendorError as e:
-            abort(404, message=e.message)
-
-        except (DuplicateCaptureAgentNameError,
+            resource = self._resource_model_class.create(**args)
+        except (AssociationError,
+                DuplicateCaptureAgentNameError,
                 DuplicateCaptureAgentAddressError,
-                DuplicateCaptureAgentSerialNumberError) as e:
+                DuplicateCaptureAgentSerialNumberError,
+                DuplicateLocationNameError,
+                DuplicateMhClusterAdminHostError,
+                DuplicateMhClusterNameError,
+                DuplicateVendorNameModelError,
+                InvalidCaRoleError,
+                InvalidEmptyValueError,
+                InvalidMhClusterEnvironmentError,
+                InvalidOperationError,
+                MissingVendorError) as e:
             abort(400, message=e.message)
         else:
-            return marshal(ca, ca_fields), 201
+            return marshal(resource,
+                    RESOURCE_FIELDS[self._resource_model_class_name]), 201
+
+
+class Ca_API(Resource_API):
+    """capture agent resource."""
+
+    def __init__(self):
+        """create instance."""
+        super(Ca_API, self).__init__()
+        self._parser_update.add_argument('name', type=str,
+                location='json', store_missing=False)
+        self._parser_update.add_argument('address', type=str,
+                location='json', store_missing=False)
+        self._parser_update.add_argument('serial_number', type=str,
+                location='json', store_missing=False)
+
+
+class Ca_ListAPI(Resource_ListAPI):
+    """capture agent list and create resource."""
+
+    def __init__(self):
+        """create instance."""
+        super(Ca_ListAPI, self).__init__()
+        self._parser_create.add_argument('name', type=str, required=True,
+                help='`name` cannot be blank', location='json')
+        self._parser_create.add_argument('address', type=str, required=True,
+                help='`address` cannot be blank', location='json')
+        self._parser_create.add_argument('vendor_id', type=int, required=True,
+                help='`vendor` cannet be blank', location='json')
+        self._parser_create.add_argument('serial_number', type=str,
+                location='json', store_missing=False)
+
+
+class Location_API(Resource_API):
+    """location resource for rest endpoints."""
+
+    def __init__(self):
+        """create instance."""
+        super(Location_API, self).__init__()
+        self._parser_update.add_argument('name', type=str, location='json',
+                store_missing=False)
+
+
+class Location_ListAPI(Resource_ListAPI):
+    """location list and create resource."""
+
+    def __init__(self):
+        """create instance."""
+        super(Location_ListAPI, self).__init__()
+        self._parser_create.add_argument('name', type=str, location='json',
+                help='`name` cannot be blank', required=True)
+
+
+class Vendor_API(Resource_API):
+    """vendor resource for rest endpoints."""
+
+    def __init__(self):
+        """create instance."""
+        super(Vendor_API, self).__init__()
+        self._parser_update.add_argument('name', type=str, location='json',
+                store_missing=False)
+        self._parser_update.add_argument('model', type=str, location='json',
+                store_missing=False)
+
+
+class Vendor_ListAPI(Resource_ListAPI):
+    """vendor list and create resource."""
+
+    def __init__(self):
+        """create instance."""
+        super(Vendor_ListAPI, self).__init__()
+        self._parser_create.add_argument('name', type=str, location='json',
+                help='`name` cannot be blank', required=True)
+        self._parser_create.add_argument('model', type=str, location='json',
+                help='`model` cannot be blank', required=True)
+
+
+class MhCluster_API(Resource_API):
+    """cluster resource for rest endpoints."""
+
+    def __init__(self):
+        """create instance."""
+        super(MhCluster_API, self).__init__()
+        self._parser_update.add_argument('name', type=str, location='json',
+                store_missing=False)
+        self._parser_update.add_argument('admin_host', type=str, location='json',
+                store_missing=False)
+        self._parser_update.add_argument('env', type=str, location='json',
+                store_missing=False)
+
+
+class MhCluster_ListAPI(Resource_ListAPI):
+    """cluster list and create resource."""
+
+    def __init__(self):
+        """create instance."""
+        super(MhCluster_ListAPI, self).__init__()
+        self._parser_create.add_argument('name', type=str, location='json',
+                help='`name` cannot be blank', required=True)
+        self._parser_create.add_argument('admin_host', type=str, location='json',
+                help='`admin_host` cannot be blank', required=True)
+        self._parser_create.add_argument('env', type=str, location='json',
+                help='`env` cannot be blank', required=True)

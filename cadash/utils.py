@@ -47,7 +47,7 @@ def clean_name(name):
 
     replaces non-alpha with underscores '_' and set the string to lower case
     """
-    return re.sub('[^0-9a-zA-Z]+', '_', name).lower()
+    return re.sub('[^0-9a-zA-Z]+', '_', name.strip()).lower()
 
 
 def pull_data(url, creds=None):

@@ -76,7 +76,7 @@ class Location(SurrogatePK, NameIdMixin, Model):
         """throws an error if args violate location constraints."""
         for k, value in kwargs.items():
             if k == 'name':
-                if not value:
+                if not value or not value.strip():
                     raise InvalidEmptyValueError(
                             'not allowed empty value for `name`')
                 l = Location.query.filter_by(name=value).first()
@@ -214,7 +214,7 @@ class Ca(SurrogatePK, NameIdMixin, Model):
 
             # fail if duplicate name
             if key == 'name':
-                if not value:
+                if not value or not value.strip():
                     raise InvalidEmptyValueError(
                             'not allowed empty value for `name`')
                 c = Ca.query.filter_by(name=value).first()
@@ -225,7 +225,7 @@ class Ca(SurrogatePK, NameIdMixin, Model):
 
             # fail if duplicate address
             if key == 'address':
-                if not value:
+                if not value or not value.strip():
                     raise InvalidEmptyValueError(
                             'not allowed empty value for `address`')
                 c = Ca.query.filter_by(address=value).first()
@@ -356,7 +356,7 @@ class MhCluster(SurrogatePK, NameIdMixin, Model):
                 c = MhCluster.query.filter_by(name=value).first()
                 if not c is None:
                     raise DuplicateMhClusterNameError(
-                            'duplicate mh-cluster name(%s)' % value)
+                            'duplicate mh_cluster name(%s)' % value)
                 next
 
             if k == 'admin_host':
@@ -366,10 +366,10 @@ class MhCluster(SurrogatePK, NameIdMixin, Model):
                 c = MhCluster.query.filter_by(admin_host=value).first()
                 if not c is None:
                     raise DuplicateMhClusterAdminHostError(
-                            'duplicate mh-cluster admin host(%s)' % value)
+                            'duplicate mh_cluster admin host(%s)' % value)
         return True
 
-    def _get_valid_env(self, env):
+    def _get_valid_env(self, env=None):
         """returns valid env value: ['prod'|'dev'|'stage']."""
         if env is None:
             raise InvalidMhClusterEnvironmentError(
