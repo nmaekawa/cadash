@@ -1,5 +1,32 @@
-{% extends "inventory/home.html" %}
+{% extends "layout.html" %}
 
-{% block inventory_content %}
-    <h2>location forms</h2>
+{% block content %}
+<div class="body-content">
+    <div class="row">
+      <h1>inventory v-{{ version }}</h1>
+      </p>
+    </div>
+    <div class="row">
+        <ul class="nav nav-tabs">
+            <li><a href="{{ url_for('inventory.ca_list') }}">
+                capture agent
+            </a></li>
+            <li><a href="{{ url_for('inventory.vendor_list') }}">
+                vendor
+            </a></li>
+            <li class="active"><a href="{{ url_for('inventory.location_list') }}">
+                location
+            <span class="sr-only">(current)</span></a></li>
+            <li><a href="{{ url_for('inventory.cluster_list') }}">
+                mh cluster
+            </a></li>
+        </ul>
+
+
+        <h2>location forms</h2>
+
+
+    </div>
+</div>
 {% endblock %}
+

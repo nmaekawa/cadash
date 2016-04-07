@@ -7,8 +7,10 @@ import time
 from flask import Blueprint
 from flask import current_app
 from flask import flash
+from flask import redirect
 from flask import render_template
 from flask import request
+from flask import url_for
 from flask_login import current_user
 from flask_login import login_required
 
@@ -20,7 +22,7 @@ from cadash.inventory.models import Role
 from cadash.inventory.models import Vendor
 from cadash.utils import is_authorized
 
-AUTHORIZED_GROUP = 'deadmin'
+AUTHORIZED_GROUPS = ['deadmin']
 
 blueprint = Blueprint(
         'inventory', __name__,
@@ -32,7 +34,7 @@ blueprint = Blueprint(
 @login_required
 def home():
     """inventory home page."""
-    if not is_authorized(current_user, AUTHORIZED_GROUP):
+    if not is_authorized(current_user, AUTHORIZED_GROUPS):
         flash('You need to login, or have no access to inventory pages', 'info')
         return redirect(url_for('public.home', next=request.url))
 
@@ -44,11 +46,11 @@ def home():
 @login_required
 def ca_list():
     """capture agents list."""
-    if not is_authorized(current_user, AUTHORIZED_GROUP):
+    if not is_authorized(current_user, AUTHORIZED_GROUPS):
         flash('You need to login, or have no access to inventory pages', 'info')
         return redirect(url_for('public.home', next=request.url))
 
-    ca_list = Ca.query.order_by(Ca.name)
+    ca_list = Ca.query.order_by(Ca.name).all()
     return render_template('inventory/capture_agent.html',
             version=app_version, ca_list=ca_list)
 
@@ -57,7 +59,7 @@ def ca_list():
 @login_required
 def vendor_list():
     """vendor list."""
-    if not is_authorized(current_user, AUTHORIZED_GROUP):
+    if not is_authorized(current_user, AUTHORIZED_GROUPS):
         flash('You need to login, or have no access to inventory pages', 'info')
         return redirect(url_for('public.home', next=request.url))
 
@@ -68,7 +70,7 @@ def vendor_list():
 @login_required
 def cluster_list():
     """cluster list."""
-    if not is_authorized(current_user, AUTHORIZED_GROUP):
+    if not is_authorized(current_user, AUTHORIZED_GROUPS):
         flash('You need to login, or have no access to inventory pages', 'info')
         return redirect(url_for('public.home', next=request.url))
 
@@ -79,7 +81,7 @@ def cluster_list():
 @login_required
 def location_list():
     """location list."""
-    if not is_authorized(current_user, AUTHORIZED_GROUP):
+    if not is_authorized(current_user, AUTHORIZED_GROUPS):
         flash('You need to login, or have no access to inventory pages', 'info')
         return redirect(url_for('public.home', next=request.url))
 
