@@ -1,0 +1,35 @@
+{% extends "inventory/vendor.html" %}
+
+{% block vendor_content %}
+    <div class="row">
+        <ul class="nav nav-tabs">
+            <li class="active">
+            <a href="#">
+                list
+            <span class="sr-only">(current)</span></a></li>
+            <li><a href="{{ url_for('inventory.vendor_create') }}">
+                create</a></li>
+        </ul>
+    </div>
+
+    <div class="row">
+    <div class="table-responsive">
+    <table class="table table-hover">
+        <thead>
+        <tr>
+            <th>name</th>
+            <th>model</th>
+        <tr>
+        </thead>
+        <tbody>
+        {% for v in vendor_list %}
+        <tr>
+            <td>{{ v.name }}</td>
+            <td>{{ v.model }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    </div>
+    </div>
+{% endblock %}

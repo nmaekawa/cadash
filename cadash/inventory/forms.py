@@ -17,9 +17,9 @@ from cadash import utils
 class CaForm(Form):
     """form for capture agent."""
 
-    vendor_id = SelectField('vendor', coerce=int)
-    name = StringField('name')
-    address = StringField('address', validators=[URL()])
+    vendor_id = SelectField('vendor', coerce=int, validators=[DataRequired()])
+    name = StringField('name', validators=[DataRequired()])
+    address = StringField('address', validators=[DataRequired(), URL()])
     serial_number = StringField('serial_number')
 
     def validate(self):
@@ -93,6 +93,9 @@ class VendorForm(Form):
         """Validate the form."""
         initial_validation = super(VendorForm, self).validate()
         if not initial_validation:
+            self.name.errors.append(
+                    'did not pass initial_validation! name(%s) model(%s)' % \
+                            (self.name.data, self.model.data))
             return False
 
         vendor_name_id = "%s_%s" % (utils.clean_name(self.name.data),

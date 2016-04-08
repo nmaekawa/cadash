@@ -1,0 +1,53 @@
+{% extends "inventory/vendor.html" %}
+
+{% block vendor_content %}
+    <div class="row">
+        <ul class="nav nav-tabs">
+            <li><a href="{{ url_for('inventory.vendor_list') }}">
+                list</a>
+            </li>
+            {% if mode == 'edit' %}
+            <li><a href="{{ url_for('inventory.vendor_create') }}">
+                create</a>
+            </li>
+            <li class="active"><a href="#">
+                 edit
+            <span class="sr-only">(current)</span></a></li>
+            {% else %}
+            <li class="active"><a href="#">
+                 create
+            <span class="sr-only">(current)</span></a></li>
+            {% endif %}
+        </ul>
+    </div>
+
+    <div class="row">
+    <h3>create new vendor entry</h3>
+
+
+    <form action="{{ url_for('inventory.vendor_create') }}"
+        method="POST" role="form">
+        {{ form.csrf_token }}
+        <div class="form-group">
+            <label for="name">name</label>
+            <input type="text" class="form-control" name="name" id="name"
+            placeholder="vendor name">
+        </div>
+        <div class="form-group">
+            <label for="model">model</label>
+            <input type="text" class="form-control" name="model" id="model"
+            placeholder="capture agent model">
+        </div>
+        <div class="form-group">
+            <div class="submit-row">
+                <input type="submit" class="btn btn-primary" value="save" />
+                <a href="{{ url_for('inventory.vendor_list') }}"
+                    class="btn btn-danger" role="button">cancel</a>
+            </div>
+        </div>
+    </form>
+
+
+    </div>
+
+{% endblock %}
