@@ -79,10 +79,11 @@ class Location(SurrogatePK, NameIdMixin, Model):
                 if not value or not value.strip():
                     raise InvalidEmptyValueError(
                             'not allowed empty value for `name`')
-                l = Location.query.filter_by(name=value).first()
-                if not l is None and not l.name == self.name:
-                    raise DuplicateLocationNameError(
-                            'duplicate location name(%s)' % value)
+                if not value == self.name:
+                    l = Location.query.filter_by(name=value).first()
+                    if not l is None:
+                        raise DuplicateLocationNameError(
+                                'duplicate location name(%s)' % value)
         return True
 
 
@@ -110,13 +111,11 @@ class Role(Model):
             raise InvalidCaRoleError(
                     'invalid ca-role(%s) - valid values: [%s]' %
                     (role_name, ','.join(list(CA_ROLES))))
-
         # ca already has a role?
         if bool(ca.role):
             raise AssociationError(
                     'cannot associate ca(%s): already has a role(%s)' %
                     (ca.name_id, ca.role))
-
         # location already has a ca with same role?
         if role_name != 'experimental':
             duplicate = location.get_ca_by_role(role_name)
@@ -206,10 +205,11 @@ class Ca(SurrogatePK, NameIdMixin, Model):
                 if not value:
                     raise InvalidEmptyValueError(
                             'not allowed empty value for `vendor_id`')
-                v = Vendor.get_by_id(value)
-                if v is None:
-                    raise MissingVendorError(
-                            'not in inventory: vendor_id(%i)' % value)
+                if not value == self.vendor_id:
+                    v = Vendor.get_by_id(value)
+                    if v is None:
+                        raise MissingVendorError(
+                                'not in inventory: vendor_id(%i)' % value)
                 next
 
             # fail if duplicate name
@@ -217,10 +217,11 @@ class Ca(SurrogatePK, NameIdMixin, Model):
                 if not value or not value.strip():
                     raise InvalidEmptyValueError(
                             'not allowed empty value for `name`')
-                c = Ca.query.filter_by(name=value).first()
-                if not c is None and not c.name == self.name:
-                    raise DuplicateCaptureAgentNameError(
-                            'duplicate ca name(%s)' % value)
+                if not value == self.name:
+                    c = Ca.query.filter_by(name=value).first()
+                    if not c is None:
+                        raise DuplicateCaptureAgentNameError(
+                                'duplicate ca name(%s)' % value)
                 next
 
             # fail if duplicate address
@@ -228,16 +229,17 @@ class Ca(SurrogatePK, NameIdMixin, Model):
                 if not value or not value.strip():
                     raise InvalidEmptyValueError(
                             'not allowed empty value for `address`')
-                c = Ca.query.filter_by(address=value).first()
-                if not c is None and not c.address == self.address:
-                    raise DuplicateCaptureAgentAddressError(
-                            'duplicate ca address(%s)' % value)
+                if not value == self.address:
+                    c = Ca.query.filter_by(address=value).first()
+                    if not c is None:
+                        raise DuplicateCaptureAgentAddressError(
+                                'duplicate ca address(%s)' % value)
                 next
 
             # fail if duplicate serial_number
-            if key == 'serial_number':
+            if key == 'serial_number' and not value == self.serial_number:
                 c = Ca.query.filter_by(serial_number=value).first()
-                if not c is None and not c.serial_number == self.serial_number:
+                if not c is None:
                     raise DuplicateCaptureAgentSerialNumberError(
                             'duplicate ca serial_number(%s)' % value)
         return True
@@ -286,10 +288,11 @@ class Vendor(SurrogatePK, Model):
         n = kwargs['name'] if 'name' in kwargs.keys() else self.name
         m = kwargs['model'] if 'model' in kwargs.keys() else self.model
         nm = Vendor.computed_name_id(n, m)
-        v = Vendor.query.filter_by(name_id=nm).first()
-        if not v is None and not v.name_id == self.name_id:
-            raise DuplicateVendorNameModelError(
-                    'duplicate vendor name_model(%s)' % nm)
+        if not nm == self.name_id:
+            v = Vendor.query.filter_by(name_id=nm).first()
+            if not v is None:
+                raise DuplicateVendorNameModelError(
+                        'duplicate vendor name_model(%s)' % nm)
         return True
 
     @classmethod
@@ -353,20 +356,22 @@ class MhCluster(SurrogatePK, NameIdMixin, Model):
                 if not value:
                     raise InvalidEmptyValueError(
                             'not allowed empty value for `name`')
-                c = MhCluster.query.filter_by(name=value).first()
-                if not c is None and not c.name == self.name:
-                    raise DuplicateMhClusterNameError(
-                            'duplicate mh_cluster name(%s)' % value)
+                if not value == self.name:
+                    c = MhCluster.query.filter_by(name=value).first()
+                    if not c is None:
+                        raise DuplicateMhClusterNameError(
+                                'duplicate mh_cluster name(%s)' % value)
                 next
 
             if k == 'admin_host':
                 if not value:
                     raise InvalidEmptyValueError(
                             'not allowed empty value for `admin_host`')
-                c = MhCluster.query.filter_by(admin_host=value).first()
-                if not c is None and not c.admin_host == self.admin_host:
-                    raise DuplicateMhClusterAdminHostError(
-                            'duplicate mh_cluster admin host(%s)' % value)
+                if not value == self.admin_host:
+                    c = MhCluster.query.filter_by(admin_host=value).first()
+                    if not c is None:
+                        raise DuplicateMhClusterAdminHostError(
+                                'duplicate mh_cluster admin host(%s)' % value)
         return True
 
     def _get_valid_env(self, env=None):

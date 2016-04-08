@@ -332,3 +332,71 @@ def location_edit(r_id):
 
     return render_template('inventory/location_form.html',
             version=app_version, form=form, mode='edit', r_id=loc.id)
+
+############################################################
+#
+# work in progress -- role admin ui
+# http://flask.pocoo.org/snippets/98/
+#
+@blueprint.route('/role/list', methods=['GET'])
+@login_required
+def role_list():
+    """role list."""
+    if not is_authorized(current_user, AUTHORIZED_GROUPS):
+        flash('You need to login, or have no access to inventory pages', 'info')
+        return redirect(url_for('public.home', next=request.url))
+
+    v_list = Vendor.query.order_by(Vendor.name_id).all()
+    return render_template('inventory/vendor_list.html',
+            version=app_version, record_list=v_list)
+
+
+@blueprint.route('/role', methods=['GET','POST'])
+@login_required
+def role_create():
+    if not is_authorized(current_user, AUTHORIZED_GROUPS):
+        flash('You need to login, or have no access to inventory pages', 'info')
+        return redirect(url_for('public.home', next=request.url))
+
+    form = VendorForm()
+    if form.validate_on_submit():
+        try:
+            Vendor.create(name=form.name.data, model=form.model.data)
+        except (InvalidOperationError,
+                DuplicateVendorNameModelError) as e:
+            flash('Error: %s' % e.message, 'danger')
+        else:
+            flash('vendor created.', 'success')
+    else:
+        flash_errors(form)
+
+    return render_template('inventory/vendor_form.html',
+            version=app_version, form=form, mode='create')
+
+
+@blueprint.route('/role/<int:r_id>', methods=['POST'])
+@login_required
+def role_delete(r_id):
+    if not is_authorized(current_user, AUTHORIZED_GROUPS):
+        flash('You need to login, or have no access to inventory pages', 'info')
+        return redirect(url_for('public.home', next=request.url))
+
+    vendor = Vendor.get_by_id(r_id)
+    if not vendor:
+        return render_template('404.html')
+
+    form = VendorForm(obj=vendor)
+    if form.validate_on_submit():
+        try:
+            vendor.update(name=form.name.data, model=form.model.data)
+        except (InvalidOperationError,
+                DuplicateVendorNameModelError) as e:
+            flash('Error: %s' % e.message, 'danger')
+        else:
+            flash('vendor updated.', 'success')
+    else:
+        flash_errors(form)
+
+    return render_template('inventory/vendor_form.html',
+            version=app_version, form=form, mode='edit', r_id=vendor.id)
+
