@@ -80,7 +80,7 @@ class Location(SurrogatePK, NameIdMixin, Model):
                     raise InvalidEmptyValueError(
                             'not allowed empty value for `name`')
                 l = Location.query.filter_by(name=value).first()
-                if not l is None:
+                if not l is None and not l.name == self.name:
                     raise DuplicateLocationNameError(
                             'duplicate location name(%s)' % value)
         return True
@@ -218,7 +218,7 @@ class Ca(SurrogatePK, NameIdMixin, Model):
                     raise InvalidEmptyValueError(
                             'not allowed empty value for `name`')
                 c = Ca.query.filter_by(name=value).first()
-                if not c is None:
+                if not c is None and not c.name == self.name:
                     raise DuplicateCaptureAgentNameError(
                             'duplicate ca name(%s)' % value)
                 next
@@ -229,7 +229,7 @@ class Ca(SurrogatePK, NameIdMixin, Model):
                     raise InvalidEmptyValueError(
                             'not allowed empty value for `address`')
                 c = Ca.query.filter_by(address=value).first()
-                if not c is None:
+                if not c is None and not c.address == self.address:
                     raise DuplicateCaptureAgentAddressError(
                             'duplicate ca address(%s)' % value)
                 next
@@ -237,7 +237,7 @@ class Ca(SurrogatePK, NameIdMixin, Model):
             # fail if duplicate serial_number
             if key == 'serial_number':
                 c = Ca.query.filter_by(serial_number=value).first()
-                if not c is None:
+                if not c is None and not c.serial_number == self.serial_number:
                     raise DuplicateCaptureAgentSerialNumberError(
                             'duplicate ca serial_number(%s)' % value)
         return True
@@ -287,7 +287,7 @@ class Vendor(SurrogatePK, Model):
         m = kwargs['model'] if 'model' in kwargs.keys() else self.model
         nm = Vendor.computed_name_id(n, m)
         v = Vendor.query.filter_by(name_id=nm).first()
-        if not v is None:
+        if not v is None and not v.name_id == self.name_id:
             raise DuplicateVendorNameModelError(
                     'duplicate vendor name_model(%s)' % nm)
         return True
@@ -354,7 +354,7 @@ class MhCluster(SurrogatePK, NameIdMixin, Model):
                     raise InvalidEmptyValueError(
                             'not allowed empty value for `name`')
                 c = MhCluster.query.filter_by(name=value).first()
-                if not c is None:
+                if not c is None and not c.name == self.name:
                     raise DuplicateMhClusterNameError(
                             'duplicate mh_cluster name(%s)' % value)
                 next
@@ -364,7 +364,7 @@ class MhCluster(SurrogatePK, NameIdMixin, Model):
                     raise InvalidEmptyValueError(
                             'not allowed empty value for `admin_host`')
                 c = MhCluster.query.filter_by(admin_host=value).first()
-                if not c is None:
+                if not c is None and not c.admin_host == self.admin_host:
                     raise DuplicateMhClusterAdminHostError(
                             'duplicate mh_cluster admin host(%s)' % value)
         return True

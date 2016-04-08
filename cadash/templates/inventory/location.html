@@ -9,24 +9,21 @@
     <div class="row">
         <ul class="nav nav-tabs">
             <li><a href="{{ url_for('inventory.ca_list') }}">
-                capture agent
-            </a></li>
+                capture agent </a></li>
             <li><a href="{{ url_for('inventory.vendor_list') }}">
-                vendor
-            </a></li>
+                vendor </a></li>
             <li class="active"><a href="#">
                 location
             <span class="sr-only">(current)</span></a></li>
             <li><a href="{{ url_for('inventory.cluster_list') }}">
-                mh cluster
-            </a></li>
+                mh cluster </a></li>
         </ul>
-
-
-        <h2>location forms</h2>
-
-
     </div>
+
+
+    {% block location_content %}{% endblock %}
+
+
 </div>
 {% endblock %}
 

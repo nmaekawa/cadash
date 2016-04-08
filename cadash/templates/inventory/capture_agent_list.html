@@ -14,17 +14,30 @@
 
     <div class="row">
     <div class="table-responsive">
-    <table class="table table-hover">
+    <table class="table table-hover table-striped">
         <thead>
+        <tr>
+            <th>&nbsp;</th>
             <th>name</th>
             <th>address</th>
-            <th>serial</th>
+            <th>serial number</th>
+            <th>vendor</th>
+        </tr>
         </thead>
         <tbody>
-        {% for ca in ca_list %}
-            <td>{{ ca.name }}</td>
-            <td>{{ ca.address }}</td>
-            <td>{{ ca.serial_number }}</td>
+        {% for r in record_list %}
+        <tr>
+            <td>
+                <a class="icon" title="edit record"
+                    href="{{ url_for('inventory.ca_edit', r_id=r.id) }}">
+                    <span class="fa fa-pencil glyphicon glyphicon-pencil"></span>
+                </a>
+            </td>
+            <td>{{ r.name }}</td>
+            <td>{{ r.address }}</td>
+            <td>{{ r.serial_number }}</td>
+            <td>{{ r.vendor.name_id }}</td>
+        </tr>
         {% endfor %}
         </tbody>
     </table>

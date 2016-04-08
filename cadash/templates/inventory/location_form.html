@@ -1,13 +1,13 @@
-{% extends "inventory/vendor.html" %}
+{% extends "inventory/location.html" %}
 
-{% block vendor_content %}
+{% block location_content %}
     <div class="row">
         <ul class="nav nav-tabs">
-            <li><a href="{{ url_for('inventory.vendor_list') }}">
+            <li><a href="{{ url_for('inventory.location_list') }}">
                 list</a>
             </li>
             {% if mode == 'edit' %}
-            <li><a href="{{ url_for('inventory.vendor_create') }}">
+            <li><a href="{{ url_for('inventory.location_create') }}">
                 create</a>
             </li>
             <li class="active"><a href="#">
@@ -22,39 +22,30 @@
     </div>
 
     <div class="row">
-    <h3>create new vendor record</h3>
+    <h3>create new location record</h3>
 
 
     {% if mode == 'edit' %}
-    <form action="{{ url_for('inventory.vendor_edit', r_id=r_id) }}"
+    <form action="{{ url_for('inventory.location_edit', r_id=r_id) }}"
         method="POST" role="form">
     {% else %}
-    <form action="{{ url_for('inventory.vendor_create') }}"
+    <form action="{{ url_for('inventory.location_create') }}"
         method="POST" role="form">
     {% endif %}
         {{ form.csrf_token }}
         <div class="form-group">
             <label for="name">name</label>
             <input type="text" class="form-control" name="name" id="name"
-            placeholder="vendor name"
+            placeholder="location name"
             {% if mode == 'edit' %}
             value="{{ form.name.data }}"
             {% endif %}
             />
         </div>
         <div class="form-group">
-            <label for="model">model</label>
-            <input type="text" class="form-control" name="model" id="model"
-            placeholder="capture agent model"
-            {% if mode == 'edit' %}
-            value="{{ form.model.data }}"
-            {% endif %}
-            />
-        </div>
-        <div class="form-group">
             <div class="submit-row">
                 <input type="submit" class="btn btn-primary" value="save" />
-                <a href="{{ url_for('inventory.vendor_list') }}"
+                <a href="{{ url_for('inventory.location_list') }}"
                     class="btn btn-danger" role="button">cancel</a>
             </div>
         </div>

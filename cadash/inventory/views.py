@@ -52,13 +52,7 @@ blueprint = Blueprint(
 @login_required
 def home():
     """inventory home page."""
-    if not is_authorized(current_user, AUTHORIZED_GROUPS):
-        flash('You need to login, or have no access to inventory pages', 'info')
-        return redirect(url_for('public.home', next=request.url))
-
-    # Handle logging in
-    return render_template('inventory/home.html', version=app_version)
-
+    return ca_list()
 
 @blueprint.route('/ca/list', methods=['GET'])
 @login_required
@@ -70,7 +64,7 @@ def ca_list():
 
     ca_list = Ca.query.order_by(Ca.name).all()
     return render_template('inventory/capture_agent_list.html',
-            version=app_version, ca_list=ca_list)
+            version=app_version, record_list=ca_list)
 
 
 @blueprint.route('/ca', methods=['GET','POST'])
@@ -81,7 +75,8 @@ def ca_create():
         flash('You need to login, or have no access to inventory pages', 'info')
         return redirect(url_for('public.home', next=request.url))
 
-    form = CaForm(request.form)
+    form = CaForm()
+    form.vendor_id.choices = get_select_list_for_vendors()
     if form.validate_on_submit():
         try:
             Ca.create(name=form.name.data, address=form.address.data,
@@ -92,7 +87,7 @@ def ca_create():
                 DuplicateCaptureAgentNameError,
                 DuplicateCaptureAgentAddressError,
                 DuplicateCaptureAgentSerialNumberError) as e:
-            flash('Error: %s' % e.message, 'error')
+            flash('Error: %s' % e.message, 'danger')
         else:
             flash('capture agent created.', 'success')
     else:
@@ -100,6 +95,44 @@ def ca_create():
 
     return render_template('inventory/capture_agent_form.html',
             version=app_version, form=form, mode='create')
+
+def get_select_list_for_vendors():
+    """return a list of vendor tuples (id, name_id)."""
+    v_list = Vendor.query.order_by(Vendor.name_id).all()
+    return [ (v.id, v.name_id) for v in v_list ]
+
+
+@blueprint.route('/ca/<int:r_id>', methods=['GET','POST'])
+@login_required
+def ca_edit(r_id):
+    """capture agent edit form."""
+    if not is_authorized(current_user, AUTHORIZED_GROUPS):
+        flash('You need to login, or have no access to inventory pages', 'info')
+        return redirect(url_for('public.home', next=request.url))
+
+    ca = Ca.get_by_id(r_id)
+    if not ca:
+        return render_template('404.html')
+
+    form = CaForm(obj=ca)
+    form.vendor_id.choices = get_select_list_for_vendors()
+    if form.validate_on_submit():
+        try:
+            ca.update(name=form.name.data, address=form.address.data,
+                    serial_number=form.serial_number.data)
+        except (InvalidEmptyValueError,
+                MissingVendorError,
+                DuplicateCaptureAgentNameError,
+                DuplicateCaptureAgentAddressError,
+                DuplicateCaptureAgentSerialNumberError) as e:
+            flash('Error: %s' % e.message, 'danger')
+        else:
+            flash('capture agent created.', 'success')
+    else:
+        flash_errors(form)
+
+    return render_template('inventory/capture_agent_form.html',
+            version=app_version, form=form, mode='edit', r_id=ca.id)
 
 
 @blueprint.route('/vendor/list', methods=['GET'])
@@ -112,7 +145,7 @@ def vendor_list():
 
     v_list = Vendor.query.order_by(Vendor.name_id).all()
     return render_template('inventory/vendor_list.html',
-            version=app_version, vendor_list=v_list)
+            version=app_version, record_list=v_list)
 
 
 @blueprint.route('/vendor', methods=['GET','POST'])
@@ -128,7 +161,7 @@ def vendor_create():
             Vendor.create(name=form.name.data, model=form.model.data)
         except (InvalidOperationError,
                 DuplicateVendorNameModelError) as e:
-            flash('Error: %s' % e.message, 'error')
+            flash('Error: %s' % e.message, 'danger')
         else:
             flash('vendor created.', 'success')
     else:
@@ -138,14 +171,14 @@ def vendor_create():
             version=app_version, form=form, mode='create')
 
 
-@blueprint.route('/vendor/<int:v_id>', methods=['GET','POST'])
+@blueprint.route('/vendor/<int:r_id>', methods=['GET','POST'])
 @login_required
-def vendor_edit(v_id):
+def vendor_edit(r_id):
     if not is_authorized(current_user, AUTHORIZED_GROUPS):
         flash('You need to login, or have no access to inventory pages', 'info')
         return redirect(url_for('public.home', next=request.url))
 
-    vendor = Vendor.get_by_id(v_id)
+    vendor = Vendor.get_by_id(r_id)
     if not vendor:
         return render_template('404.html')
 
@@ -155,17 +188,17 @@ def vendor_edit(v_id):
             vendor.update(name=form.name.data, model=form.model.data)
         except (InvalidOperationError,
                 DuplicateVendorNameModelError) as e:
-            flash('Error: %s' % e.message, 'error')
+            flash('Error: %s' % e.message, 'danger')
         else:
             flash('vendor updated.', 'success')
     else:
         flash_errors(form)
 
     return render_template('inventory/vendor_form.html',
-            version=app_version, form=form, mode='edit', v_id=vendor.id)
+            version=app_version, form=form, mode='edit', r_id=vendor.id)
 
 
-@blueprint.route('/cluster', methods=['GET'])
+@blueprint.route('/cluster/list', methods=['GET'])
 @login_required
 def cluster_list():
     """cluster list."""
@@ -173,10 +206,70 @@ def cluster_list():
         flash('You need to login, or have no access to inventory pages', 'info')
         return redirect(url_for('public.home', next=request.url))
 
-    return render_template('inventory/cluster.html', version=app_version)
+    c_list = MhCluster.query.order_by(MhCluster.name).all()
+    return render_template('inventory/cluster_list.html',
+            version=app_version, record_list=c_list)
 
 
-@blueprint.route('/location', methods=['GET'])
+@blueprint.route('/cluster', methods=['GET','POST'])
+@login_required
+def cluster_create():
+    if not is_authorized(current_user, AUTHORIZED_GROUPS):
+        flash('You need to login, or have no access to inventory pages', 'info')
+        return redirect(url_for('public.home', next=request.url))
+
+    form = MhClusterForm()
+    if form.validate_on_submit():
+        try:
+            MhCluster.create(name=form.name.data,
+                    admin_host=form.admin_host.data,
+                    env=form.env.data)
+        except (InvalidOperationError,
+                InvalidEmptyValueError,
+                DuplicateMhClusterAdminHostError,
+                DuplicateMhClusterNameError) as e:
+            flash('Error: %s' % e.message, 'danger')
+        else:
+            flash('cluster created.', 'success')
+    else:
+        flash_errors(form)
+
+    return render_template('inventory/cluster_form.html',
+            version=app_version, form=form, mode='create')
+
+
+@blueprint.route('/cluster/<int:r_id>', methods=['GET','POST'])
+@login_required
+def cluster_edit(r_id):
+    if not is_authorized(current_user, AUTHORIZED_GROUPS):
+        flash('You need to login, or have no access to inventory pages', 'info')
+        return redirect(url_for('public.home', next=request.url))
+
+    cluster = MhCluster.get_by_id(r_id)
+    if not cluster:
+        return render_template('404.html')
+
+    form = MhClusterForm(obj=cluster)
+    if form.validate_on_submit():
+        try:
+            cluster.update(name=form.name.data,
+                    admin_host=form.admin_host.data,
+                    env=form.env.data)
+        except (InvalidOperationError,
+                InvalidEmptyValueError,
+                DuplicateMhClusterAdminHostError,
+                DuplicateMhClusterNameError) as e:
+            flash('Error: %s' % e.message, 'failure')
+        else:
+            flash('cluster updated.', 'success')
+    else:
+        flash_errors(form)
+
+    return render_template('inventory/cluster_form.html',
+            version=app_version, form=form, mode='edit', r_id=cluster.id)
+
+
+@blueprint.route('/location/list', methods=['GET'])
 @login_required
 def location_list():
     """location list."""
@@ -184,4 +277,58 @@ def location_list():
         flash('You need to login, or have no access to inventory pages', 'info')
         return redirect(url_for('public.home', next=request.url))
 
-    return render_template('inventory/location.html', version=app_version)
+    r_list = Location.query.order_by(Location.name).all()
+    return render_template('inventory/location_list.html',
+            version=app_version, record_list=r_list)
+
+
+@blueprint.route('/location', methods=['GET','POST'])
+@login_required
+def location_create():
+    if not is_authorized(current_user, AUTHORIZED_GROUPS):
+        flash('You need to login, or have no access to inventory pages', 'info')
+        return redirect(url_for('public.home', next=request.url))
+
+    form = LocationForm()
+    if form.validate_on_submit():
+        try:
+            Location.create(name=form.name.data)
+        except (InvalidOperationError,
+                InvalidEmptyValueError,
+                DuplicateLocationNameError) as e:
+            flash('Error: %s' % e.message, 'danger')
+        else:
+            flash('location created.', 'success')
+    else:
+        flash_errors(form)
+
+    return render_template('inventory/location_form.html',
+            version=app_version, form=form, mode='create')
+
+
+@blueprint.route('/location/<int:r_id>', methods=['GET','POST'])
+@login_required
+def location_edit(r_id):
+    if not is_authorized(current_user, AUTHORIZED_GROUPS):
+        flash('You need to login, or have no access to inventory pages', 'info')
+        return redirect(url_for('public.home', next=request.url))
+
+    loc = Location.get_by_id(r_id)
+    if not loc:
+        return render_template('404.html')
+
+    form = LocationForm(obj=loc)
+    if form.validate_on_submit():
+        try:
+            loc.update(name=form.name.data)
+        except (InvalidOperationError,
+                InvalidEmptyValueError,
+                DuplicateLocationNameError) as e:
+            flash('Error: %s' % e.message, 'danger')
+        else:
+            flash('location updated.', 'success')
+    else:
+        flash_errors(form)
+
+    return render_template('inventory/location_form.html',
+            version=app_version, form=form, mode='edit', r_id=loc.id)

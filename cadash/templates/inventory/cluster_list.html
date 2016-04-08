@@ -1,13 +1,13 @@
-{% extends "inventory/vendor.html" %}
+{% extends "inventory/cluster.html" %}
 
-{% block vendor_content %}
+{% block cluster_content %}
     <div class="row">
         <ul class="nav nav-tabs">
             <li class="active">
             <a href="#">
                 list
             <span class="sr-only">(current)</span></a></li>
-            <li><a href="{{ url_for('inventory.vendor_create') }}">
+            <li><a href="{{ url_for('inventory.cluster_create') }}">
                 create</a></li>
         </ul>
     </div>
@@ -19,6 +19,8 @@
         <tr>
             <th>&nbsp;</th>
             <th>name</th>
+            <th>admin host</th>
+            <th>environment</th>
         <tr>
         </thead>
         <tbody>
@@ -26,12 +28,14 @@
         <tr>
             <td>
                 <a class="icon" title="edit record"
-                    href="{{ url_for('inventory.vendor_edit', r_id=r.id) }}">
+                    href="{{ url_for('inventory.cluster_edit', r_id=r.id) }}">
                     <span class="fa fa-pencil glyphicon glyphicon-pencil"></span>
                 </a>
             </td>
 
-            <td>{{ r.name_id }}</td>
+            <td>{{ r.name }}</td>
+            <td>{{ r.admin_host }}</td>
+            <td>{{ r.env }}</td>
         </tr>
         {% endfor %}
         </tbody>
