@@ -111,7 +111,6 @@ def vendor_list():
         return redirect(url_for('public.home', next=request.url))
 
     v_list = Vendor.query.order_by(Vendor.name_id).all()
-    flash('v_list total(%i)' % len(v_list))
     return render_template('inventory/vendor_list.html',
             version=app_version, vendor_list=v_list)
 
@@ -137,6 +136,33 @@ def vendor_create():
 
     return render_template('inventory/vendor_form.html',
             version=app_version, form=form, mode='create')
+
+
+@blueprint.route('/vendor/<int:v_id>', methods=['GET','POST'])
+@login_required
+def vendor_edit(v_id):
+    if not is_authorized(current_user, AUTHORIZED_GROUPS):
+        flash('You need to login, or have no access to inventory pages', 'info')
+        return redirect(url_for('public.home', next=request.url))
+
+    vendor = Vendor.get_by_id(v_id)
+    if not vendor:
+        return render_template('404.html')
+
+    form = VendorForm(obj=vendor)
+    if form.validate_on_submit():
+        try:
+            vendor.update(name=form.name.data, model=form.model.data)
+        except (InvalidOperationError,
+                DuplicateVendorNameModelError) as e:
+            flash('Error: %s' % e.message, 'error')
+        else:
+            flash('vendor updated.', 'success')
+    else:
+        flash_errors(form)
+
+    return render_template('inventory/vendor_form.html',
+            version=app_version, form=form, mode='edit', v_id=vendor.id)
 
 
 @blueprint.route('/cluster', methods=['GET'])

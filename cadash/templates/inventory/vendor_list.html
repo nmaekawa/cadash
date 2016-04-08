@@ -14,18 +14,24 @@
 
     <div class="row">
     <div class="table-responsive">
-    <table class="table table-hover">
+    <table class="table table-hover table-striped">
         <thead>
         <tr>
+            <th>&nbsp;</th>
             <th>name</th>
-            <th>model</th>
         <tr>
         </thead>
         <tbody>
         {% for v in vendor_list %}
         <tr>
-            <td>{{ v.name }}</td>
-            <td>{{ v.model }}</td>
+            <td>
+                <a class="icon" title="edit record"
+                    href="{{ url_for('inventory.vendor_edit', v_id=v.id) }}">
+                    <span class="fa fa-pencil glyphicon glyphicon-pencil"></span>
+                </a>
+            </td>
+
+            <td>{{ v.name_id }}</td>
         </tr>
         {% endfor %}
         </tbody>
