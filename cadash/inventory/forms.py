@@ -57,7 +57,7 @@ class RoleForm(Form):
             validators=[DataRequired()])
     ca_id = SelectField('capture_agent', coerce=int,
             validators=[DataRequired()])
-    location_id = SelectedField['location', coerce=int,
+    location_id = SelectField('location', coerce=int,
             validators=[DataRequired()])
-    cluster_id = SelectedField['cluster', coerce=int,
+    cluster_id = SelectField('cluster', coerce=int,
             validators=[DataRequired()])

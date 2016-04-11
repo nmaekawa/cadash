@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """inventory section"""
+from functools import wraps
 import json
 import logging
 import time
@@ -38,7 +39,7 @@ from cadash.inventory.models import MhCluster
 from cadash.inventory.models import Role
 from cadash.inventory.models import Vendor
 from cadash.utils import flash_errors
-from cadash.utils import is_authorized
+from cadash.utils import requires_roles
 
 AUTHORIZED_GROUPS = ['deadmin']
 
@@ -56,12 +57,9 @@ def home():
 
 @blueprint.route('/ca/list', methods=['GET'])
 @login_required
+@requires_roles(AUTHORIZED_GROUPS)
 def ca_list():
     """capture agents list."""
-    if not is_authorized(current_user, AUTHORIZED_GROUPS):
-        flash('You need to login, or have no access to inventory pages', 'info')
-        return redirect(url_for('public.home', next=request.url))
-
     ca_list = Ca.query.order_by(Ca.name).all()
     return render_template('inventory/capture_agent_list.html',
             version=app_version, record_list=ca_list)
@@ -69,12 +67,9 @@ def ca_list():
 
 @blueprint.route('/ca', methods=['GET','POST'])
 @login_required
+@requires_roles(AUTHORIZED_GROUPS)
 def ca_create():
     """capture agent create form."""
-    if not is_authorized(current_user, AUTHORIZED_GROUPS):
-        flash('You need to login, or have no access to inventory pages', 'info')
-        return redirect(url_for('public.home', next=request.url))
-
     form = CaForm()
     form.vendor_id.choices = get_select_list_for_vendors()
     if form.validate_on_submit():
@@ -104,12 +99,9 @@ def get_select_list_for_vendors():
 
 @blueprint.route('/ca/<int:r_id>', methods=['GET','POST'])
 @login_required
+@requires_roles(AUTHORIZED_GROUPS)
 def ca_edit(r_id):
     """capture agent edit form."""
-    if not is_authorized(current_user, AUTHORIZED_GROUPS):
-        flash('You need to login, or have no access to inventory pages', 'info')
-        return redirect(url_for('public.home', next=request.url))
-
     ca = Ca.get_by_id(r_id)
     if not ca:
         return render_template('404.html')
@@ -137,12 +129,9 @@ def ca_edit(r_id):
 
 @blueprint.route('/vendor/list', methods=['GET'])
 @login_required
+@requires_roles(AUTHORIZED_GROUPS)
 def vendor_list():
     """vendor list."""
-    if not is_authorized(current_user, AUTHORIZED_GROUPS):
-        flash('You need to login, or have no access to inventory pages', 'info')
-        return redirect(url_for('public.home', next=request.url))
-
     v_list = Vendor.query.order_by(Vendor.name_id).all()
     return render_template('inventory/vendor_list.html',
             version=app_version, record_list=v_list)
@@ -150,11 +139,8 @@ def vendor_list():
 
 @blueprint.route('/vendor', methods=['GET','POST'])
 @login_required
+@requires_roles(AUTHORIZED_GROUPS)
 def vendor_create():
-    if not is_authorized(current_user, AUTHORIZED_GROUPS):
-        flash('You need to login, or have no access to inventory pages', 'info')
-        return redirect(url_for('public.home', next=request.url))
-
     form = VendorForm()
     if form.validate_on_submit():
         try:
@@ -173,11 +159,8 @@ def vendor_create():
 
 @blueprint.route('/vendor/<int:r_id>', methods=['GET','POST'])
 @login_required
+@requires_roles(AUTHORIZED_GROUPS)
 def vendor_edit(r_id):
-    if not is_authorized(current_user, AUTHORIZED_GROUPS):
-        flash('You need to login, or have no access to inventory pages', 'info')
-        return redirect(url_for('public.home', next=request.url))
-
     vendor = Vendor.get_by_id(r_id)
     if not vendor:
         return render_template('404.html')
@@ -200,12 +183,9 @@ def vendor_edit(r_id):
 
 @blueprint.route('/cluster/list', methods=['GET'])
 @login_required
+@requires_roles(AUTHORIZED_GROUPS)
 def cluster_list():
     """cluster list."""
-    if not is_authorized(current_user, AUTHORIZED_GROUPS):
-        flash('You need to login, or have no access to inventory pages', 'info')
-        return redirect(url_for('public.home', next=request.url))
-
     c_list = MhCluster.query.order_by(MhCluster.name).all()
     return render_template('inventory/cluster_list.html',
             version=app_version, record_list=c_list)
@@ -213,11 +193,8 @@ def cluster_list():
 
 @blueprint.route('/cluster', methods=['GET','POST'])
 @login_required
+@requires_roles(AUTHORIZED_GROUPS)
 def cluster_create():
-    if not is_authorized(current_user, AUTHORIZED_GROUPS):
-        flash('You need to login, or have no access to inventory pages', 'info')
-        return redirect(url_for('public.home', next=request.url))
-
     form = MhClusterForm()
     if form.validate_on_submit():
         try:
@@ -240,11 +217,8 @@ def cluster_create():
 
 @blueprint.route('/cluster/<int:r_id>', methods=['GET','POST'])
 @login_required
+@requires_roles(AUTHORIZED_GROUPS)
 def cluster_edit(r_id):
-    if not is_authorized(current_user, AUTHORIZED_GROUPS):
-        flash('You need to login, or have no access to inventory pages', 'info')
-        return redirect(url_for('public.home', next=request.url))
-
     cluster = MhCluster.get_by_id(r_id)
     if not cluster:
         return render_template('404.html')
@@ -271,12 +245,9 @@ def cluster_edit(r_id):
 
 @blueprint.route('/location/list', methods=['GET'])
 @login_required
+@requires_roles(AUTHORIZED_GROUPS)
 def location_list():
     """location list."""
-    if not is_authorized(current_user, AUTHORIZED_GROUPS):
-        flash('You need to login, or have no access to inventory pages', 'info')
-        return redirect(url_for('public.home', next=request.url))
-
     r_list = Location.query.order_by(Location.name).all()
     return render_template('inventory/location_list.html',
             version=app_version, record_list=r_list)
@@ -284,11 +255,8 @@ def location_list():
 
 @blueprint.route('/location', methods=['GET','POST'])
 @login_required
+@requires_roles(AUTHORIZED_GROUPS)
 def location_create():
-    if not is_authorized(current_user, AUTHORIZED_GROUPS):
-        flash('You need to login, or have no access to inventory pages', 'info')
-        return redirect(url_for('public.home', next=request.url))
-
     form = LocationForm()
     if form.validate_on_submit():
         try:
@@ -308,11 +276,8 @@ def location_create():
 
 @blueprint.route('/location/<int:r_id>', methods=['GET','POST'])
 @login_required
+@requires_roles(AUTHORIZED_GROUPS)
 def location_edit(r_id):
-    if not is_authorized(current_user, AUTHORIZED_GROUPS):
-        flash('You need to login, or have no access to inventory pages', 'info')
-        return redirect(url_for('public.home', next=request.url))
-
     loc = Location.get_by_id(r_id)
     if not loc:
         return render_template('404.html')
@@ -340,12 +305,9 @@ def location_edit(r_id):
 #
 @blueprint.route('/role/list', methods=['GET'])
 @login_required
+@requires_roles(AUTHORIZED_GROUPS)
 def role_list():
     """role list."""
-    if not is_authorized(current_user, AUTHORIZED_GROUPS):
-        flash('You need to login, or have no access to inventory pages', 'info')
-        return redirect(url_for('public.home', next=request.url))
-
     v_list = Vendor.query.order_by(Vendor.name_id).all()
     return render_template('inventory/vendor_list.html',
             version=app_version, record_list=v_list)
@@ -353,11 +315,8 @@ def role_list():
 
 @blueprint.route('/role', methods=['GET','POST'])
 @login_required
+@requires_roles(AUTHORIZED_GROUPS)
 def role_create():
-    if not is_authorized(current_user, AUTHORIZED_GROUPS):
-        flash('You need to login, or have no access to inventory pages', 'info')
-        return redirect(url_for('public.home', next=request.url))
-
     form = VendorForm()
     if form.validate_on_submit():
         try:
@@ -376,11 +335,8 @@ def role_create():
 
 @blueprint.route('/role/<int:r_id>', methods=['POST'])
 @login_required
+@requires_roles(AUTHORIZED_GROUPS)
 def role_delete(r_id):
-    if not is_authorized(current_user, AUTHORIZED_GROUPS):
-        flash('You need to login, or have no access to inventory pages', 'info')
-        return redirect(url_for('public.home', next=request.url))
-
     vendor = Vendor.get_by_id(r_id)
     if not vendor:
         return render_template('404.html')

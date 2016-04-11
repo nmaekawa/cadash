@@ -8,12 +8,16 @@ import re
 import sys
 import yaml
 
+from flask import flash
+from flask import redirect
+from flask import request
+from flask_login import current_user
+from functools import wraps
 import requests
 from requests.auth import HTTPBasicAuth
 
 from cadash import __version__
 
-from flask import flash
 
 
 def flash_errors(form, category='warning'):
@@ -117,3 +121,15 @@ def is_authorized(user, groups):
         if user.is_in_group(g):
             return True
     return False
+
+def requires_roles(*roles):
+    def wrapper(f):
+        @wraps(f)
+        def wrapped(*args, **kwargs):
+            if not is_authorized(current_user, *roles):
+                flash('You need to login, or do not have credentials to access this page', 'info')
+                return redirect(url_for('public.home', next=request.url))
+            return f(*args, **kwargs)
+        return wrapped
+    return wrapper
+
