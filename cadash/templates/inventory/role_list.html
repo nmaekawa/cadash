@@ -1,0 +1,52 @@
+{% extends "inventory/role.html" %}
+
+{% block role_content %}
+    <div class="row">
+        <ul class="nav nav-tabs">
+            <li class="active">
+            <a href="#">
+                list
+            <span class="sr-only">(current)</span></a></li>
+            <li><a href="{{ url_for('inventory.role_create') }}">
+                create</a></li>
+        </ul>
+    </div>
+
+    <div class="row">
+    <div class="table-responsive">
+    <table class="table table-hover table-striped">
+        <thead>
+        <tr>
+            <th>&nbsp;</th>
+            <th>name</th>
+            <th>capture agent</th>
+            <th>location</th>
+            <th>mh cluster</th>
+        <tr>
+        </thead>
+        <tbody>
+        {% for r in record_list %}
+        <tr>
+            <td>
+                <form class="icon" method="POST"
+                    action="{{url_for('inventory.role_delete', r_id=r.ca_id)}}">
+                    {{ form.csrf_token }}
+                    <input id="r_id" name="r_id"
+                    type="hidden" value="{{ r.ca_id }}"></input>
+                    <button onclick="return confirm('Are you sure you want to delete this role?');" title="delete record">
+                        <span class="fa fa-trash glyphicon glyphicon-trash"></span>
+                    </button>
+                </form>
+            </td>
+
+            <td>{{ r.name }}</td>
+            <td>{{ r.ca.name_id }}</td>
+            <td>{{ r.location.name_id }}</td>
+            <td>{{ r.cluster.name_id }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    </div>
+    </div>
+{% endblock %}

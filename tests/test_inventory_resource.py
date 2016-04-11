@@ -361,3 +361,40 @@ class TestMhClusterResource(object):
         res = testapp_login_disabled.put_json(url, params=c, expect_errors=True)
         assert res.status_int == 400
         assert 'mh cluster env value not in' in res.body
+
+
+@pytest.mark.usefixtures('db', 'simple_db', 'testapp_login_disabled')
+class TestRoleResource(object):
+    """role rest resource."""
+
+    def test_can_get_role_list(self, testapp_login_disabled, simple_db):
+        """get list of roles."""
+        res = testapp_login_disabled.get('/inventory/api/roles')
+        assert bool(res)
+        json_data = json.loads(res.body)
+        assert isinstance(json_data, list)
+        assert len(json_data) == 3
+        assert json_data[0]['ca_id'] == simple_db['ca'][0].id
+
+    def test_get_role(self, testapp_login_disabled, simple_db):
+        """get single role, by ca.id."""
+        res = testapp_login_disabled.get('/inventory/api/roles/%i' %
+                simple_db['ca'][2].id)
+        json_data = json.loads(res.body)
+        assert json_data['ca_id'] == simple_db['ca'][2].id
+        assert json_data['name'] == simple_db['ca'][2].role.name
+
+    def test_should_fail_in_update(self, testapp_login_disabled, simple_db):
+        """update not allowed for roles."""
+        res = testapp_login_disabled.put('/inventory/api/roles/%i' %
+                simple_db['ca'][0].id, expect_errors=True)
+        assert res.status_int == 405
+        assert 'not allowed to update' in res.body
+
+    def test_delete(self, testapp_login_disabled, simple_db):
+        """delete role."""
+        res = testapp_login_disabled.delete('/inventory/api/roles/%i' %
+                simple_db['ca'][2].id)
+        assert res.status_int == 204
+        assert simple_db['ca'][2].role is None
+

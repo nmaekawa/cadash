@@ -11,20 +11,19 @@
             <li><a href="{{ url_for('inventory.ca_list') }}">
                 capture agent </a></li>
             <li><a href="{{ url_for('inventory.vendor_list') }}">
-                vendor </a></li>
-            <li class="active"><a href="#">
-                location
-            <span class="sr-only">(current)</span></a></li>
+                vendor </a></lis>
+            <li><a href="{{ url_for('inventory.location_list') }}">
+                location</a></li>
             <li><a href="{{ url_for('inventory.cluster_list') }}">
-                mh cluster </a></li>
-            <li><a href="{{ url_for('inventory.role_list') }}">
-                role</a></li>
+                mh cluster</a></li>
+            <li class="active"><a href="#">
+                role
+                <span class="sr-only">(current)</span></a></li>
         </ul>
     </div>
 
 
-    {% block location_content %}{% endblock %}
-
+    {% block role_content %}{% endblock %}
 
 </div>
 {% endblock %}

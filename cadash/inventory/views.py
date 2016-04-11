@@ -32,6 +32,8 @@ from cadash.inventory.errors import MissingVendorError
 from cadash.inventory.forms import CaForm
 from cadash.inventory.forms import LocationForm
 from cadash.inventory.forms import MhClusterForm
+from cadash.inventory.forms import RoleDeleteForm
+from cadash.inventory.forms import RoleForm
 from cadash.inventory.forms import VendorForm
 from cadash.inventory.models import Ca
 from cadash.inventory.models import Location
@@ -298,61 +300,80 @@ def location_edit(r_id):
     return render_template('inventory/location_form.html',
             version=app_version, form=form, mode='edit', r_id=loc.id)
 
-############################################################
-#
-# work in progress -- role admin ui
-# http://flask.pocoo.org/snippets/98/
-#
 @blueprint.route('/role/list', methods=['GET'])
 @login_required
 @requires_roles(AUTHORIZED_GROUPS)
 def role_list():
     """role list."""
-    v_list = Vendor.query.order_by(Vendor.name_id).all()
-    return render_template('inventory/vendor_list.html',
-            version=app_version, record_list=v_list)
+    form = RoleDeleteForm()
+    r_list = Role.query.all()
+    return render_template('inventory/role_list.html',
+            version=app_version, record_list=r_list, form=form)
 
 
 @blueprint.route('/role', methods=['GET','POST'])
 @login_required
 @requires_roles(AUTHORIZED_GROUPS)
 def role_create():
-    form = VendorForm()
+    form = RoleForm()
+    form.ca_id.choices = get_select_list_for_cas()
+    form.location_id.choices = get_select_list_for_locations()
+    form.cluster_id.choices = get_select_list_for_clusters()
     if form.validate_on_submit():
+        ca = Ca.get_by_id(form.ca_id.data)
+        loc = Location.get_by_id(form.location_id.data)
+        cluster = MhCluster.get_by_id(form.cluster_id.data)
         try:
-            Vendor.create(name=form.name.data, model=form.model.data)
-        except (InvalidOperationError,
-                DuplicateVendorNameModelError) as e:
+            Role.create(name=form.role_name.data,
+                    ca=ca, location=loc, cluster=cluster)
+        except (InvalidCaRoleError,
+                AssociationError) as e:
             flash('Error: %s' % e.message, 'danger')
         else:
-            flash('vendor created.', 'success')
+            flash('role created.', 'success')
     else:
         flash_errors(form)
 
-    return render_template('inventory/vendor_form.html',
+    return render_template('inventory/role_form.html',
             version=app_version, form=form, mode='create')
 
+def get_select_list_for_cas():
+    """return a list of ca tuples (id, name_id)."""
+    ca_list = Ca.query.filter(Ca.role==None).all()
+    return [ (c.id, c.name_id) for c in ca_list ]
 
-@blueprint.route('/role/<int:r_id>', methods=['POST'])
+def get_select_list_for_locations():
+    """return a list of location tuples (id, name_id)."""
+    r_list = Location.query.order_by(Location.name).all()
+    return [ (r.id, r.name_id) for r in r_list ]
+
+def get_select_list_for_clusters():
+    """return a list of cluster tuples (id, name_id)."""
+    r_list = MhCluster.query.order_by(MhCluster.name).all()
+    return [ (r.id, r.name_id) for r in r_list ]
+
+
+@blueprint.route('/role/delete/<int:r_id>', methods=['POST'])
 @login_required
 @requires_roles(AUTHORIZED_GROUPS)
 def role_delete(r_id):
-    vendor = Vendor.get_by_id(r_id)
-    if not vendor:
+    form = RoleDeleteForm()
+    role = Role.query.filter_by(ca_id=r_id).first()
+    if not role:
         return render_template('404.html')
 
-    form = VendorForm(obj=vendor)
     if form.validate_on_submit():
         try:
-            vendor.update(name=form.name.data, model=form.model.data)
-        except (InvalidOperationError,
-                DuplicateVendorNameModelError) as e:
+            role.delete()
+        except (InvalidCaRoleError,
+                AssociationError) as e:
             flash('Error: %s' % e.message, 'danger')
         else:
-            flash('vendor updated.', 'success')
+            flash('role deleted.', 'success')
     else:
         flash_errors(form)
 
-    return render_template('inventory/vendor_form.html',
-            version=app_version, form=form, mode='edit', r_id=vendor.id)
+    r_list = Role.query.all()
+    return render_template('inventory/role_list.html',
+            version=app_version, form=form, record_list=r_list)
 

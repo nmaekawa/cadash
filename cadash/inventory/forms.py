@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """inventory forms."""
 from flask_wtf import Form
+from wtforms import IntegerField
 from wtforms import SelectField
 from wtforms import StringField
 from wtforms.validators import DataRequired
@@ -17,7 +18,6 @@ from cadash import utils
 
 class CaForm(Form):
     """form for capture agent."""
-
     vendor_id = SelectField('vendor', coerce=int, validators=[DataRequired()])
     name = StringField('name', validators=[DataRequired()])
     address = StringField('address',
@@ -27,7 +27,6 @@ class CaForm(Form):
 
 class MhClusterForm(Form):
     """form for mh cluster."""
-
     name = StringField('name', validators=[DataRequired()])
     admin_host = StringField('admin_host',
             validators=[DataRequired(), URL(require_tld=False)])
@@ -38,21 +37,18 @@ class MhClusterForm(Form):
 
 class VendorForm(Form):
     """form for vendor."""
-
     name = StringField('name', validators=[DataRequired()])
     model = StringField('model', validators=[DataRequired()])
 
 
 class LocationForm(Form):
     """form for location."""
-
     name = StringField('name', validators=[DataRequired()])
 
 
 class RoleForm(Form):
     """form for role."""
-
-    name = SelectField('role',
+    role_name = SelectField('role',
             choices=[(r, r) for r in CA_ROLES],
             validators=[DataRequired()])
     ca_id = SelectField('capture_agent', coerce=int,
@@ -61,3 +57,7 @@ class RoleForm(Form):
             validators=[DataRequired()])
     cluster_id = SelectField('cluster', coerce=int,
             validators=[DataRequired()])
+
+class RoleDeleteForm(Form):
+    """form for deleting role."""
+    r_id = IntegerField('r_id', validators=[DataRequired()])

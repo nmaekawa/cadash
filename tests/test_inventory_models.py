@@ -324,6 +324,20 @@ class TestRelationship(object):
         with pytest.raises(InvalidOperationError):
             role.update(name='primary')
 
+    def test_delete_role(self, simple_db):
+        """test all role relationships are deleted."""
+        role = simple_db['ca'][0].role
+        ca = role.ca
+        ca_role_name = role.name
+        location = role.location
+        cluster = role.cluster
+        role.delete()
+        assert ca.role is None
+        ll = [x for x in location.capture_agents if x.ca.id == ca.id]
+        assert len(ll) == 0
+        cl = [x for x in cluster.capture_agents if x.ca.id == ca.id]
+        assert len(cl) == 0
+
 
 @pytest.mark.usefixtures('db', 'simple_db')
 class TestDelete(object):

@@ -1,0 +1,50 @@
+{% extends "inventory/role.html" %}
+
+{% block role_content %}
+    <div class="row">
+        <ul class="nav nav-tabs">
+            <li><a href="{{ url_for('inventory.role_list') }}">
+                list</a>
+            </li>
+            <li class="active"><a href="#">
+                 create
+            <span class="sr-only">(current)</span></a></li>
+        </ul>
+    </div>
+
+    <div class="row">
+    <h3>create new role record</h3>
+
+
+    <form action="{{ url_for('inventory.role_create') }}"
+        method="POST" role="form">
+        {{ form.csrf_token }}
+        <div class="form-group">
+            <label for="name">role name</label>
+            {{ form.role_name(class='form-control') }}
+        </div>
+        <div class="form-group">
+            <label for="ca_id">capture agent</label>
+            {{ form.ca_id(class='form-control') }}
+        </div>
+        <div class="form-group">
+            <label for="location_id">location</label>
+            {{ form.location_id(class='form-control') }}
+        </div>
+        <div class="form-group">
+            <label for="cluster_id">mh cluster</label>
+            {{ form.cluster_id(class='form-control') }}
+        </div>
+        <div class="form-group">
+            <div class="submit-row">
+                <input type="submit" class="btn btn-primary" value="save" />
+                <a href="{{ url_for('inventory.role_list') }}"
+                    class="btn btn-danger" role="button">cancel</a>
+            </div>
+        </div>
+    </form>
+
+
+    </div>
+
+{% endblock %}

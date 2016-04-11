@@ -66,6 +66,12 @@ RESOURCE_FIELDS = {
             'admin_host': fields.String,
             'env': fields.String,
         },
+        'Role': {
+            'name': fields.String,
+            'ca_id': fields.Integer,
+            'location_id': fields.Integer,
+            'cluster_id': fields.Integer,
+        },
 }
 
 def register_resources(api):
@@ -86,6 +92,10 @@ def register_resources(api):
             '/inventory/api/clusters/<int:r_id>', endpoint='api_cluster')
     api.add_resource(MhCluster_ListAPI,
             '/inventory/api/clusters', endpoint='api_clusterlist')
+    api.add_resource(Role_API,
+            '/inventory/api/roles/<int:r_id>', endpoint='api_role')
+    api.add_resource(Role_ListAPI,
+            '/inventory/api/roles', endpoint='api_rolelist')
 
 def abort_404_if_resource_none(resource, resource_id):
     """ return 404."""
@@ -292,3 +302,72 @@ class MhCluster_ListAPI(Resource_ListAPI):
                 help='`admin_host` cannot be blank', required=True)
         self._parser_create.add_argument('env', type=str, location='json',
                 help='`env` cannot be blank', required=True)
+
+
+class Role_API(Resource):
+    """role resource for rest endpoints."""
+
+    def __init__(self):
+        """create instance."""
+        super(Role_API, self).__init__()
+
+        self._parser_update = reqparse.RequestParser()
+
+
+    def get(self, r_id):
+        resource = Role.query.filter_by(ca_id=r_id).first()
+        abort_404_if_resource_none(resource, 'Role[%i]' % r_id)
+        return marshal(resource,
+                RESOURCE_FIELDS['Role']), 200
+
+
+    def put(self, r_id):
+        abort(405, message='not allowed to update')
+
+
+    def delete(self, r_id):
+        resource = Role.query.filter_by(ca_id=r_id).first()
+        if resource:
+            resource.delete()
+        return '', 204
+
+
+class Role_ListAPI(Resource):
+    """role resource for rest api: get list, post."""
+
+    def __init__(self):
+        """create instance."""
+        super(Role_ListAPI, self).__init__()
+
+        self._parser_create = reqparse.RequestParser()
+        self._parser_create.add_argument('name', type=str,
+                location='json', required=True,
+                help='`name` cannot be blank')
+        self._parser_create.add_argument('ca_id', type=int,
+                location='json', required=True,
+                help='`ca_id` cannot be blank')
+        self._parser_create.add_argument('location_id', type=int,
+                location='json', required=True,
+                help='`location_id` cannot be blank')
+        self._parser_create.add_argument('cluster_id', type=int,
+                location='json', required=True,
+                help='`cluster_id` cannot be blank')
+
+
+    def get(self):
+        resource_list = Role.query.all()
+        return marshal(resource_list,
+                RESOURCE_FIELDS['Role']), 200
+
+    def post(self):
+        args = self._parser_create.parse_args()
+        try:
+            resource = Role.create(**args)
+        except (AssociationError,
+                InvalidCaRoleError,
+                InvalidEmptyValueError,
+                InvalidOperationError) as e:
+            abort(400, message=e.message)
+        else:
+            return marshal(resource,
+                    RESOURCE_FIELDS['Role']), 201

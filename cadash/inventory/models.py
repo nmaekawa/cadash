@@ -91,7 +91,7 @@ class Role(Model):
     """role for a ca in a room."""
 
     __tablename__ = 'role'
-    name = Column(db.String(16), nullable=False, primary_key=True)
+    name = Column(db.String(16), nullable=False)
     ca_id = Column(db.Integer, db.ForeignKey('ca.id'), primary_key=True)
     ca = relationship('Ca', back_populates='role')
     location_id = Column(db.Integer, db.ForeignKey('location.id'))
