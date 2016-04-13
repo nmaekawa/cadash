@@ -80,7 +80,7 @@ class CaptureAgent(object):
                     'device(%s) channel(%s)=(%s) publish_type=(%s)' %
                     (self.name, chan_name, chan['channel'], response))
 
-        except requests.HTTPError as e:
+        except Exception as e:
             logger.warning(
                     'CA(%s) unable to get channel(%s) publish_type. error: %s' %
                     (self.name, chan_name, e.message))
@@ -102,7 +102,7 @@ class CaptureAgent(object):
                     channel=self.channels[chan_name]['channel'],
                     params={'publish_type': value})
             self._last_update = arrow.utcnow()
-        except requests.HTTPError as e:
+        except Exception as e:
             logger.warning(
                     'CA(%s) unable to set channel(%s) publish_type to %s. error: %s'
                     % (self.name, chan_name, value, e.message))
