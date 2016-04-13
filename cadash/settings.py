@@ -15,6 +15,9 @@ class Config(object):
     DEBUG_TB_ENABLED = True  # enable Debug toolbar
     DEBUG_TB_INTERCEPT_REDIRECTS = False
     SQLALCHEMY_TRACK_MODIFICATIONS = False
+    SQLALCHEMY_DATABASE_URI = 'mysql+oursql://%s:%s@localhost/cadash' % (
+            os.environ.get('DATABASE_USR', 'user'),
+            os.environ.get('DATABASE_PWD', 'password'))
     LOG_CONFIG = os.environ.get('LOG_CONFIG', 'logging.yaml')
 
     # app in-memory cache
