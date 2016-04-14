@@ -4,9 +4,6 @@ import json
 import logging
 import time
 
-from flask import current_app
-from flask import request
-from flask_login import current_user
 from flask_login import login_required
 from flask_restful import Api
 from flask_restful import Resource
@@ -77,25 +74,25 @@ RESOURCE_FIELDS = {
 def register_resources(api):
     """add resources to rest-api."""
     api.add_resource(Ca_API,
-            '/inventory/api/cas/<int:r_id>', endpoint='api_ca')
+            '/api/inventory/cas/<int:r_id>', endpoint='api_ca')
     api.add_resource(Ca_ListAPI,
-            '/inventory/api/cas', endpoint='api_calist')
+            '/api/inventory/cas', endpoint='api_calist')
     api.add_resource(Location_API,
-            '/inventory/api/locations/<int:r_id>', endpoint='api_location')
+            '/api/inventory/locations/<int:r_id>', endpoint='api_location')
     api.add_resource(Location_ListAPI,
-            '/inventory/api/locations', endpoint='api_locationlist')
+            '/api/inventory/locations', endpoint='api_locationlist')
     api.add_resource(Vendor_API,
-            '/inventory/api/vendors/<int:r_id>', endpoint='api_vendor')
+            '/api/inventory/vendors/<int:r_id>', endpoint='api_vendor')
     api.add_resource(Vendor_ListAPI,
-            '/inventory/api/vendors', endpoint='api_vendorlist')
+            '/api/inventory/vendors', endpoint='api_vendorlist')
     api.add_resource(MhCluster_API,
-            '/inventory/api/clusters/<int:r_id>', endpoint='api_cluster')
+            '/api/inventory/clusters/<int:r_id>', endpoint='api_cluster')
     api.add_resource(MhCluster_ListAPI,
-            '/inventory/api/clusters', endpoint='api_clusterlist')
+            '/api/inventory/clusters', endpoint='api_clusterlist')
     api.add_resource(Role_API,
-            '/inventory/api/roles/<int:r_id>', endpoint='api_role')
+            '/api/inventory/roles/<int:r_id>', endpoint='api_role')
     api.add_resource(Role_ListAPI,
-            '/inventory/api/roles', endpoint='api_rolelist')
+            '/api/inventory/roles', endpoint='api_rolelist')
 
 def abort_404_if_resource_none(resource, resource_id):
     """ return 404."""
@@ -116,6 +113,8 @@ class Resource_API(Resource):
         self._resource_model_class = globals()[self._resource_model_class_name]
         # arg parser for updates - must be init'd by child class
         self._parser_update = reqparse.RequestParser()
+        # decorators for authenticated rest-endpoints
+        self.method_decorators = [login_required]
 
 
     def get(self, r_id):
@@ -172,6 +171,8 @@ class Resource_ListAPI(Resource):
         self._resource_model_class = globals()[self._resource_model_class_name]
         # arg parser for creates - must be init'd by child class
         self._parser_create = reqparse.RequestParser()
+        # decorators for authenticated rest-endpoints
+        self.method_decorators = [login_required]
 
 
     def get(self):

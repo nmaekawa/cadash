@@ -20,14 +20,21 @@ from cadash.inventory.models import Role
 from cadash.inventory.models import Vendor
 
 
+@pytest.mark.usefixtures('db', 'simple_db', 'testapp')
+class TestCaResourceAuthenticated(object):
+    def test_should_fail_when_not_auth(simple_db, testapp):
+        res = testapp.get('/api/inventory/cas', expect_errors=True)
+        assert res.status_int == 401
+
+
 @pytest.mark.usefixtures('db', 'simple_db', 'testapp_login_disabled')
 class TestCaResource(object):
     """capture agent rest resource."""
 
     def test_can_get_ca_list(self, testapp_login_disabled, simple_db):
         """get list of capture agents."""
-        res = testapp_login_disabled.get('/inventory/api/cas')
-        assert bool(res)
+        res = testapp_login_disabled.get('/api/inventory/cas')
+        assert isinstance(res.body, str)
         json_data = json.loads(res.body)
         assert len(json_data) == 5
         assert json_data[3]['name'] == simple_db['ca'][3].name
@@ -36,7 +43,7 @@ class TestCaResource(object):
 
     def test_get_ca(self, testapp_login_disabled, simple_db):
         """get capture agent by id."""
-        url = '/inventory/api/cas/%i' % simple_db['ca'][1].id
+        url = '/api/inventory/cas/%i' % simple_db['ca'][1].id
         res = testapp_login_disabled.get(url)
         json_data = json.loads(res.body)
         assert isinstance(json_data, dict)
@@ -48,7 +55,7 @@ class TestCaResource(object):
         """create new capture agent - happy path."""
         new_ca = dict(name='fake-ca', address='fake-ca.some.url',
                 vendor_id=simple_db['vendor'].id, serial_number='ABC123')
-        res = testapp_login_disabled.post_json('/inventory/api/cas', new_ca)
+        res = testapp_login_disabled.post_json('/api/inventory/cas', new_ca)
         assert res.status_int == 201
 
         ca_list = Ca.query.all()
@@ -69,7 +76,7 @@ class TestCaResource(object):
         new_ca = dict(name='fake-ca', address='fake-ca.some.url',
                 vendor_id=999999, serial_number='ABC123')
         res = testapp_login_disabled.post_json(
-                '/inventory/api/cas', params=new_ca, expect_errors=True)
+                '/api/inventory/cas', params=new_ca, expect_errors=True)
         assert res.status_int == 400
         error_msg = 'not in inventory: vendor_id(%i)' % new_ca['vendor_id']
         assert error_msg in res.body
@@ -80,7 +87,7 @@ class TestCaResource(object):
         new_ca = dict(name=simple_db['ca'][0].name, address='fake-ca.some.url',
                 vendor_id=simple_db['vendor'].id, serial_number='ABC123')
         res = testapp_login_disabled.post_json(
-                '/inventory/api/cas', params=new_ca, expect_errors=True)
+                '/api/inventory/cas', params=new_ca, expect_errors=True)
         assert res.status_int == 400
         error_msg = 'duplicate ca name(%s)' % new_ca['name']
         assert error_msg in res.body
@@ -91,7 +98,7 @@ class TestCaResource(object):
         new_ca = dict(name='fake-ca', address=simple_db['ca'][0].address,
                 vendor_id=simple_db['vendor'].id, serial_number='ABC123')
         res = testapp_login_disabled.post_json(
-                '/inventory/api/cas', params=new_ca, expect_errors=True)
+                '/api/inventory/cas', params=new_ca, expect_errors=True)
         assert res.status_int == 400
         error_msg = 'duplicate ca address(%s)' % new_ca['address']
         assert error_msg in res.body
@@ -103,7 +110,7 @@ class TestCaResource(object):
                 vendor_id=simple_db['vendor'].id,
                 serial_number=simple_db['ca'][1].serial_number)
         res = testapp_login_disabled.post_json(
-                '/inventory/api/cas', params=new_ca, expect_errors=True)
+                '/api/inventory/cas', params=new_ca, expect_errors=True)
         assert res.status_int == 400
         error_msg = 'duplicate ca serial_number(%s)' % new_ca['serial_number']
         assert error_msg in res.body
@@ -114,7 +121,7 @@ class TestCaResource(object):
         ca = dict(name=simple_db['ca'][0].name, address='fake-ca.some.url',
                 vendor_id=simple_db['vendor'].id, serial_number='ABC123')
         res = testapp_login_disabled.put_json(
-                '/inventory/api/cas/%i' % simple_db['ca'][1].id,
+                '/api/inventory/cas/%i' % simple_db['ca'][1].id,
                 params=ca, expect_errors=True)
         assert res.status_int == 400
         error_msg = 'duplicate ca name(%s)' % ca['name']
@@ -125,7 +132,7 @@ class TestCaResource(object):
             self, testapp_login_disabled, simple_db):
         ca = dict(name='fake-name')
         res = testapp_login_disabled.put_json(
-                '/inventory/api/cas/%i' % simple_db['ca'][1].id, params=ca)
+                '/api/inventory/cas/%i' % simple_db['ca'][1].id, params=ca)
         assert res.status_int == 200
         ca_updated = Ca.get_by_id(simple_db['ca'][1].id)
         assert ca_updated.name == ca['name']
@@ -137,7 +144,7 @@ class TestLocationResource(object):
 
     def test_can_get_location_list(self, testapp_login_disabled, simple_db):
         """get list of location."""
-        res = testapp_login_disabled.get('/inventory/api/locations')
+        res = testapp_login_disabled.get('/api/inventory/locations')
         assert bool(res)
         json_data = json.loads(res.body)
         assert len(json_data) == 5
@@ -145,7 +152,7 @@ class TestLocationResource(object):
 
     def test_get_lecation(self, testapp_login_disabled, simple_db):
         """get location by id."""
-        url = '/inventory/api/locations/%i' % simple_db['room'][1].id
+        url = '/api/inventory/locations/%i' % simple_db['room'][1].id
         res = testapp_login_disabled.get(url)
         json_data = json.loads(res.body)
         assert isinstance(json_data, dict)
@@ -154,7 +161,7 @@ class TestLocationResource(object):
     def test_create_location(self, testapp_login_disabled, simple_db):
         """create new location - happy path."""
         l = dict(name='fake-ROOM')
-        res = testapp_login_disabled.post_json('/inventory/api/locations', l)
+        res = testapp_login_disabled.post_json('/api/inventory/locations', l)
         assert res.status_int == 201
 
         l_list = Location.query.all()
@@ -171,7 +178,7 @@ class TestLocationResource(object):
             self, testapp_login_disabled, simple_db):
         """name is unique."""
         l = dict(name=simple_db['room'][0].name)
-        res = testapp_login_disabled.post_json('/inventory/api/locations',
+        res = testapp_login_disabled.post_json('/api/inventory/locations',
                 params=l, expect_errors=True)
         json_data = json.loads(res.body)
         assert res.status_int == 400
@@ -183,7 +190,7 @@ class TestLocationResource(object):
             self, testapp_login_disabled, simple_db):
         """name is unique."""
         l = dict(fake_arg='fake_value')
-        res = testapp_login_disabled.post_json('/inventory/api/locations',
+        res = testapp_login_disabled.post_json('/api/inventory/locations',
                 params=l, expect_errors=True)
         json_data = json.loads(res.body)
         assert res.status_int == 400
@@ -196,7 +203,7 @@ class TestLocationResource(object):
         assert loc.name == simple_db['room'][2].name
 
         l = dict(name='special_new_name')
-        url = '/inventory/api/locations/%i' % simple_db['room'][2].id
+        url = '/api/inventory/locations/%i' % simple_db['room'][2].id
         res = testapp_login_disabled.put_json(url, params=l)
 
         loc = Location.get_by_id(simple_db['room'][2].id)
@@ -207,7 +214,7 @@ class TestLocationResource(object):
             self, testapp_login_disabled, simple_db):
         """name is unique."""
         l = dict(name='   ')
-        url = '/inventory/api/locations/%i' % simple_db['room'][2].id
+        url = '/api/inventory/locations/%i' % simple_db['room'][2].id
         res = testapp_login_disabled.put_json(url, params=l, expect_errors=True)
         assert res.status_int == 400
         assert 'not allowed empty value for `name`' in res.body
@@ -219,7 +226,7 @@ class TestVendorResource(object):
 
     def test_can_get_vendor_list(self, testapp_login_disabled, simple_db):
         """get list of vendor."""
-        res = testapp_login_disabled.get('/inventory/api/vendors')
+        res = testapp_login_disabled.get('/api/inventory/vendors')
         assert bool(res)
         json_data = json.loads(res.body)
         assert len(json_data) == 1
@@ -227,7 +234,7 @@ class TestVendorResource(object):
 
     def test_get_vendor(self, testapp_login_disabled, simple_db):
         """get vendor by id."""
-        url = '/inventory/api/vendors/%i' % simple_db['vendor'].id
+        url = '/api/inventory/vendors/%i' % simple_db['vendor'].id
         res = testapp_login_disabled.get(url)
         json_data = json.loads(res.body)
         assert isinstance(json_data, dict)
@@ -236,7 +243,7 @@ class TestVendorResource(object):
     def test_create_vendor(self, testapp_login_disabled, simple_db):
         """create new vendor - happy path."""
         v = dict(name='calling', model='i.c.wiener')
-        res = testapp_login_disabled.post_json('/inventory/api/vendors', v)
+        res = testapp_login_disabled.post_json('/api/inventory/vendors', v)
         assert res.status_int == 201
 
         v_list = Vendor.query.all()
@@ -253,7 +260,7 @@ class TestVendorResource(object):
             self, testapp_login_disabled, simple_db):
         """name is unique."""
         l = dict(name=simple_db['vendor'].name, model=simple_db['vendor'].model)
-        res = testapp_login_disabled.post_json('/inventory/api/vendors',
+        res = testapp_login_disabled.post_json('/api/inventory/vendors',
                 params=l, expect_errors=True)
         json_data = json.loads(res.body)
         assert res.status_int == 400
@@ -268,7 +275,7 @@ class TestVendorResource(object):
         assert vendor.name_id == simple_db['vendor'].name_id
 
         v = dict(model='tralala')
-        url = '/inventory/api/vendors/%i' % simple_db['vendor'].id
+        url = '/api/inventory/vendors/%i' % simple_db['vendor'].id
         res = testapp_login_disabled.put_json(url, params=v)
 
         vendor = Vendor.get_by_id(simple_db['vendor'].id)
@@ -281,7 +288,7 @@ class TestVendorResource(object):
         """name is unique."""
         v = dict(name='   ',)
         model = utils.clean_name(simple_db['vendor'].model)
-        url = '/inventory/api/vendors/%i' % simple_db['vendor'].id
+        url = '/api/inventory/vendors/%i' % simple_db['vendor'].id
         res = testapp_login_disabled.put_json(url, params=v)
         assert res.status_int == 200
 
@@ -296,7 +303,7 @@ class TestMhClusterResource(object):
 
     def test_can_get_cluster_list(self, testapp_login_disabled, simple_db):
         """get list of cluster."""
-        res = testapp_login_disabled.get('/inventory/api/clusters')
+        res = testapp_login_disabled.get('/api/inventory/clusters')
         assert bool(res)
         json_data = json.loads(res.body)
         assert len(json_data) == 3
@@ -304,7 +311,7 @@ class TestMhClusterResource(object):
 
     def test_get_cluster(self, testapp_login_disabled, simple_db):
         """get cluster by id."""
-        url = '/inventory/api/clusters/%i' % simple_db['cluster'][0].id
+        url = '/api/inventory/clusters/%i' % simple_db['cluster'][0].id
         res = testapp_login_disabled.get(url)
         json_data = json.loads(res.body)
         assert isinstance(json_data, dict)
@@ -313,7 +320,7 @@ class TestMhClusterResource(object):
     def test_create_cluster(self, testapp_login_disabled, simple_db):
         """create new vendor - happy path."""
         c = dict(name='gojira', admin_host='http://some.url.net', env='prod')
-        res = testapp_login_disabled.post_json('/inventory/api/clusters', c)
+        res = testapp_login_disabled.post_json('/api/inventory/clusters', c)
         assert res.status_int == 201
 
         c_list = MhCluster.query.all()
@@ -331,7 +338,7 @@ class TestMhClusterResource(object):
         """name is unique."""
         c = dict(name=simple_db['cluster'][0].name,
                 admin_host='http://doh.doh.doh', env='stage')
-        res = testapp_login_disabled.post_json('/inventory/api/clusters',
+        res = testapp_login_disabled.post_json('/api/inventory/clusters',
                 params=c, expect_errors=True)
         json_data = json.loads(res.body)
         assert res.status_int == 400
@@ -346,7 +353,7 @@ class TestMhClusterResource(object):
         assert cluster.name == simple_db['cluster'][1].name
 
         c = dict(env='StAgE')
-        url = '/inventory/api/clusters/%i' % simple_db['cluster'][1].id
+        url = '/api/inventory/clusters/%i' % simple_db['cluster'][1].id
         res = testapp_login_disabled.put_json(url, params=c)
 
         cluster = MhCluster.get_by_id(simple_db['cluster'][1].id)
@@ -357,7 +364,7 @@ class TestMhClusterResource(object):
             self, testapp_login_disabled, simple_db):
         """env is restricted to values prod|dev|stage."""
         c = dict(env='mothra',)
-        url = '/inventory/api/clusters/%i' % simple_db['cluster'][2].id
+        url = '/api/inventory/clusters/%i' % simple_db['cluster'][2].id
         res = testapp_login_disabled.put_json(url, params=c, expect_errors=True)
         assert res.status_int == 400
         assert 'mh cluster env value not in' in res.body
@@ -369,7 +376,7 @@ class TestRoleResource(object):
 
     def test_can_get_role_list(self, testapp_login_disabled, simple_db):
         """get list of roles."""
-        res = testapp_login_disabled.get('/inventory/api/roles')
+        res = testapp_login_disabled.get('/api/inventory/roles')
         assert bool(res)
         json_data = json.loads(res.body)
         assert isinstance(json_data, list)
@@ -378,7 +385,7 @@ class TestRoleResource(object):
 
     def test_get_role(self, testapp_login_disabled, simple_db):
         """get single role, by ca.id."""
-        res = testapp_login_disabled.get('/inventory/api/roles/%i' %
+        res = testapp_login_disabled.get('/api/inventory/roles/%i' %
                 simple_db['ca'][2].id)
         json_data = json.loads(res.body)
         assert json_data['ca_id'] == simple_db['ca'][2].id
@@ -386,14 +393,14 @@ class TestRoleResource(object):
 
     def test_should_fail_in_update(self, testapp_login_disabled, simple_db):
         """update not allowed for roles."""
-        res = testapp_login_disabled.put('/inventory/api/roles/%i' %
+        res = testapp_login_disabled.put('/api/inventory/roles/%i' %
                 simple_db['ca'][0].id, expect_errors=True)
         assert res.status_int == 405
         assert 'not allowed to update' in res.body
 
     def test_delete(self, testapp_login_disabled, simple_db):
         """delete role."""
-        res = testapp_login_disabled.delete('/inventory/api/roles/%i' %
+        res = testapp_login_disabled.delete('/api/inventory/roles/%i' %
                 simple_db['ca'][2].id)
         assert res.status_int == 204
         assert simple_db['ca'][2].role is None

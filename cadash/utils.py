@@ -18,6 +18,7 @@ import requests
 from requests.auth import HTTPBasicAuth
 
 from cadash import __version__
+from cadash.user.models import BaseUser
 
 
 
@@ -116,18 +117,33 @@ def default_useragent():
         '%s/%s' % (p_system, p_release)])
 
 
-def is_authorized(user, groups):
+def fetch_ldap_user(usr, pwd, cli):
+    """fetch user in ldap, and the groups user belongs to.
+
+    returns a BaseUser object or None if not authenticated or unknown
+    """
+    if cli.is_authenticated(usr, pwd):
+        u = BaseUser(usr)
+        groups = cli.fetch_groups(usr)
+        u.place_in_groups(groups)
+        return u
+    else:
+        return None
+
+
+def is_authorized_by_groups(user, groups):
     """returns True if `user` in any group of list `groups`."""
     for g in groups:
         if user.is_in_group(g):
             return True
     return False
 
+
 def requires_roles(*roles):
     def wrapper(f):
         @wraps(f)
         def wrapped(*args, **kwargs):
-            if not is_authorized(current_user, *roles):
+            if not is_authorized_by_groups(current_user, *roles):
                 flash('You need to login, or do not have credentials to access this page', 'info')
                 return redirect(url_for('public.home', next=request.url))
             return f(*args, **kwargs)
