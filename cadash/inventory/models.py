@@ -147,7 +147,7 @@ class Ca(SurrogatePK, NameIdMixin, Model):
     created_at = Column(db.DateTime, nullable=False, default=dt.datetime.utcnow)
     name = Column(db.String(80), unique=True, nullable=False)
     address = Column(db.String(128), unique=True, nullable=False)
-    serial_number = Column(db.String(80), unique=True, nullable=True)
+    serial_number = Column(db.String(80), unique=False, nullable=False)
     vendor_id = Column(db.Integer, db.ForeignKey('vendor.id'), nullable=False)
     vendor = relationship('Vendor')
     role = relationship('Role', back_populates='ca', uselist=False)
@@ -155,6 +155,8 @@ class Ca(SurrogatePK, NameIdMixin, Model):
 
     def __init__(self, name, address, vendor_id, serial_number=None):
         """create instance."""
+        if serial_number is None: # temp name until update
+            serial_number = name
         if self._check_constraints(name=name,
                 address=address, vendor_id=vendor_id,
                 serial_number=serial_number):

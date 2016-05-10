@@ -22,7 +22,7 @@ class CaForm(Form):
     name = StringField('name', validators=[DataRequired()])
     address = StringField('address',
             validators=[DataRequired(), URL(require_tld=False)])
-    serial_number = StringField('serial_number')
+    serial_number = StringField('serial_number', validators=[DataRequired()])
 
 
 class MhClusterForm(Form):
