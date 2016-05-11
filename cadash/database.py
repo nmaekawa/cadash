@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 """Database module, including the SQLAlchemy database object and DB-related utilities."""
+import datetime
 from sqlalchemy.orm import relationship
 from sqlalchemy.orm import validates
 
@@ -65,6 +66,15 @@ class SurrogatePK(object):
         ):
             return cls.query.get(int(record_id))
         return None
+
+
+class CreatedDateMixin(object):
+    """mixin to add a `create_at` datetime column."""
+    __table_args__ = {'extend_existing': True}
+
+    created_at = Column(db.DateTime,
+            nullable=False,
+            default=datetime.datetime.utcnow)
 
 
 class NameIdMixin(object):

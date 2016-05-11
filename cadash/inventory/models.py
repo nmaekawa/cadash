@@ -4,6 +4,7 @@
 import datetime as dt
 
 from cadash.database import Column
+from cadash.database import CreatedDateMixin
 from cadash.database import Model
 from cadash.database import NameIdMixin
 from cadash.database import SurrogatePK
@@ -26,25 +27,32 @@ from cadash.inventory.errors import InvalidOperationError
 from cadash.inventory.errors import MissingVendorError
 import cadash.utils as utils
 
+
 CA_ROLES = frozenset([u'primary', u'secondary', u'experimental'])
 MH_ENVS = frozenset([u'prod', u'dev', u'stage'])
-UPDATEABLE_CA_FIELDS = frozenset([u'name', u'address', u'serial_number'])
-UPDATEABLE_CLUSTER_FIELDS = frozenset([u'name', u'admin_host', u'env'])
-UPDATEABLE_LOCATION_FIELDS = frozenset([u'name'])
-UPDATEABLE_VENDOR_FIELDS = frozenset([u'name', u'model'])
+UPDATEABLE_CA_FIELDS = \
+        frozenset([u'name', u'address', u'serial_number', u'settings'])
+UPDATEABLE_CLUSTER_FIELDS = \
+        frozenset([u'name', u'admin_host', u'env',u'settings'])
+UPDATEABLE_LOCATION_FIELDS = frozenset([u'name', u'settings'])
+UPDATEABLE_VENDOR_FIELDS = frozenset([u'name', u'model', u'settings'])
 
-class Location(SurrogatePK, NameIdMixin, Model):
+
+
+class Location(SurrogatePK, NameIdMixin, CreatedDateMixin, Model):
     """a room where a capture agent is installed."""
 
     __tablename__ = 'location'
-    created_at = Column(db.DateTime, nullable=False, default=dt.datetime.utcnow)
     name = Column(db.String(80), unique=True, nullable=False)
     capture_agents = relationship('Role', back_populates='location')
+    settings = Column(db.UnicodeText, nullable=False, default=u'{}')
+    _settings_last_update = Column('settings_last_update',
+            db.DateTime, nullable=True)
 
-    def __init__(self, name):
+    def __init__(self, name, settings=None):
         """create instance."""
         if self._check_constraints(name=name):
-            db.Model.__init__(self, name=name)
+            db.Model.__init__(self, name=name, settings=settings)
 
     def get_ca(self):
         """return all capture agents installed in location."""
@@ -55,6 +63,10 @@ class Location(SurrogatePK, NameIdMixin, Model):
         """return list of capture-agents with given role."""
         result = [r.ca for r in self.capture_agents if r.name == role_name]
         return result
+
+    @property
+    def settings_last_update(self):
+        return self._settings_last_update
 
     def delete(self, commit=True):
         """override to undo all relationships involving this location."""
@@ -69,6 +81,11 @@ class Location(SurrogatePK, NameIdMixin, Model):
             raise InvalidOperationError(
                     'not allowed to update location fields: %s' %
                     ', '.join(list(x)))
+
+        if 'settings' in kwargs:
+            if not kwargs['settings']: # settings at least empty json obj
+                kwargs['settings'] = u'{}'
+            kwargs.update({'_settings_last_update': dt.datetime.utcnow()})
         if self._check_constraints(**kwargs):
             return super(Location, self).update(**kwargs)
 
@@ -87,7 +104,7 @@ class Location(SurrogatePK, NameIdMixin, Model):
         return True
 
 
-class Role(Model):
+class Role(CreatedDateMixin, Model):
     """role for a ca in a room."""
 
     __tablename__ = 'role'
@@ -100,7 +117,6 @@ class Role(Model):
     cluster_id = Column(db.Integer, db.ForeignKey('mhcluster.id'))
     cluster = relationship('MhCluster',
             back_populates='capture_agents', uselist=False)
-    created_at = Column(db.DateTime, nullable=False, default=dt.datetime.utcnow)
 
 
     def __init__(self, ca, location, cluster, name):
@@ -140,20 +156,23 @@ class Role(Model):
         raise InvalidOperationError('not allowed update `role` relatioship')
 
 
-class Ca(SurrogatePK, NameIdMixin, Model):
+class Ca(SurrogatePK, NameIdMixin, CreatedDateMixin, Model):
     """a capture agent."""
 
     __tablename__ = 'ca'
-    created_at = Column(db.DateTime, nullable=False, default=dt.datetime.utcnow)
     name = Column(db.String(80), unique=True, nullable=False)
     address = Column(db.String(128), unique=True, nullable=False)
     serial_number = Column(db.String(80), unique=False, nullable=False)
     vendor_id = Column(db.Integer, db.ForeignKey('vendor.id'), nullable=False)
     vendor = relationship('Vendor')
     role = relationship('Role', back_populates='ca', uselist=False)
+    settings = Column(db.UnicodeText, nullable=False, default=u'{}')
+    _settings_last_update = Column('settings_last_update',
+            db.DateTime, nullable=True)
 
 
-    def __init__(self, name, address, vendor_id, serial_number=None):
+    def __init__(self, name, address, vendor_id,
+            serial_number=None, settings=None):
         """create instance."""
         if serial_number is None: # temp name until update
             serial_number = name
@@ -165,22 +184,27 @@ class Ca(SurrogatePK, NameIdMixin, Model):
 
     @property
     def role_name(self):
-        if bool(self.role):
+        if self.role:
             return self.role.name
         return None
 
     @property
     def location(self):
-        if bool(self.role):
+        if self.role:
             return self.role.location
         return None
 
     @property
     def mh_cluster(self):
-        if bool(self.role):
+        if self.role:
             return self.role.cluster
         return None
 
+    @property
+    def settings_last_update(self):
+        if self._settings_last_update:
+            return self._settings_last_update
+        return None
 
     def update(self, **kwargs):
         """override to check ca constraints."""
@@ -189,6 +213,10 @@ class Ca(SurrogatePK, NameIdMixin, Model):
             raise InvalidOperationError(
                     'not allowed to update ca fields: %s' % ', '.join(list(x)))
 
+        if 'settings' in kwargs:
+            if not kwargs['settings']: # settings at least empty json obj
+                kwargs['settings'] = u'{}'
+            kwargs.update({'_settings_last_update': dt.datetime.utcnow()})
         if self._check_constraints(**kwargs):
             return super(Ca, self).update(**kwargs)
 
@@ -247,17 +275,19 @@ class Ca(SurrogatePK, NameIdMixin, Model):
         return True
 
 
-class Vendor(SurrogatePK, Model):
+class Vendor(SurrogatePK, CreatedDateMixin, Model):
     """a capture agent vendor."""
 
     __tablename__ = 'vendor'
-    created_at = Column(db.DateTime, nullable=False, default=dt.datetime.utcnow)
     name = Column(db.String(64), unique=False, nullable=False)
     model = Column(db.String(64), unique=False, nullable=False)
     name_id = Column(db.String(128), unique=True, nullable=False)
     capture_agents = relationship('Ca', back_populates='vendor')
+    settings = Column(db.UnicodeText, nullable=False, default=u'{}')
+    _settings_last_update = Column('settings_last_update',
+            db.DateTime, nullable=True)
 
-    def __init__(self, name, model):
+    def __init__(self, name, model, settings=None):
         """create instance."""
         if self._check_constraints(name=name, model=model):
             db.Model.__init__(self, name=name, model=model,
@@ -265,6 +295,10 @@ class Vendor(SurrogatePK, Model):
 
     def __repr__(self):
         return self.name_id
+
+    @property
+    def settings_last_update(self):
+        return self._settings_last_update
 
     def delete(self, commit=True):
         """override to disable deletion of vendors."""
@@ -278,6 +312,10 @@ class Vendor(SurrogatePK, Model):
                     'not allowed to update vendor fields: %s' %
                     ', '.join(list(x)))
 
+        if 'settings' in kwargs:
+            if not kwargs['settings']: # settings at least empty json obj
+                kwargs['settings'] = u'{}'
+            kwargs.update({'_settings_last_update': dt.datetime.utcnow()})
         if self._check_constraints(**kwargs):
             # update name,model in vendor model
             super(Vendor, self).update(commit=False, **kwargs)
@@ -302,18 +340,19 @@ class Vendor(SurrogatePK, Model):
         return '%s_%s' % (utils.clean_name(name), utils.clean_name(model))
 
 
-class MhCluster(SurrogatePK, NameIdMixin, Model):
+class MhCluster(SurrogatePK, NameIdMixin, CreatedDateMixin, Model):
     """a mh cluster that a capture agent pull schedule from."""
 
     __tablename__ = 'mhcluster'
-    created_at = Column(db.DateTime, nullable=False, default=dt.datetime.utcnow)
     name = Column(db.String(80), unique=True, nullable=False)
     admin_host = Column(db.String(128), unique=True, nullable=False)
     env = Column(db.String(80), unique=False, nullable=False)
     capture_agents = relationship('Role', back_populates='cluster')
+    settings = Column(db.UnicodeText, nullable=False, default=u'{}')
+    _settings_last_update = Column('settings_last_update',
+            db.DateTime, nullable=True)
 
-
-    def __init__(self, name, admin_host, env):
+    def __init__(self, name, admin_host, env, settings=None):
         """create instance."""
         environment = self._get_valid_env(env)
         if self._check_constraints(name=name, admin_host=admin_host):
@@ -330,6 +369,10 @@ class MhCluster(SurrogatePK, NameIdMixin, Model):
         result = [r.ca for r in self.capture_agents if r.name == role_name]
         return result
 
+    @property
+    def settings_last_update(self):
+        return self._settings_last_update
+
     def delete(self, commit=True):
         """override to undo all role relationships involving this cluster."""
         for c in self.capture_agents:
@@ -344,6 +387,10 @@ class MhCluster(SurrogatePK, NameIdMixin, Model):
                     'not allowed to update mh_cluster fields: %s' %
                     ', '.join(list(x)))
 
+        if 'settings' in kwargs:
+            if not kwargs['settings']: # settings at least empty json obj
+                kwargs['settings'] = u'{}'
+            kwargs.update({'_settings_last_update': dt.datetime.utcnow()})
         if self._check_constraints(**kwargs):
             r = super(MhCluster, self).update(commit=False, **kwargs)
             # ensure persisted `env` value is valid
@@ -387,3 +434,4 @@ class MhCluster(SurrogatePK, NameIdMixin, Model):
         raise InvalidMhClusterEnvironmentError(
                 'mh cluster env value not in [%s]: %s' %
                 (','.join(list(MH_ENVS)), env))
+
