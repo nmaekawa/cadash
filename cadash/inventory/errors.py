@@ -58,3 +58,11 @@ class DuplicateMhClusterNameError(Error):
 
 class DuplicateMhClusterAdminHostError(Error):
     """mhcluster admin_host name already in inventory."""
+
+
+class InvalidCaPackageTypeError(Error):
+    """package type not allowed."""
+
+
+class  DuplicateCaPackageNameError(Error):
+    """ capackage name already in inventory."""

@@ -3,6 +3,12 @@
 import datetime as dt
 import pytest
 
+from cadash.inventory.errors import DuplicateCaPackageNameError
+from cadash.inventory.errors import InvalidCaPackageTypeError
+from cadash.inventory.errors import InvalidOperationError
+from cadash.inventory.models import CaPackage
+
+
 @pytest.mark.usefixtures('db', 'simple_db')
 class TestSettings(object):
     """test component basic settings restrictions."""
@@ -76,3 +82,74 @@ class TestSettings(object):
         t2 = simple_db['vendor'].settings_last_update
         assert simple_db['vendor'].settings == u'{}'
         assert t2 > t1
+
+
+@pytest.mark.usefixture('db', 'simple_db')
+class TestCaPackage(object):
+    """test capackage model."""
+
+    def test_pkg_create_ok(self, simple_db):
+        """create plain package."""
+        pkg = CaPackage(name='blof',
+                pkgtype=type(simple_db['vendor']).__name__,
+                settings=u'{"key1": "value1"}', deploy=False)
+        assert pkg.name == 'blof'
+        assert pkg.pkgtype == 'Vendor'
+        assert pkg.created_at is not None
+        assert pkg.last_deployed is None
+
+    def test_pkg_create_and_deploy(self, simple_db):
+        """create package and set deploy date to now."""
+        pkg = CaPackage(name='blof',
+                pkgtype=type(simple_db['vendor']).__name__,
+                settings=u'{"key1": "value1"}', deploy=True)
+        assert pkg.name == 'blof'
+        assert pkg.pkgtype == 'Vendor'
+        assert pkg.created_at is not None
+        assert pkg.last_deployed is not None
+        assert pkg.last_deployed > pkg.created_at
+
+    def test_pkg_duplicated_name(self, simple_db):
+        """create pkg with a name already in inventory."""
+        pkg1 = CaPackage(name='blof',
+                pkgtype=type(simple_db['vendor']).__name__,
+                settings=u'{"key1": "value1"}', deploy=False)
+
+        with pytest.raises(DuplicateCaPackageNameError) as e:
+            pkg2 = CaPackage(name='blof',
+                    pkgtype=type(simple_db['vendor']).__name__,
+                    settings=u'{"key1": "value1"}', deploy=False)
+        assert 'duplicate package name(blof)' in e.value.message
+
+    def test_pkg_invalid_type(self, simple_db):
+        """create pkg with invalid pkg type."""
+        with pytest.raises(InvalidCaPackageTypeError) as e:
+            pkg = CaPackage(name='blof', pkgtype='FakeClassNameForTest',
+                    settings=u'{"key1": "value1"}', deploy=False)
+        assert 'not allowed package type(FakeClassNameForTest)' \
+                in e.value.message
+
+    def test_pkg_update_disabled(self, simple_db):
+        """error when trying to update package."""
+        pkg = CaPackage(name='blof',
+                pkgtype=type(simple_db['vendor']).__name__,
+                settings=u'{"key1": "value1"}', deploy=False)
+        assert pkg.last_deployed is None
+
+        with pytest.raises(InvalidOperationError) as e:
+            pkg.update(settings=u'{"key1": "valueBLO"}')
+        assert 'not allowed to update `capackage`' in e.value.message
+
+        pkg.deploy_now()
+        assert pkg.last_deployed is not None
+        assert pkg.last_deployed > pkg.created_at
+
+    def test_pkg_delete_disabled(self, simple_db):
+        """error when trying to delete package."""
+        pkg = CaPackage(name='blof',
+                pkgtype=type(simple_db['vendor']).__name__,
+                settings=u'{"key1": "value1"}', deploy=False)
+
+        with pytest.raises(InvalidOperationError) as e:
+            pkg.delete()
+        assert 'not allowed to delete `capackage`' in e.value.message

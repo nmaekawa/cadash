@@ -19,23 +19,31 @@ from cadash.inventory.errors import DuplicateCaptureAgentSerialNumberError
 from cadash.inventory.errors import DuplicateLocationNameError
 from cadash.inventory.errors import DuplicateMhClusterAdminHostError
 from cadash.inventory.errors import DuplicateMhClusterNameError
+from cadash.inventory.errors import DuplicateCaPackageNameError
 from cadash.inventory.errors import DuplicateVendorNameModelError
 from cadash.inventory.errors import InvalidCaRoleError
 from cadash.inventory.errors import InvalidEmptyValueError
 from cadash.inventory.errors import InvalidMhClusterEnvironmentError
 from cadash.inventory.errors import InvalidOperationError
+from cadash.inventory.errors import InvalidCaPackageTypeError
 from cadash.inventory.errors import MissingVendorError
 import cadash.utils as utils
 
 
-CA_ROLES = frozenset([u'primary', u'secondary', u'experimental'])
-MH_ENVS = frozenset([u'prod', u'dev', u'stage'])
+CA_ROLES = \
+        frozenset([u'primary', u'secondary', u'experimental'])
+MH_ENVS = \
+        frozenset([u'prod', u'dev', u'stage'])
 UPDATEABLE_CA_FIELDS = \
         frozenset([u'name', u'address', u'serial_number', u'settings'])
 UPDATEABLE_CLUSTER_FIELDS = \
         frozenset([u'name', u'admin_host', u'env',u'settings'])
-UPDATEABLE_LOCATION_FIELDS = frozenset([u'name', u'settings'])
-UPDATEABLE_VENDOR_FIELDS = frozenset([u'name', u'model', u'settings'])
+UPDATEABLE_LOCATION_FIELDS = \
+        frozenset([u'name', u'settings'])
+UPDATEABLE_VENDOR_FIELDS = \
+        frozenset([u'name', u'model', u'settings'])
+ALLOWED_CAPACKAGE_TYPES = \
+        frozenset([u'Vendor', u'Location', u'MhCluster', u'Ca'])
 
 
 
@@ -96,9 +104,9 @@ class Location(SurrogatePK, NameIdMixin, CreatedDateMixin, Model):
                 if not value or not value.strip():
                     raise InvalidEmptyValueError(
                             'not allowed empty value for `name`')
-                if not value == self.name:
+                if value != self.name:
                     l = Location.query.filter_by(name=value).first()
-                    if not l is None:
+                    if l is not None:
                         raise DuplicateLocationNameError(
                                 'duplicate location name(%s)' % value)
         return True
@@ -128,7 +136,7 @@ class Role(CreatedDateMixin, Model):
                     'invalid ca-role(%s) - valid values: [%s]' %
                     (role_name, ','.join(list(CA_ROLES))))
         # ca already has a role?
-        if bool(ca.role):
+        if ca.role:
             raise AssociationError(
                     'cannot associate ca(%s): already has a role(%s)' %
                     (ca.name_id, ca.role))
@@ -235,41 +243,38 @@ class Ca(SurrogatePK, NameIdMixin, CreatedDateMixin, Model):
                 if not value:
                     raise InvalidEmptyValueError(
                             'not allowed empty value for `vendor_id`')
-                if not value == self.vendor_id:
+                if value != self.vendor_id:
                     v = Vendor.get_by_id(value)
                     if v is None:
                         raise MissingVendorError(
                                 'not in inventory: vendor_id(%i)' % value)
-                next
 
             # fail if duplicate name
-            if key == 'name':
+            elif key == 'name':
                 if not value or not value.strip():
                     raise InvalidEmptyValueError(
                             'not allowed empty value for `name`')
-                if not value == self.name:
+                if value != self.name:
                     c = Ca.query.filter_by(name=value).first()
-                    if not c is None:
+                    if c is not None:
                         raise DuplicateCaptureAgentNameError(
                                 'duplicate ca name(%s)' % value)
-                next
 
             # fail if duplicate address
-            if key == 'address':
+            elif key == 'address':
                 if not value or not value.strip():
                     raise InvalidEmptyValueError(
                             'not allowed empty value for `address`')
-                if not value == self.address:
+                if value != self.address:
                     c = Ca.query.filter_by(address=value).first()
-                    if not c is None:
+                    if c is not None:
                         raise DuplicateCaptureAgentAddressError(
                                 'duplicate ca address(%s)' % value)
-                next
 
             # fail if duplicate serial_number
-            if key == 'serial_number' and not value == self.serial_number:
+            elif key == 'serial_number' and value != self.serial_number:
                 c = Ca.query.filter_by(serial_number=value).first()
-                if not c is None:
+                if c is not None:
                     raise DuplicateCaptureAgentSerialNumberError(
                             'duplicate ca serial_number(%s)' % value)
         return True
@@ -328,9 +333,9 @@ class Vendor(SurrogatePK, CreatedDateMixin, Model):
         n = kwargs['name'] if 'name' in kwargs.keys() else self.name
         m = kwargs['model'] if 'model' in kwargs.keys() else self.model
         nm = Vendor.computed_name_id(n, m)
-        if not nm == self.name_id:
+        if nm != self.name_id:
             v = Vendor.query.filter_by(name_id=nm).first()
-            if not v is None:
+            if v is not None:
                 raise DuplicateVendorNameModelError(
                         'duplicate vendor name_model(%s)' % nm)
         return True
@@ -405,20 +410,18 @@ class MhCluster(SurrogatePK, NameIdMixin, CreatedDateMixin, Model):
                 if not value:
                     raise InvalidEmptyValueError(
                             'not allowed empty value for `name`')
-                if not value == self.name:
+                if value != self.name:
                     c = MhCluster.query.filter_by(name=value).first()
-                    if not c is None:
+                    if c is not None:
                         raise DuplicateMhClusterNameError(
                                 'duplicate mh_cluster name(%s)' % value)
-                next
-
-            if k == 'admin_host':
+            elif k == 'admin_host':
                 if not value:
                     raise InvalidEmptyValueError(
                             'not allowed empty value for `admin_host`')
-                if not value == self.admin_host:
+                if value != self.admin_host:
                     c = MhCluster.query.filter_by(admin_host=value).first()
-                    if not c is None:
+                    if c is not None:
                         raise DuplicateMhClusterAdminHostError(
                                 'duplicate mh_cluster admin host(%s)' % value)
         return True
@@ -434,4 +437,62 @@ class MhCluster(SurrogatePK, NameIdMixin, CreatedDateMixin, Model):
         raise InvalidMhClusterEnvironmentError(
                 'mh cluster env value not in [%s]: %s' %
                 (','.join(list(MH_ENVS)), env))
+
+
+class CaPackage(SurrogatePK, NameIdMixin, CreatedDateMixin, Model):
+    """set of ca configs packaged as a deployment."""
+
+    __tablename__ = 'capackage'
+    name = Column(db.String(80), unique=True, nullable=False)
+    pkgtype = Column(db.String(80), nullable=False)
+    settings = Column(db.UnicodeText, nullable=False, default=u'{}')
+    _last_deployed = Column('last_deployed_at', db.DateTime, nullable=True)
+
+    def __init__(self, name, pkgtype, settings, deploy=False):
+        """create instance."""
+        if self._check_constraints(name=name, pkgtype=pkgtype,
+                settings=settings):
+            db.Model.__init__(self, name=name,
+                    pkgtype=pkgtype, settings=settings)
+            self.save()
+            if deploy: # set deploy date
+                self.deploy_now()
+
+    @property
+    def last_deployed(self):
+        return self._last_deployed
+
+    def deploy_now(self):
+        """sets the last deploy date."""
+        self._last_deployed = dt.datetime.utcnow()
+        self.save()
+
+    def _check_constraints(self, **kwargs):
+        """throws an error if args violate package constraints."""
+        for k, value in kwargs.items():
+            if k == 'name':
+                if not value:
+                    raise InvalidEmptyValueError(
+                            'not allowed empty value for `name`')
+                if value != self.name:
+                    c = CaPackage.query.filter_by(name=value).first()
+                    if c is not None:
+                        raise DuplicateCaPackageNameError(
+                                'duplicate package name(%s)' % value)
+            elif k == 'pkgtype':
+                if not value:
+                    raise InvalidEmptyValueError(
+                            'not allowed empty value for `pkgtype`')
+                if value not in ALLOWED_CAPACKAGE_TYPES:
+                    raise InvalidCaPackageTypeError(
+                        'not allowed package type(%s)' % value)
+        return True
+
+    def delete(self, commit=True):
+        """override to disable deletion of packages."""
+        raise InvalidOperationError('not allowed to delete `capackage`')
+
+    def update(self, commit=True, **kwargs):
+        """overrides to disable updates in packages."""
+        raise InvalidOperationError('not allowed to update `capackage`')
 
