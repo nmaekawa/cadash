@@ -25,7 +25,6 @@ from cadash.inventory.errors import InvalidCaRoleError
 from cadash.inventory.errors import InvalidEmptyValueError
 from cadash.inventory.errors import InvalidMhClusterEnvironmentError
 from cadash.inventory.errors import InvalidOperationError
-from cadash.inventory.errors import InvalidCaPackageTypeError
 from cadash.inventory.errors import MissingVendorError
 import cadash.utils as utils
 
@@ -42,8 +41,6 @@ UPDATEABLE_LOCATION_FIELDS = \
         frozenset([u'name', u'settings'])
 UPDATEABLE_VENDOR_FIELDS = \
         frozenset([u'name', u'model', u'settings'])
-ALLOWED_CAPACKAGE_TYPES = \
-        frozenset([u'Vendor', u'Location', u'MhCluster', u'Ca'])
 
 
 
@@ -444,16 +441,14 @@ class CaPackage(SurrogatePK, NameIdMixin, CreatedDateMixin, Model):
 
     __tablename__ = 'capackage'
     name = Column(db.String(80), unique=True, nullable=False)
-    pkgtype = Column(db.String(80), nullable=False)
     settings = Column(db.UnicodeText, nullable=False, default=u'{}')
     _last_deployed = Column('last_deployed_at', db.DateTime, nullable=True)
 
-    def __init__(self, name, pkgtype, settings, deploy=False):
+    def __init__(self, name, settings, deploy=False):
         """create instance."""
-        if self._check_constraints(name=name, pkgtype=pkgtype,
-                settings=settings):
-            db.Model.__init__(self, name=name,
-                    pkgtype=pkgtype, settings=settings)
+        if self._check_constraints(name=name,
+                settings=settings, deploy=deploy):
+            db.Model.__init__(self, name=name, settings=settings)
             self.save()
             if deploy: # set deploy date
                 self.deploy_now()
@@ -479,13 +474,6 @@ class CaPackage(SurrogatePK, NameIdMixin, CreatedDateMixin, Model):
                     if c is not None:
                         raise DuplicateCaPackageNameError(
                                 'duplicate package name(%s)' % value)
-            elif k == 'pkgtype':
-                if not value:
-                    raise InvalidEmptyValueError(
-                            'not allowed empty value for `pkgtype`')
-                if value not in ALLOWED_CAPACKAGE_TYPES:
-                    raise InvalidCaPackageTypeError(
-                        'not allowed package type(%s)' % value)
         return True
 
     def delete(self, commit=True):
