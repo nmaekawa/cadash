@@ -60,5 +60,5 @@ class DuplicateMhClusterAdminHostError(Error):
     """mhcluster admin_host name already in inventory."""
 
 
-class  DuplicateCaPackageNameError(Error):
+class DuplicateCaPackageNameError(Error):
     """ capackage name already in inventory."""
