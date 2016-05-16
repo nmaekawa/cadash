@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """Database module, including the SQLAlchemy database object and DB-related utilities."""
 import datetime
+import json
 from sqlalchemy.orm import relationship
 from sqlalchemy.orm import validates
 
@@ -90,6 +91,35 @@ class NameIdMixin(object):
 
     def __repr__(self):
         return self.name
+
+class SettingsMixin(object):
+    """mixin that adds a settings column to any declarative-mapped class.
+
+    assumes main object has CRUDMixin as parent
+    settings assumed to be a dict that can be shallow copied and it's saved
+        internally as json
+    last_udpate is also provided.
+    """
+    __table_args__ = {'extend_existing': True}
+
+
+    _settings_json = Column('settings_json',
+            db.UnicodeText, nullable=False, default=u'{}')
+    _settings_last_update = Column('settings_last_update',
+            db.DateTime, nullable=True)
+
+    @property
+    def settings_last_update(self):
+        return self._settings_last_update
+
+    @property
+    def settings(self):
+        return json.loads(self._settings_json)
+
+    @settings.setter
+    def settings(self, s):
+        self._settings_json = json.dumps(s, ensure_ascii=False)
+        self._settings_last_update = datetime.datetime.utcnow()
 
 
 def reference_col(tablename, nullable=False, pk_name='id', **kwargs):

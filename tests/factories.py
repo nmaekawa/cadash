@@ -54,7 +54,7 @@ class MhClusterFactory(BaseFactory):
 
 class VendorFactory(BaseFactory):
     """vendor factory."""
-    name = Sequence(lambda n: 'vendor%s' % n)
+    name = Sequence(lambda n: 'epiphan%s' % n)
     model = Sequence(lambda n: 'model%s' % n)
 
     class Meta:

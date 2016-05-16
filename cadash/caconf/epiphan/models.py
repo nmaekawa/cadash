@@ -2,11 +2,12 @@
 """models for epiphan-pearl capture agent devices.
 
 this approach considers that the device can take input via `connectors`, like
-hdmi|sdi|vga|analog, and that connectors can take audio or video or both signals.
-so, an audio signal via `connector` hdmi is called a `source`.
+hdmi|sdi|vga|analog, and that connectors can take audio or video or both
+signals.  so, an audio signal via `connector` hdmi is called a `source`.
 
 epiphan-pearls have 2 groups of inputs via a set of connectors, usually called
-'A' and 'B'. So, for example, an audio SDI signal in group 'A'is named 'SDI-A Audio'.
+'A' and 'B'. So, for example, an audio SDI signal in group 'A'is named
+'SDI-A Audio'.
 
 from sources, you can create `channels` (that can combine multiple sources).
 
@@ -38,17 +39,23 @@ class EpipearlSource(object):
                 self._group = nlist[1]
 
         if not self._type:
-            raise MalformedJsonError('source json missing "type"(as in audio|video)')
+            raise MalformedJsonError(
+                    'source json missing "type"(as in audio|video)')
         elif not self._name:
-            raise MalformedJsonError('source json missing "name"')
+            raise MalformedJsonError(
+                    'source json missing "name"')
         elif not self_sid:
-            raise MalformedJsonError('source json missing "id"')
+            raise MalformedJsonError(
+                    'source json missing "id"')
         elif not self._did:
-            raise MalformedJsonError('source json missing "id"(as in device id)')
+            raise MalformedJsonError(
+                    'source json missing "id"(as in device id)')
         elif not self._connector:
-            raise MalformedJsonError('source json missing "id"(as in source connector)')
+            raise MalformedJsonError(
+                    'source json missing "id"(as in source connector)')
         elif not self._group:
-            raise MalformedJsonError('source json missing "id"(as in device group)')
+            raise MalformedJsonError(
+                    'source json missing "id"(as in device group)')
 
     @property
     def group(self):
