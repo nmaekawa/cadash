@@ -4,25 +4,10 @@
 <div class="body-content">
     <div class="row">
       <h1>inventory v-{{ version }}</h1>
+      <p>home page for capture agent inventory.
       </p>
     </div>
-    <div class="row">
-        <ul class="nav nav-tabs">
-            <li class="active"><a href="{{ url_for('inventory.ca_list') }}">
-                capture agent <span class="sr-only">(current)</span></a></li>
-            <li><a href="{{ url_for('inventory.vendor_list') }}">
-                vendor</a></li>
-            <li><a href="{{ url_for('inventory.location_list') }}">
-                location</a></li>
-            <li><a href="{{ url_for('inventory.cluster_list') }}">
-            mh cluster</a></li>
-        </ul>
-     </div>
-     <div class="row">
-         {% block inventory_content %}
-         <h2>this is where the forms go</h2>
-         {% endblock %}
-     </div>
 </div>
 {% endblock %}
+
 

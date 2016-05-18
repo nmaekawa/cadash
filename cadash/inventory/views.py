@@ -55,7 +55,9 @@ blueprint = Blueprint(
 @login_required
 def home():
     """inventory home page."""
-    return ca_list()
+    #return ca_list()
+    return render_template('inventory/home.html',
+            version=app_version)
 
 @blueprint.route('/ca/list', methods=['GET'])
 @login_required
