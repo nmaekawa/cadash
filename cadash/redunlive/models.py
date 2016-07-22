@@ -2,7 +2,6 @@
 """models for redunlive module."""
 import arrow
 import logging
-import requests
 
 from cadash import utils
 
@@ -14,6 +13,7 @@ class CaptureAgent(object):
     the device is the source of truth, and when unreachable, the proxy status
     is 'not available'
     """
+
     def __init__(self, serial_number, address):
         self._serial_number = serial_number
         self._address = address

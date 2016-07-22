@@ -5,10 +5,9 @@ from flask import render_template
 from flask_restful import Api
 
 from cadash import castatus
+from cadash import inventory
 from cadash import public
 from cadash import redunlive
-from cadash import user
-from cadash import inventory
 from cadash.assets import assets
 from cadash.extensions import bcrypt
 from cadash.extensions import cache

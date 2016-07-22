@@ -59,9 +59,9 @@ def map_redunlive_ca_loc(data):
 
         # find the live streaming channel
         if 'channels' in ca_item['ca_attributes']:
-            for chan,info in ca_item['ca_attributes']['channels'].iteritems():
-                if 'Live' in info['name']:
-                    if 'LowBR' not in info['name']:
+            for chan, info in ca_item['ca_attributes']['channels'].iteritems():
+                if 'live' in info['name'].lower():
+                    if 'lowbr' not in info['name'].lower():
                         ca.channels['live']['channel'] = chan if chan else 'not available'
                         if 'publish_type' in info:
                             ca.channels['live']['publish_type'] = info['publish_type']
@@ -81,30 +81,9 @@ def map_redunlive_ca_loc(data):
     return {'all_locations': all_locations, 'all_cas': all_cas}
 
 
-
 def set_epipearl_client(ca):
     ca.client = Epipearl(
             'http://%s' % ca.address,
             current_app.config['EPIPEARL_USER'],
             current_app.config['EPIPEARL_PASSWD'])
     ca.sync_live_status()
-
-
-
-# to check what map_redunlive_ca_loc generates do
-# python data_masseuse.py
-if __name__ == '__main__':
-    import os
-    import json
-
-    data_filename = os.path.join(
-        os.path.abspath(os.path.dirname(__file__)), '../tests/ca_loc_shortmap.json')
-    txt = open(data_filename, 'r')
-    data = json.load(txt)
-    txt.close()
-    result = map_redunlive_ca_loc(data)
-
-    for x in result['all_locations'].values():
-        print '------------------------------------'
-        print '%s' % x.debug_print()
-        print '------------------------------------'

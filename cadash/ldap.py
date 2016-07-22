@@ -5,6 +5,7 @@ from ldap3 import Connection
 from ldap3 import Server
 import logging
 
+
 class LdapClient(object):
     """simple ldap client for dce ldap server.
 
@@ -25,14 +26,10 @@ class LdapClient(object):
         self._base_search = app.config['LDAP_BASE_SEARCH']
         self._usr = app.config['LDAP_BIND_DN']
         self._pwd = app.config['LDAP_BIND_PASSWD']
-        # requiring ldap connection at this early stage of the app init
-        # prevents use of manage.py!
-        #if not self.is_authenticated(self._usr, self._pwd):
-        #    raise ValueError('ldap user:password combination failed to authenticate')
 
 
     def is_authenticated(self, username, password):
-        """authenticates user with ldap server."""
+        """authenticate user with ldap server."""
         u = ('uid=%s,ou=People,' % username) + self._base_search
         conn = Connection(self._server, user=u, password=password)
         conn.open()

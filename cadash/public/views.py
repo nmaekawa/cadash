@@ -16,13 +16,12 @@ from flask_login import logout_user
 
 from cadash import __version__ as app_version
 from cadash.extensions import cache
-from cadash.extensions import ldap_cli
 from cadash.extensions import login_manager
 from cadash.public.forms import LoginForm
-from cadash.utils import fetch_ldap_user
 from cadash.utils import flash_errors
 
 blueprint = Blueprint('public', __name__, static_folder='../static')
+
 
 @login_manager.user_loader
 def load_user(user_id):

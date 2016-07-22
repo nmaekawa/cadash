@@ -8,6 +8,7 @@ import re
 import sys
 import yaml
 
+from flask import current_app
 from flask import flash
 from flask import redirect
 from flask import request
@@ -46,6 +47,7 @@ def setup_logging(
         logging.config.dictConfig(config)
     else:
         logging.basicConfig(level=default_level)
+
 
 def clean_name(name):
     """
@@ -132,7 +134,7 @@ def fetch_ldap_user(usr, pwd, cli):
 
 
 def is_authorized_by_groups(user, groups):
-    """returns True if `user` in any group of list `groups`."""
+    """return True if `user` in any group of list `groups`."""
     for g in groups:
         if user.is_in_group(g):
             return True
@@ -143,10 +145,10 @@ def requires_roles(*roles):
     def wrapper(f):
         @wraps(f)
         def wrapped(*args, **kwargs):
-            if not is_authorized_by_groups(current_user, *roles):
-                flash('You need to login, or do not have credentials to access this page', 'info')
-                return redirect(url_for('public.home', next=request.url))
+            if not current_app.config.get('LOGIN_DISABLED'):
+                if not is_authorized_by_groups(current_user, *roles):
+                    flash('You need to login, or do not have credentials to access this page', 'info')
+                    return redirect(url_for('public.home', next=request.url))
             return f(*args, **kwargs)
         return wrapped
     return wrapper
-

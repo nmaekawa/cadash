@@ -38,6 +38,3 @@ class LoginForm(Form):
             self.username.errors.append('User not activated')
             return False
         return True
-
-
-

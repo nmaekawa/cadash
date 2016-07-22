@@ -1,19 +1,13 @@
 # -*- coding: utf-8 -*-
-"""rest resources inventory section"""
-import json
-import logging
-import time
+"""rest resources inventory section."""
 
 from flask_login import login_required
-from flask_restful import Api
 from flask_restful import Resource
 from flask_restful import abort
 from flask_restful import fields
 from flask_restful import marshal
-from flask_restful import marshal_with
 from flask_restful import reqparse
 
-from cadash import __version__ as app_version
 from cadash.inventory.errors import AssociationError
 from cadash.inventory.errors import DuplicateCaptureAgentNameError
 from cadash.inventory.errors import DuplicateCaptureAgentAddressError
@@ -71,31 +65,43 @@ RESOURCE_FIELDS = {
         },
 }
 
+
 def register_resources(api):
     """add resources to rest-api."""
-    api.add_resource(Ca_API,
+    api.add_resource(
+            Ca_API,
             '/api/inventory/cas/<int:r_id>', endpoint='api_ca')
-    api.add_resource(Ca_ListAPI,
+    api.add_resource(
+            Ca_ListAPI,
             '/api/inventory/cas', endpoint='api_calist')
-    api.add_resource(Location_API,
+    api.add_resource(
+            Location_API,
             '/api/inventory/locations/<int:r_id>', endpoint='api_location')
-    api.add_resource(Location_ListAPI,
+    api.add_resource(
+            Location_ListAPI,
             '/api/inventory/locations', endpoint='api_locationlist')
-    api.add_resource(Vendor_API,
+    api.add_resource(
+            Vendor_API,
             '/api/inventory/vendors/<int:r_id>', endpoint='api_vendor')
-    api.add_resource(Vendor_ListAPI,
+    api.add_resource(
+            Vendor_ListAPI,
             '/api/inventory/vendors', endpoint='api_vendorlist')
-    api.add_resource(MhCluster_API,
+    api.add_resource(
+            MhCluster_API,
             '/api/inventory/clusters/<int:r_id>', endpoint='api_cluster')
-    api.add_resource(MhCluster_ListAPI,
+    api.add_resource(
+            MhCluster_ListAPI,
             '/api/inventory/clusters', endpoint='api_clusterlist')
-    api.add_resource(Role_API,
+    api.add_resource(
+            Role_API,
             '/api/inventory/roles/<int:r_id>', endpoint='api_role')
-    api.add_resource(Role_ListAPI,
+    api.add_resource(
+            Role_ListAPI,
             '/api/inventory/roles', endpoint='api_rolelist')
 
+
 def abort_404_if_resource_none(resource, resource_id):
-    """ return 404."""
+    """return 404."""
     if resource is None:
         abort(404, message='resource not found (%s)' % resource_id)
 
@@ -119,15 +125,18 @@ class Resource_API(Resource):
 
     def get(self, r_id):
         resource = self._resource_model_class.get_by_id(r_id)
-        abort_404_if_resource_none(resource,
+        abort_404_if_resource_none(
+                resource,
                 '%s[%i]' % (self._resource_model_class_name, r_id))
-        return marshal(resource,
+        return marshal(
+                resource,
                 RESOURCE_FIELDS[self._resource_model_class_name]), 200
 
 
     def put(self, r_id):
         resource = self._resource_model_class.get_by_id(r_id)
-        abort_404_if_resource_none(resource,
+        abort_404_if_resource_none(
+                resource,
                 '%s[%i]' % (self._resource_model_class_name, r_id))
 
         args = self._parser_update.parse_args()
@@ -148,7 +157,8 @@ class Resource_API(Resource):
                 MissingVendorError) as e:
             abort(400, message=e.message)
         else:
-            return marshal(resource,
+            return marshal(
+                    resource,
                     RESOURCE_FIELDS[self._resource_model_class_name]), 200
 
     def delete(self, r_id):
@@ -177,7 +187,8 @@ class Resource_ListAPI(Resource):
 
     def get(self):
         resource_list = self._resource_model_class.query.all()
-        return marshal(resource_list,
+        return marshal(
+                resource_list,
                 RESOURCE_FIELDS[self._resource_model_class_name]), 200
 
     def post(self):
@@ -199,7 +210,8 @@ class Resource_ListAPI(Resource):
                 MissingVendorError) as e:
             abort(400, message=e.message)
         else:
-            return marshal(resource,
+            return marshal(
+                    resource,
                     RESOURCE_FIELDS[self._resource_model_class_name]), 201
 
 
@@ -209,11 +221,14 @@ class Ca_API(Resource_API):
     def __init__(self):
         """create instance."""
         super(Ca_API, self).__init__()
-        self._parser_update.add_argument('name', type=str,
+        self._parser_update.add_argument(
+                'name', type=str,
                 location='json', store_missing=False)
-        self._parser_update.add_argument('address', type=str,
+        self._parser_update.add_argument(
+                'address', type=str,
                 location='json', store_missing=False)
-        self._parser_update.add_argument('serial_number', type=str,
+        self._parser_update.add_argument(
+                'serial_number', type=str,
                 location='json', store_missing=False)
 
 
@@ -223,13 +238,17 @@ class Ca_ListAPI(Resource_ListAPI):
     def __init__(self):
         """create instance."""
         super(Ca_ListAPI, self).__init__()
-        self._parser_create.add_argument('name', type=str, required=True,
+        self._parser_create.add_argument(
+                'name', type=str, required=True,
                 help='`name` cannot be blank', location='json')
-        self._parser_create.add_argument('address', type=str, required=True,
+        self._parser_create.add_argument(
+                'address', type=str, required=True,
                 help='`address` cannot be blank', location='json')
-        self._parser_create.add_argument('vendor_id', type=int, required=True,
+        self._parser_create.add_argument(
+                'vendor_id', type=int, required=True,
                 help='`vendor` cannet be blank', location='json')
-        self._parser_create.add_argument('serial_number', type=str,
+        self._parser_create.add_argument(
+                'serial_number', type=str,
                 location='json', store_missing=False)
 
 
@@ -239,7 +258,8 @@ class Location_API(Resource_API):
     def __init__(self):
         """create instance."""
         super(Location_API, self).__init__()
-        self._parser_update.add_argument('name', type=str, location='json',
+        self._parser_update.add_argument(
+                'name', type=str, location='json',
                 store_missing=False)
 
 
@@ -249,7 +269,8 @@ class Location_ListAPI(Resource_ListAPI):
     def __init__(self):
         """create instance."""
         super(Location_ListAPI, self).__init__()
-        self._parser_create.add_argument('name', type=str, location='json',
+        self._parser_create.add_argument(
+                'name', type=str, location='json',
                 help='`name` cannot be blank', required=True)
 
 
@@ -259,9 +280,11 @@ class Vendor_API(Resource_API):
     def __init__(self):
         """create instance."""
         super(Vendor_API, self).__init__()
-        self._parser_update.add_argument('name', type=str, location='json',
+        self._parser_update.add_argument(
+                'name', type=str, location='json',
                 store_missing=False)
-        self._parser_update.add_argument('model', type=str, location='json',
+        self._parser_update.add_argument(
+                'model', type=str, location='json',
                 store_missing=False)
 
 
@@ -271,9 +294,11 @@ class Vendor_ListAPI(Resource_ListAPI):
     def __init__(self):
         """create instance."""
         super(Vendor_ListAPI, self).__init__()
-        self._parser_create.add_argument('name', type=str, location='json',
+        self._parser_create.add_argument(
+                'name', type=str, location='json',
                 help='`name` cannot be blank', required=True)
-        self._parser_create.add_argument('model', type=str, location='json',
+        self._parser_create.add_argument(
+                'model', type=str, location='json',
                 help='`model` cannot be blank', required=True)
 
 
@@ -283,11 +308,14 @@ class MhCluster_API(Resource_API):
     def __init__(self):
         """create instance."""
         super(MhCluster_API, self).__init__()
-        self._parser_update.add_argument('name', type=str, location='json',
+        self._parser_update.add_argument(
+                'name', type=str, location='json',
                 store_missing=False)
-        self._parser_update.add_argument('admin_host', type=str, location='json',
+        self._parser_update.add_argument(
+                'admin_host', type=str, location='json',
                 store_missing=False)
-        self._parser_update.add_argument('env', type=str, location='json',
+        self._parser_update.add_argument(
+                'env', type=str, location='json',
                 store_missing=False)
 
 
@@ -297,11 +325,14 @@ class MhCluster_ListAPI(Resource_ListAPI):
     def __init__(self):
         """create instance."""
         super(MhCluster_ListAPI, self).__init__()
-        self._parser_create.add_argument('name', type=str, location='json',
+        self._parser_create.add_argument(
+                'name', type=str, location='json',
                 help='`name` cannot be blank', required=True)
-        self._parser_create.add_argument('admin_host', type=str, location='json',
+        self._parser_create.add_argument(
+                'admin_host', type=str, location='json',
                 help='`admin_host` cannot be blank', required=True)
-        self._parser_create.add_argument('env', type=str, location='json',
+        self._parser_create.add_argument(
+                'env', type=str, location='json',
                 help='`env` cannot be blank', required=True)
 
 
@@ -318,8 +349,7 @@ class Role_API(Resource):
     def get(self, r_id):
         resource = Role.query.filter_by(ca_id=r_id).first()
         abort_404_if_resource_none(resource, 'Role[%i]' % r_id)
-        return marshal(resource,
-                RESOURCE_FIELDS['Role']), 200
+        return marshal(resource, RESOURCE_FIELDS['Role']), 200
 
 
     def put(self, r_id):
@@ -341,24 +371,27 @@ class Role_ListAPI(Resource):
         super(Role_ListAPI, self).__init__()
 
         self._parser_create = reqparse.RequestParser()
-        self._parser_create.add_argument('name', type=str,
+        self._parser_create.add_argument(
+                'name', type=str,
                 location='json', required=True,
                 help='`name` cannot be blank')
-        self._parser_create.add_argument('ca_id', type=int,
+        self._parser_create.add_argument(
+                'ca_id', type=int,
                 location='json', required=True,
                 help='`ca_id` cannot be blank')
-        self._parser_create.add_argument('location_id', type=int,
+        self._parser_create.add_argument(
+                'location_id', type=int,
                 location='json', required=True,
                 help='`location_id` cannot be blank')
-        self._parser_create.add_argument('cluster_id', type=int,
+        self._parser_create.add_argument(
+                'cluster_id', type=int,
                 location='json', required=True,
                 help='`cluster_id` cannot be blank')
 
 
     def get(self):
         resource_list = Role.query.all()
-        return marshal(resource_list,
-                RESOURCE_FIELDS['Role']), 200
+        return marshal(resource_list, RESOURCE_FIELDS['Role']), 200
 
     def post(self):
         args = self._parser_create.parse_args()
@@ -370,5 +403,4 @@ class Role_ListAPI(Resource):
                 InvalidOperationError) as e:
             abort(400, message=e.message)
         else:
-            return marshal(resource,
-                    RESOURCE_FIELDS['Role']), 201
+            return marshal(resource, RESOURCE_FIELDS['Role']), 201
