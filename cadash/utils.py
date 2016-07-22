@@ -8,6 +8,7 @@ import re
 import sys
 import yaml
 
+from flask import current_app
 from flask import flash
 from flask import redirect
 from flask import request
@@ -143,9 +144,10 @@ def requires_roles(*roles):
     def wrapper(f):
         @wraps(f)
         def wrapped(*args, **kwargs):
-            if not is_authorized_by_groups(current_user, *roles):
-                flash('You need to login, or do not have credentials to access this page', 'info')
-                return redirect(url_for('public.home', next=request.url))
+            if not current_app.config.get('LOGIN_DISABLED'):
+                if not is_authorized_by_groups(current_user, *roles):
+                    flash( 'You need to login, or do not have credentials to access this page', 'info')
+                    return redirect(url_for('public.home', next=request.url))
             return f(*args, **kwargs)
         return wrapped
     return wrapper

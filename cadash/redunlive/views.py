@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-"""redunlive section"""
+"""redunlive section."""
 import json
 import logging
 import time
@@ -13,8 +13,10 @@ from flask_login import login_required
 
 from cadash import __version__ as app_version
 from cadash.utils import pull_data
+from cadash.utils import requires_roles
 from cadash.redunlive.data_masseuse import map_redunlive_ca_loc
 
+required_groups = ['deadmin']
 
 blueprint = Blueprint(
         'redunlive', __name__,
@@ -23,6 +25,7 @@ blueprint = Blueprint(
 
 
 def prep_redunlive_data():
+    """read and parse data for redunlive."""
     json_text = pull_data(
             current_app.config['CA_STATS_JSON_URL'],
             creds={
@@ -34,6 +37,7 @@ def prep_redunlive_data():
 
 @blueprint.route('/', methods=['GET', 'POST'])
 @login_required
+@requires_roles(required_groups)
 def home():
     """redunlive home page: all locations."""
     # example of logger
