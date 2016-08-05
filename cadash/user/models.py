@@ -2,6 +2,7 @@
 """User models."""
 from flask_login import UserMixin
 
+
 class BaseUser(UserMixin):
     """base user of the app."""
 
@@ -26,7 +27,7 @@ class BaseUser(UserMixin):
         return group in self._grp
 
     def place_in_groups(self, groups):
-        """add user to list `groups`. prevents duplicates"""
+        """add user to list `groups`. prevents duplicates."""
         self._grp = list(set(self._grp + groups))
 
     def remove_from_group(self, group):

@@ -40,10 +40,6 @@ class DuplicateCaptureAgentSerialNumberError(Error):
     """ca serial_number already in inventory."""
 
 
-class DuplicateCaptureAgentNameError(Error):
-    """ca name already in inventory."""
-
-
 class DuplicateLocationNameError(Error):
     """location name already in inventory."""
 

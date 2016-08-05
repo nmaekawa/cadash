@@ -8,9 +8,7 @@ from cadash.database import Model
 from cadash.database import NameIdMixin
 from cadash.database import SurrogatePK
 from cadash.database import db
-from cadash.database import reference_col
 from cadash.database import relationship
-from cadash.database import validates
 from cadash.inventory.errors import AssociationError
 from cadash.inventory.errors import DuplicateCaptureAgentNameError
 from cadash.inventory.errors import DuplicateCaptureAgentAddressError
@@ -32,6 +30,7 @@ UPDATEABLE_CA_FIELDS = frozenset([u'name', u'address', u'serial_number'])
 UPDATEABLE_CLUSTER_FIELDS = frozenset([u'name', u'admin_host', u'env'])
 UPDATEABLE_LOCATION_FIELDS = frozenset([u'name'])
 UPDATEABLE_VENDOR_FIELDS = frozenset([u'name', u'model'])
+
 
 class Location(SurrogatePK, NameIdMixin, Model):
     """a room where a capture agent is installed."""
@@ -73,7 +72,7 @@ class Location(SurrogatePK, NameIdMixin, Model):
             return super(Location, self).update(**kwargs)
 
     def _check_constraints(self, **kwargs):
-        """throws an error if args violate location constraints."""
+        """raise an error if args violate location constraints."""
         for k, value in kwargs.items():
             if k == 'name':
                 if not value or not value.strip():
@@ -81,7 +80,7 @@ class Location(SurrogatePK, NameIdMixin, Model):
                             'not allowed empty value for `name`')
                 if not value == self.name:
                     l = Location.query.filter_by(name=value).first()
-                    if not l is None:
+                    if l is not None:
                         raise DuplicateLocationNameError(
                                 'duplicate location name(%s)' % value)
         return True
@@ -95,16 +94,16 @@ class Role(Model):
     ca_id = Column(db.Integer, db.ForeignKey('ca.id'), primary_key=True)
     ca = relationship('Ca', back_populates='role')
     location_id = Column(db.Integer, db.ForeignKey('location.id'))
-    location = relationship('Location',
-            back_populates='capture_agents', uselist=False)
+    location = relationship(
+            'Location', back_populates='capture_agents', uselist=False)
     cluster_id = Column(db.Integer, db.ForeignKey('mhcluster.id'))
-    cluster = relationship('MhCluster',
-            back_populates='capture_agents', uselist=False)
+    cluster = relationship(
+            'MhCluster', back_populates='capture_agents', uselist=False)
     created_at = Column(db.DateTime, nullable=False, default=dt.datetime.utcnow)
 
 
     def __init__(self, ca, location, cluster, name):
-        """validates constraints and create instance."""
+        """validate constraints and create instance."""
         # role name is valid?
         role_name = name.lower()
         if role_name not in CA_ROLES:
@@ -121,22 +120,23 @@ class Role(Model):
             duplicate = location.get_ca_by_role(role_name)
             if duplicate:
                 raise AssociationError(
-                        ('cannot associate location(%s): '
-                        'already has ca with role(%s)') %
-                        (location.name_id, role_name))
+                    'cannot associate location(%s): already has ca with role(%s)'
+                    % (location.name_id, role_name))
 
-        db.Model.__init__(self, ca=ca, location=location,
+        db.Model.__init__(
+                self, ca=ca, location=location,
                 cluster=cluster, name=role_name)
 
 
     def __repr__(self):
-        """represet instance as unique string."""
-        return '<%s as %s in %s for %s>' % (self.ca.name_id,
+        """represent instance as unique string."""
+        return '<%s as %s in %s for %s>' % (
+                self.ca.name_id,
                 self.name, self.location.name_id, self.cluster.name_id)
 
 
     def update(self, commit=True, **kwargs):
-        """overrides to disable updates in role relationship."""
+        """override to disable updates in role relationship."""
         raise InvalidOperationError('not allowed update `role` relatioship')
 
 
@@ -155,11 +155,13 @@ class Ca(SurrogatePK, NameIdMixin, Model):
 
     def __init__(self, name, address, vendor_id, serial_number=None):
         """create instance."""
-        if self._check_constraints(name=name,
+        if self._check_constraints(
+                name=name,
                 address=address, vendor_id=vendor_id,
                 serial_number=serial_number):
-            db.Model.__init__(self, name=name, address=address,
-                        vendor_id=vendor_id, serial_number=serial_number)
+            db.Model.__init__(
+                    self, name=name, address=address,
+                    vendor_id=vendor_id, serial_number=serial_number)
 
     @property
     def role_name(self):
@@ -198,7 +200,7 @@ class Ca(SurrogatePK, NameIdMixin, Model):
 
 
     def _check_constraints(self, **kwargs):
-        """throws an error if args violate ca constraints."""
+        """raise an error if args violate ca constraints."""
         for key, value in kwargs.items():
             # fail if unknown vendor
             if key == 'vendor_id':
@@ -219,7 +221,7 @@ class Ca(SurrogatePK, NameIdMixin, Model):
                             'not allowed empty value for `name`')
                 if not value == self.name:
                     c = Ca.query.filter_by(name=value).first()
-                    if not c is None:
+                    if c is not None:
                         raise DuplicateCaptureAgentNameError(
                                 'duplicate ca name(%s)' % value)
                 next
@@ -231,7 +233,7 @@ class Ca(SurrogatePK, NameIdMixin, Model):
                             'not allowed empty value for `address`')
                 if not value == self.address:
                     c = Ca.query.filter_by(address=value).first()
-                    if not c is None:
+                    if c is not None:
                         raise DuplicateCaptureAgentAddressError(
                                 'duplicate ca address(%s)' % value)
                 next
@@ -239,7 +241,7 @@ class Ca(SurrogatePK, NameIdMixin, Model):
             # fail if duplicate serial_number
             if key == 'serial_number' and not value == self.serial_number:
                 c = Ca.query.filter_by(serial_number=value).first()
-                if not c is None:
+                if c is not None:
                     raise DuplicateCaptureAgentSerialNumberError(
                             'duplicate ca serial_number(%s)' % value)
         return True
@@ -258,7 +260,8 @@ class Vendor(SurrogatePK, Model):
     def __init__(self, name, model):
         """create instance."""
         if self._check_constraints(name=name, model=model):
-            db.Model.__init__(self, name=name, model=model,
+            db.Model.__init__(
+                    self, name=name, model=model,
                     name_id=Vendor.computed_name_id(name, model))
 
     def __repr__(self):
@@ -284,13 +287,13 @@ class Vendor(SurrogatePK, Model):
                     name_id=self.computed_name_id(self.name, self.model))
 
     def _check_constraints(self, **kwargs):
-        """throws an error if args violate vendor constraints."""
+        """raise an error if args violate vendor constraints."""
         n = kwargs['name'] if 'name' in kwargs.keys() else self.name
         m = kwargs['model'] if 'model' in kwargs.keys() else self.model
         nm = Vendor.computed_name_id(n, m)
         if not nm == self.name_id:
             v = Vendor.query.filter_by(name_id=nm).first()
-            if not v is None:
+            if v is not None:
                 raise DuplicateVendorNameModelError(
                         'duplicate vendor name_model(%s)' % nm)
         return True
@@ -315,8 +318,8 @@ class MhCluster(SurrogatePK, NameIdMixin, Model):
         """create instance."""
         environment = self._get_valid_env(env)
         if self._check_constraints(name=name, admin_host=admin_host):
-            db.Model.__init__(self, name=name, admin_host=admin_host,
-                    env=environment)
+            db.Model.__init__(
+                    self, name=name, admin_host=admin_host, env=environment)
 
     def get_ca(self):
         """return all capture agents configured for this cluster."""
@@ -350,7 +353,7 @@ class MhCluster(SurrogatePK, NameIdMixin, Model):
             return self.save()
 
     def _check_constraints(self, **kwargs):
-        """throws an error if args violate mh cluster constraints."""
+        """raise an error if args violate mh cluster constraints."""
         for k, value in kwargs.items():
             if k == 'name':
                 if not value:
@@ -358,7 +361,7 @@ class MhCluster(SurrogatePK, NameIdMixin, Model):
                             'not allowed empty value for `name`')
                 if not value == self.name:
                     c = MhCluster.query.filter_by(name=value).first()
-                    if not c is None:
+                    if c is not None:
                         raise DuplicateMhClusterNameError(
                                 'duplicate mh_cluster name(%s)' % value)
                 next
@@ -369,13 +372,13 @@ class MhCluster(SurrogatePK, NameIdMixin, Model):
                             'not allowed empty value for `admin_host`')
                 if not value == self.admin_host:
                     c = MhCluster.query.filter_by(admin_host=value).first()
-                    if not c is None:
+                    if c is not None:
                         raise DuplicateMhClusterAdminHostError(
                                 'duplicate mh_cluster admin host(%s)' % value)
         return True
 
     def _get_valid_env(self, env=None):
-        """returns valid env value: ['prod'|'dev'|'stage']."""
+        """return valid env value: ['prod'|'dev'|'stage']."""
         if env is None:
             raise InvalidMhClusterEnvironmentError(
                     'missing mh cluster environment')
