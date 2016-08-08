@@ -60,8 +60,8 @@ def map_redunlive_ca_loc(data):
         # find the live streaming channel
         if 'channels' in ca_item['ca_attributes']:
             for chan, info in ca_item['ca_attributes']['channels'].iteritems():
-                if 'Live' in info['name']:
-                    if 'LowBR' not in info['name']:
+                if 'live' in info['name'].lower():
+                    if 'lowbr' not in info['name'].lower():
                         ca.channels['live']['channel'] = chan if chan else 'not available'
                         if 'publish_type' in info:
                             ca.channels['live']['publish_type'] = info['publish_type']
