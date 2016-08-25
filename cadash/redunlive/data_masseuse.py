@@ -58,7 +58,8 @@ def map_redunlive_ca_loc(data):
             loc.experimental_cas.append(ca)
 
         # find the live streaming channel
-        if 'channels' in ca_item['ca_attributes']:
+        if 'channels' in ca_item['ca_attributes'] and \
+                isinstance(ca_item['ca_attributes']['channels'], dict):
             for chan, info in ca_item['ca_attributes']['channels'].iteritems():
                 if 'live' in info['name'].lower():
                     if 'lowbr' not in info['name'].lower():
