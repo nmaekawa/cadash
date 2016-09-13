@@ -35,10 +35,10 @@ def create_app(config_object=None, app_name=__name__):
         app.config.from_object(Config())
     else:
         app.config.from_object(config_object)
+    setup_logging(app)
     register_extensions(app)
     register_blueprints(app)
     register_errorhandlers(app)
-    setup_logging(app)
     return app
 
 

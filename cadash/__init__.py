@@ -3,4 +3,4 @@
 
 __author__ = 'nmaekawa'
 __email__ = 'nmaekawa@g.harvard.edu'
-__version__ = '0.2.2'
+__version__ = '0.2.3'
