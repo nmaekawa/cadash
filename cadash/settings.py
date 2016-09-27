@@ -14,11 +14,10 @@ class Config(object):
     ASSETS_DEBUG = True  # do not bundle/minify static assets
     DEBUG_TB_ENABLED = True  # enable Debug toolbar
     DEBUG_TB_INTERCEPT_REDIRECTS = False
-    SQLALCHEMY_TRACK_MODIFICATIONS = False
-    SQLALCHEMY_DATABASE_URI = 'mysql+oursql://%s:%s@localhost/cadash' % (
-            os.environ.get('DATABASE_USR', 'user'),
-            os.environ.get('DATABASE_PWD', 'password'))
     LOG_CONFIG = os.environ.get('LOG_CONFIG', 'logging.yaml')
+
+    # disable tracking
+    SQLALCHEMY_TRACK_MODIFICATIONS = False
 
     # app in-memory cache
     CACHE_TYPE = 'simple'  # Can be "memcached", "redis", etc.
@@ -84,6 +83,11 @@ class Config(object):
             self.DEBUG = False
             self.ASSETS_DEBUG = False
             self.DEBUG_TB_ENABLED = False
+
+            # TODO: Put the db file in separate disk
+            self.DB_NAME = 'prod_cadash.db'
+            self.DB_PATH = os.path.join(Config.PROJECT_ROOT, self.DB_NAME)
+            self.SQLALCHEMY_DATABASE_URI = 'sqlite:///{0}'.format(self.DB_PATH)
 
             # redis cache
             self.CACHE_TYPE = 'redis'

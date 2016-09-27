@@ -45,7 +45,8 @@ blueprint = Blueprint(
 @login_required
 def home():
     """inventory home page."""
-    return render_template('inventory/home.html', version=app_version)
+    #return render_template('inventory/home.html', version=app_version)
+    return ca_list()
 
 
 @blueprint.route('/ca/list', methods=['GET'])
@@ -352,7 +353,7 @@ def role_create():
 
 def get_select_list_for_cas():
     """return a list of ca tuples (id, name_id)."""
-    ca_list = Ca.query.filter(Ca.role is None).all()
+    ca_list = Ca.query.filter(Ca.role == None).all()
     return [(c.id, c.name_id) for c in ca_list]
 
 
