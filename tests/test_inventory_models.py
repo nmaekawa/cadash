@@ -205,6 +205,17 @@ class TestVendorModel(object):
             vendor.update(name_id='fake-vendor')
         assert 'not allowed to update vendor fields: name_id' in str(e.value)
 
+    def test_create_config(self):
+        vendor = Vendor.create(name='epipoing', model='drumpf')
+        retrieved = Vendor.get_by_id(vendor.id)
+        assert retrieved == vendor
+        assert vendor.config is not None
+        assert vendor.config.touchscreen_timeout_secs == 600
+        assert not vendor.config.touchscreen_allow_recording
+        assert vendor.config.maintenance_permanent_logs
+        assert vendor.config.datetime_timezone == 'US/Eastern'
+        assert vendor.config.datetime_ntpserver == '0.pool.ntp.org'
+        assert vendor.config.firmware_version == '3.15.3f'
 
 
 @pytest.mark.usefixtures('db', 'simple_db')

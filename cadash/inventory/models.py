@@ -256,6 +256,7 @@ class Vendor(SurrogatePK, Model):
     model = Column(db.String(64), unique=False, nullable=False)
     name_id = Column(db.String(128), unique=True, nullable=False)
     capture_agents = relationship('Ca', back_populates='vendor')
+    config = relationship('VendorConfig', back_populates='vendor', uselist=False)
 
     def __init__(self, name, model):
         """create instance."""
@@ -263,6 +264,8 @@ class Vendor(SurrogatePK, Model):
             db.Model.__init__(
                     self, name=name, model=model,
                     name_id=Vendor.computed_name_id(name, model))
+            cfg = VendorConfig.create(vendor=self)
+            self.config = cfg
 
     def __repr__(self):
         return self.name_id
@@ -301,6 +304,34 @@ class Vendor(SurrogatePK, Model):
     @classmethod
     def computed_name_id(cls, name, model):
         return '%s_%s' % (utils.clean_name(name), utils.clean_name(model))
+
+
+class VendorConfig(SurrogatePK, Model):
+    """configuration settings for vendors."""
+
+    __tablename__ = 'vendor_config'
+    created_at = Column(db.DateTime, nullable=False, default=dt.datetime.utcnow)
+    touchscreen_timeout_secs = Column(db.Integer, nullable=False, default=600)
+    touchscreen_allow_recording = Column(db.Boolean, nullable=False, default=False)
+    maintenance_permanent_logs = Column(db.Boolean, nullable=False, default=True)
+    datetime_timezone = Column(db.String, nullable=False, default='US/Eastern')
+    datetime_ntpserver = Column(db.String, nullable=False, default='0.pool.ntp.org')
+    firmware_version = Column(db.String, nullable=False, default='3.15.3f')
+    vendor_id = Column(db.Integer, db.ForeignKey('vendor.id'))
+    vendor = relationship('Vendor', back_populates='config')
+
+    def __repr__(self):
+        return "{}_config".format(self.vendor.name_id)
+
+    def __init__(self, vendor):
+        """validate constraints and create instance."""
+        # vendor already has configs?
+        if bool(vendor.config):
+            raise AssociationError(
+                    'cannot associate vendor({}): already has configs({})'.format(
+                    (vendor.name_id, vendor.config.id)))
+        else:
+            db.Model.__init__(self, vendor=vendor)
 
 
 class MhCluster(SurrogatePK, NameIdMixin, Model):
