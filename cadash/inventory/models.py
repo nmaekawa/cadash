@@ -2,6 +2,7 @@
 """capture agent models."""
 
 import datetime as dt
+import pytz
 
 from cadash.database import Column
 from cadash.database import Model
@@ -21,6 +22,7 @@ from cadash.inventory.errors import InvalidCaRoleError
 from cadash.inventory.errors import InvalidEmptyValueError
 from cadash.inventory.errors import InvalidMhClusterEnvironmentError
 from cadash.inventory.errors import InvalidOperationError
+from cadash.inventory.errors import InvalidTimezoneError
 from cadash.inventory.errors import MissingVendorError
 import cadash.utils as utils
 
@@ -349,8 +351,17 @@ class VendorConfig(SurrogatePK, Model):
                 'not allowed to update vendor config fields: {}'.format(
                         ', '.join(list(x)) ) )
 
-        # use super to update columns
-        return super(VendorConfig, self).update(**kwargs)
+        if self._check_constraints(**kwargs):
+            return super(VendorConfig, self).update(**kwargs)
+
+    def _check_constraints(self, **kwargs):
+        """raise an error if args violate config constraints."""
+        if 'datetime_timezone' in kwargs.keys():
+            if kwargs['datetime_timezone'] not in pytz.all_timezones:
+                raise InvalidTimezoneError(
+                        'invalid timezone ({})'.format(
+                            kwargs['datetime_timezone']))
+        return True  # no constraints to check
 
 
 class MhCluster(SurrogatePK, NameIdMixin, Model):

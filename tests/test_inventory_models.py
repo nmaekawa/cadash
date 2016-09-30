@@ -23,6 +23,7 @@ from cadash.inventory.errors import InvalidCaRoleError
 from cadash.inventory.errors import InvalidEmptyValueError
 from cadash.inventory.errors import InvalidMhClusterEnvironmentError
 from cadash.inventory.errors import InvalidOperationError
+from cadash.inventory.errors import InvalidTimezoneError
 from cadash.inventory.errors import MissingVendorError
 
 from tests.factories import CaFactory
@@ -248,6 +249,13 @@ class TestVendorModel(object):
         assert vendor.config.datetime_timezone == 'US/Alaska'
         assert vendor.config.datetime_ntpserver == '0.pool.ntp.org'
         assert vendor.config.firmware_version == 'fake123'
+
+    def test_update_vendor_config_timezone_invalid(self):
+        vendor = Vendor.create(name='epipoing', model='drumpf')
+        assert vendor.config.datetime_timezone == 'US/Eastern'
+        with pytest.raises(InvalidTimezoneError) as e:
+            vendor.config.update(datetime_timezone='MiddleEarth/Gondor')
+        assert 'invalid timezone (MiddleEarth/Gondor)' in str(e.value)
 
 
 @pytest.mark.usefixtures('db', 'simple_db')

@@ -20,6 +20,10 @@ class InvalidOperationError(Error):
     """can't execute given operation in this object."""
 
 
+class InvalidTimezoneError(Error):
+    """timezone value is invalid."""
+
+
 class AssociationError(Error):
     """can't associate entities due to some constraint."""
 
