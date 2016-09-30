@@ -8,6 +8,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from cadash import utils
 from cadash.inventory.models import Ca
 from cadash.inventory.models import Location
+from cadash.inventory.models import LocationConfig
 from cadash.inventory.models import MhCluster
 from cadash.inventory.models import Role
 from cadash.inventory.models import Vendor
@@ -162,6 +163,63 @@ class TestLocationModel(object):
         with pytest.raises(InvalidOperationError):
             l.update(capture_agents=[simple_db['ca'][3]])
 
+    def test_create_location_config(self):
+        loc = Location.create(name='room with a view')
+        retrieved = Location.get_by_id(loc.id)
+        assert retrieved == loc
+        assert loc.config is not None
+        assert loc.config.primary_pr_vconnector == 'sdi'
+        assert loc.config.primary_pr_vinput == 'a'
+        assert loc.config.primary_pn_vconnector == 'sdi'
+        assert loc.config.primary_pn_vinput == 'b'
+        assert loc.config.secondary_pr_vconnector == 'sdi'
+        assert loc.config.secondary_pr_vinput == 'a'
+        assert loc.config.secondary_pn_vconnector == 'sdi'
+        assert loc.config.secondary_pn_vinput == 'b'
+
+    def test_update_location_config(self):
+        loc = Location.create(name='room with a view')
+        assert loc.config is not None
+        assert loc.config.primary_pr_vconnector == 'sdi'
+        assert loc.config.primary_pr_vinput == 'a'
+        assert loc.config.primary_pn_vconnector == 'sdi'
+        assert loc.config.primary_pn_vinput == 'b'
+        assert loc.config.secondary_pr_vconnector == 'sdi'
+        assert loc.config.secondary_pr_vinput == 'a'
+        assert loc.config.secondary_pn_vconnector == 'sdi'
+        assert loc.config.secondary_pn_vinput == 'b'
+
+        loc.config.update(
+                primary_pr_vconnector='hdmi',
+                primary_pr_vinput='b',
+                primary_pn_vconnector='vga',
+                primary_pn_vinput='a',
+                secondary_pr_vconnector='vga',
+                secondary_pr_vinput='b',
+                secondary_pn_vconnector='vga',
+                secondary_pn_vinput='a'
+                )
+        assert loc.config.primary_pr_vconnector == 'hdmi'
+        assert loc.config.primary_pr_vinput == 'b'
+        assert loc.config.primary_pn_vconnector == 'vga'
+        assert loc.config.primary_pn_vinput == 'a'
+        assert loc.config.secondary_pr_vconnector == 'vga'
+        assert loc.config.secondary_pr_vinput == 'b'
+        assert loc.config.secondary_pn_vconnector == 'vga'
+        assert loc.config.secondary_pn_vinput == 'a'
+
+    def test_should_fail_when_update_config_not_updateable_field(self):
+        loc = Location.create(name='room with a view')
+        with pytest.raises(InvalidOperationError) as e:
+            loc.config.update(location=None)
+        assert 'not allowed to update location config fields: location' in str(e.value)
+
+    def test_should_fail_when_update_config_field_to_None(self):
+        loc = Location.create(name='room with a view')
+        with pytest.raises(InvalidEmptyValueError) as e:
+            loc.config.update(secondary_pn_vinput=None)
+        assert 'not allowed empty value for location config' in str(e.value)
+
 
 @pytest.mark.usefixtures('db', 'simple_db')
 class TestVendorModel(object):
@@ -217,8 +275,9 @@ class TestVendorModel(object):
         assert vendor.config.datetime_timezone == 'US/Eastern'
         assert vendor.config.datetime_ntpserver == '0.pool.ntp.org'
         assert vendor.config.firmware_version == '3.15.3f'
+        assert vendor.config.source_deinterlacing
 
-    def test_update_vendor_config_vendor(self):
+    def test_should_fail_when_update_config_not_updateable_field(self):
         vendor = Vendor.create(name='epipoing', model='drumpf')
         retrieved = Vendor.get_by_id(vendor.id)
         assert retrieved == vendor
@@ -226,7 +285,7 @@ class TestVendorModel(object):
             vendor.config.update(vendor=None)
         assert 'not allowed to update vendor config fields: vendor' in str(e.value)
 
-    def test_update_vendor_config_ok(self):
+    def test_update_vendor_config(self):
         vendor = Vendor.create(name='epipoing', model='drumpf')
         retrieved = Vendor.get_by_id(vendor.id)
         assert retrieved == vendor
@@ -237,20 +296,23 @@ class TestVendorModel(object):
         assert vendor.config.datetime_timezone == 'US/Eastern'
         assert vendor.config.datetime_ntpserver == '0.pool.ntp.org'
         assert vendor.config.firmware_version == '3.15.3f'
+        assert vendor.config.source_deinterlacing
 
         vendor.config.update(
                 touchscreen_timeout_secs=345,
                 maintenance_permanent_logs=False,
                 datetime_timezone='US/Alaska',
-                firmware_version='fake123')
+                firmware_version='fake123',
+                source_deinterlacing=False)
         assert vendor.config.touchscreen_timeout_secs == 345
         assert not vendor.config.touchscreen_allow_recording
         assert not vendor.config.maintenance_permanent_logs
         assert vendor.config.datetime_timezone == 'US/Alaska'
         assert vendor.config.datetime_ntpserver == '0.pool.ntp.org'
         assert vendor.config.firmware_version == 'fake123'
+        assert not vendor.config.source_deinterlacing
 
-    def test_update_vendor_config_timezone_invalid(self):
+    def test_should_fail_when_config_timezone_invalid(self):
         vendor = Vendor.create(name='epipoing', model='drumpf')
         assert vendor.config.datetime_timezone == 'US/Eastern'
         with pytest.raises(InvalidTimezoneError) as e:
@@ -452,3 +514,14 @@ class TestDelete(object):
         """delete config not allowed."""
         with pytest.raises(InvalidOperationError):
             simple_db['vendor'].config.delete()
+
+    def test_delete_location_config(self):
+        loc = Location.create(name='room with a view')
+        assert loc.config is not None
+        c = LocationConfig.get_by_id(loc.config.id)
+        assert c is not None
+        assert c == loc.config
+
+        loc.delete()
+        cfg = LocationConfig.get_by_id(c.id)
+        assert cfg is None

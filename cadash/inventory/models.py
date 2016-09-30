@@ -35,7 +35,12 @@ UPDATEABLE_VENDOR_FIELDS = frozenset([u'name', u'model'])
 UPDATEABLE_VENDOR_CONFIG_FIELDS = frozenset([
         u'touchscreen_timeout_secs', u'touchscreen_allow_recording',
         u'maintenance_permanent_logs', u'firmware_version',
-        u'datetime_timezone', u'datetime_ntpserver'])
+        u'source_deinterlacing', u'datetime_timezone', u'datetime_ntpserver'])
+UPDATEABLE_LOCATION_CONFIG_FIELDS = frozenset([
+        u'primary_pr_vconnector', u'primary_pr_vinput',
+        u'primary_pn_vconnector', u'primary_pn_vinput',
+        u'secondary_pr_vconnector', u'secondary_pr_vinput',
+        u'secondary_pn_vconnector', u'secondary_pn_vinput'])
 
 
 class Location(SurrogatePK, NameIdMixin, Model):
@@ -45,11 +50,14 @@ class Location(SurrogatePK, NameIdMixin, Model):
     created_at = Column(db.DateTime, nullable=False, default=dt.datetime.utcnow)
     name = Column(db.String(80), unique=True, nullable=False)
     capture_agents = relationship('Role', back_populates='location')
+    config = relationship('LocationConfig', back_populates='location', uselist=False)
 
     def __init__(self, name):
         """create instance."""
         if self._check_constraints(name=name):
             db.Model.__init__(self, name=name)
+            cfg = LocationConfig.create(location=self)
+            self.config = cfg
 
     def get_ca(self):
         """return all capture agents installed in location."""
@@ -65,6 +73,7 @@ class Location(SurrogatePK, NameIdMixin, Model):
         """override to undo all relationships involving this location."""
         for c in self.capture_agents:
             c.delete()
+        self.config.delete(commit)  # delete associated config
         return super(Location, self).delete(commit)
 
     def update(self, **kwargs):
@@ -89,6 +98,55 @@ class Location(SurrogatePK, NameIdMixin, Model):
                     if l is not None:
                         raise DuplicateLocationNameError(
                                 'duplicate location name(%s)' % value)
+        return True
+
+
+class LocationConfig(SurrogatePK, Model):
+    """configuration settings for location."""
+
+    __tablename__ = 'location_config'
+    created_at = Column(db.DateTime, nullable=False, default=dt.datetime.utcnow)
+    primary_pr_vconnector = Column(db.String(16), nullable=False, default='sdi')
+    primary_pr_vinput = Column(db.String(16), nullable=False, default='a')
+    primary_pn_vconnector = Column(db.String(16), nullable=False, default='sdi')
+    primary_pn_vinput = Column(db.String(16), nullable=False, default='b')
+    secondary_pr_vconnector = Column(db.String(16), nullable=False, default='sdi')
+    secondary_pr_vinput = Column(db.String(16), nullable=False, default='a')
+    secondary_pn_vconnector = Column(db.String(16), nullable=False, default='sdi')
+    secondary_pn_vinput = Column(db.String(16), nullable=False, default='b')
+    location_id = Column(db.Integer, db.ForeignKey('location.id'))
+    location = relationship('Location', back_populates='config')
+
+    def __repr__(self):
+        return "{}_config".format(self.location.name)
+
+    def __init__(self, location):
+        """validate constraints and create instance."""
+        # location already has configs?
+        if bool(location.config):
+            raise AssociationError(
+                    'cannot associate location({}): already has configs({})'.format(
+                    (location.name, location.config.id)))
+        else:
+            db.Model.__init__(self, location=location)
+
+    def update(self, **kwargs):
+        """override to check config constraints."""
+        x = set(kwargs.keys()).difference(UPDATEABLE_LOCATION_CONFIG_FIELDS)
+        if len(x) > 0:
+            raise InvalidOperationError(
+                'not allowed to update location config fields: {}'.format(
+                        ', '.join(list(x)) ) )
+
+        if self._check_constraints(**kwargs):
+            return super(LocationConfig, self).update(**kwargs)
+
+    def _check_constraints(self, **kwargs):
+        """raise an error if args violate config constraints."""
+        for k, value in kwargs.items():
+            if not value or not value.strip():
+                raise InvalidEmptyValueError(
+                        'not allowed empty value for location config `{}`'.format(k))
         return True
 
 
@@ -320,9 +378,10 @@ class VendorConfig(SurrogatePK, Model):
     touchscreen_timeout_secs = Column(db.Integer, nullable=False, default=600)
     touchscreen_allow_recording = Column(db.Boolean, nullable=False, default=False)
     maintenance_permanent_logs = Column(db.Boolean, nullable=False, default=True)
-    datetime_timezone = Column(db.String, nullable=False, default='US/Eastern')
-    datetime_ntpserver = Column(db.String, nullable=False, default='0.pool.ntp.org')
-    firmware_version = Column(db.String, nullable=False, default='3.15.3f')
+    datetime_timezone = Column(db.String(64), nullable=False, default='US/Eastern')
+    datetime_ntpserver = Column(db.String(128), nullable=False, default='0.pool.ntp.org')
+    firmware_version = Column(db.String(64), nullable=False, default='3.15.3f')
+    source_deinterlacing = Column(db.Boolean, nullable=False, default=True)
     vendor_id = Column(db.Integer, db.ForeignKey('vendor.id'))
     vendor = relationship('Vendor', back_populates='config')
 
