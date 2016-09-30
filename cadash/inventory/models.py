@@ -30,6 +30,10 @@ UPDATEABLE_CA_FIELDS = frozenset([u'name', u'address', u'serial_number'])
 UPDATEABLE_CLUSTER_FIELDS = frozenset([u'name', u'admin_host', u'env'])
 UPDATEABLE_LOCATION_FIELDS = frozenset([u'name'])
 UPDATEABLE_VENDOR_FIELDS = frozenset([u'name', u'model'])
+UPDATEABLE_VENDOR_CONFIG_FIELDS = frozenset([
+        u'touchscreen_timeout_secs', u'touchscreen_allow_recording',
+        u'maintenance_permanent_logs', u'firmware_version',
+        u'datetime_timezone', u'datetime_ntpserver'])
 
 
 class Location(SurrogatePK, NameIdMixin, Model):
@@ -332,6 +336,21 @@ class VendorConfig(SurrogatePK, Model):
                     (vendor.name_id, vendor.config.id)))
         else:
             db.Model.__init__(self, vendor=vendor)
+
+    def delete(self, commit=True):
+        """override to disable deletion of vendor configuration."""
+        raise InvalidOperationError('not allowed to delete `vendor_config`')
+
+    def update(self, **kwargs):
+        """override to check config constraints."""
+        x = set(kwargs.keys()).difference(UPDATEABLE_VENDOR_CONFIG_FIELDS)
+        if len(x) > 0:
+            raise InvalidOperationError(
+                'not allowed to update vendor config fields: {}'.format(
+                        ', '.join(list(x)) ) )
+
+        # use super to update columns
+        return super(VendorConfig, self).update(**kwargs)
 
 
 class MhCluster(SurrogatePK, NameIdMixin, Model):

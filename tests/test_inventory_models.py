@@ -217,6 +217,38 @@ class TestVendorModel(object):
         assert vendor.config.datetime_ntpserver == '0.pool.ntp.org'
         assert vendor.config.firmware_version == '3.15.3f'
 
+    def test_update_vendor_config_vendor(self):
+        vendor = Vendor.create(name='epipoing', model='drumpf')
+        retrieved = Vendor.get_by_id(vendor.id)
+        assert retrieved == vendor
+        with pytest.raises(InvalidOperationError) as e:
+            vendor.config.update(vendor=None)
+        assert 'not allowed to update vendor config fields: vendor' in str(e.value)
+
+    def test_update_vendor_config_ok(self):
+        vendor = Vendor.create(name='epipoing', model='drumpf')
+        retrieved = Vendor.get_by_id(vendor.id)
+        assert retrieved == vendor
+        assert vendor.config is not None
+        assert vendor.config.touchscreen_timeout_secs == 600
+        assert not vendor.config.touchscreen_allow_recording
+        assert vendor.config.maintenance_permanent_logs
+        assert vendor.config.datetime_timezone == 'US/Eastern'
+        assert vendor.config.datetime_ntpserver == '0.pool.ntp.org'
+        assert vendor.config.firmware_version == '3.15.3f'
+
+        vendor.config.update(
+                touchscreen_timeout_secs=345,
+                maintenance_permanent_logs=False,
+                datetime_timezone='US/Alaska',
+                firmware_version='fake123')
+        assert vendor.config.touchscreen_timeout_secs == 345
+        assert not vendor.config.touchscreen_allow_recording
+        assert not vendor.config.maintenance_permanent_logs
+        assert vendor.config.datetime_timezone == 'US/Alaska'
+        assert vendor.config.datetime_ntpserver == '0.pool.ntp.org'
+        assert vendor.config.firmware_version == 'fake123'
+
 
 @pytest.mark.usefixtures('db', 'simple_db')
 class TestMhClusterModel(object):
@@ -398,11 +430,17 @@ class TestDelete(object):
 
 
     def test_delete_vendor(self, simple_db):
-        """delete associated ca's and ca's associations."""
+        """delete not allowed."""
         with pytest.raises(InvalidOperationError):
             simple_db['vendor'].delete()
 
     def test_delete_ca(self, simple_db):
+        """delete ca and ca's associations."""
         ca_id = simple_db['ca'][0].id
         simple_db['ca'][0].delete()
         assert Ca.get_by_id(ca_id) is None
+
+    def test_delete_vendor_config(self, simple_db):
+        """delete config not allowed."""
+        with pytest.raises(InvalidOperationError):
+            simple_db['vendor'].config.delete()
