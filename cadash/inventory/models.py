@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """capture agent models."""
 
+from Crypto.Cipher import AES
 import datetime as dt
 import pytz
 
@@ -155,6 +156,7 @@ class Role(Model):
 
     __tablename__ = 'role'
     name = Column(db.String(16), nullable=False)
+    created_at = Column(db.DateTime, nullable=False, default=dt.datetime.utcnow)
     ca_id = Column(db.Integer, db.ForeignKey('ca.id'), primary_key=True)
     ca = relationship('Ca', back_populates='role', uselist=False)
     location_id = Column(db.Integer, db.ForeignKey('location.id'))
@@ -163,7 +165,6 @@ class Role(Model):
     cluster_id = Column(db.Integer, db.ForeignKey('mhcluster.id'))
     cluster = relationship(
             'MhCluster', back_populates='capture_agents', uselist=False)
-    created_at = Column(db.DateTime, nullable=False, default=dt.datetime.utcnow)
 
 
     def __init__(self, ca, location, cluster, name):
@@ -316,8 +317,8 @@ class Vendor(SurrogatePK, Model):
 
     __tablename__ = 'vendor'
     created_at = Column(db.DateTime, nullable=False, default=dt.datetime.utcnow)
-    name = Column(db.String(64), unique=False, nullable=False)
-    model = Column(db.String(64), unique=False, nullable=False)
+    name = Column(db.String(80), unique=False, nullable=False)
+    model = Column(db.String(80), unique=False, nullable=False)
     name_id = Column(db.String(128), unique=True, nullable=False)
     capture_agents = relationship('Ca', back_populates='vendor')
     config = relationship('VendorConfig', back_populates='vendor', uselist=False)
@@ -378,9 +379,9 @@ class VendorConfig(SurrogatePK, Model):
     touchscreen_timeout_secs = Column(db.Integer, nullable=False, default=600)
     touchscreen_allow_recording = Column(db.Boolean, nullable=False, default=False)
     maintenance_permanent_logs = Column(db.Boolean, nullable=False, default=True)
-    datetime_timezone = Column(db.String(64), nullable=False, default='US/Eastern')
+    datetime_timezone = Column(db.String(80), nullable=False, default='US/Eastern')
     datetime_ntpserver = Column(db.String(128), nullable=False, default='0.pool.ntp.org')
-    firmware_version = Column(db.String(64), nullable=False, default='3.15.3f')
+    firmware_version = Column(db.String(80), nullable=False, default='3.15.3f')
     source_deinterlacing = Column(db.Boolean, nullable=False, default=True)
     vendor_id = Column(db.Integer, db.ForeignKey('vendor.id'))
     vendor = relationship('Vendor', back_populates='config')
@@ -508,3 +509,127 @@ class MhCluster(SurrogatePK, NameIdMixin, Model):
         raise InvalidMhClusterEnvironmentError(
                 'mh cluster env value not in [%s]: %s' %
                 (','.join(list(MH_ENVS)), env))
+
+
+class EpiphanRecorder(SurrogatePK, Model):
+    """recorder configuration for an epiphan-pearl CA."""
+
+    __tablename__ = 'epiphan_recorder'
+    created_at = Column(db.DateTime, nullable=False, default=dt.datetime.utcnow)
+    name = Column(db.String(80), nullable=False)
+    recorder_id_in_device = Column(db.Integer, nullable=False, default=0)
+
+    # media recording configurations
+    output_format = Column(db.String(16), nullable=False, default='avi')
+    size_limit_in_kbytes = Column(db.Integer, nullable=False, default=64000000)
+    time_limit_in_minutes = Column(db.Integer, nullable=False, default=360)
+
+    def __init__(self, name, ca):
+        """create instance."""
+        for rec in ca.recorders:
+            if rec.name == name:
+                raise DuplicateEpiphanRecorderError(
+                        'recorder({}) already in ca({})'.format(name, ca.name))
+        return db.Model.__init__(self, name=name, ca=ca)
+
+    def update(self, **kwargs):
+        """override to check recorder constraints."""
+        if 'recorder_id_in_device' in kwargs.keys():
+            for rec in self.ca.recorders:
+                if rec.recorder_id_in_device == kwargs['recorder_id_in_device']:
+                    raise DuplicateEpiphanRecorderIdError(
+                            'recorder_id_in_device({}) already config as ({}) in ca({})'.format(
+                                kwargs['recorder_id_in_device'], rec.name, self.ca.name))
+        return super(EpiphanRecorder, self).update(**kwargs)
+
+
+class EpiphanChannel(SurrogatePK, Model):
+    """channel configuration for an epiphan-pearl CA."""
+
+    __tablename__ = 'epiphan_channel'
+    created_at = Column(db.DateTime, nullable=False, default=dt.datetime.utcnow)
+    name = Column(db.String(80), nullable=False)
+    channel_id_in_device = Column(db.Integer, nullable=False, default=0)
+    stream_cfg_id = Column(db.Integer, db.ForeignKey('akamai_config.id'))
+    stream_cfg = relationship('AkamaiStreamingConfig', back_populates='channels')
+
+    # a/v encodings for a channel
+    audio = Column(db.Boolean, nullable=False, default=True)
+    audiochannels = Column(db.String(8), nullable=False, default='1')
+    autoframesize = Column(db.Boolean, nullable=False, default=False)
+    codec = Column(db.String(80), nullable=False, default='h.264')
+    fpslimit = Column(db.Integer, nullable=False, default=30)
+    vencpreset = Column(db.String(8), nullable=False, default='5')
+    vkeyframeinterval = Column(db.Numeric, nullable=False, default=1)
+    vprofile = Column(db.String(8), nullable=False, default='100')
+    audiobitrate = Column(db.Integer, nullable=False, default=96)
+    framesize = Column(db.String(80), nullable=False, default='1920x540')
+    vbitrate = Column(db.Integer, nullable=False, default=4000)
+
+    def __init__(self, name, ca, stream_cfg):
+        """create instance."""
+        for chan in ca.channels:
+            if chan.name == name:
+                raise DuplicateEpiphanChannelError(
+                        'channel({}) already in ca({})'.format(name, ca.name))
+        return db.Model.__init__(
+                name=name, ca=ca, streaming_cfg=streaming_cfg)
+
+    def update(self, **kwargs):
+        """override to check channel constraints."""
+        if 'channel_id_in_device' in kwargs.keys():
+            for chan in self.ca.channels:
+                if chan.channel_id == kwargs['channel_id_in_device']:
+                    raise DuplicateEpiphanChannelIdError(
+                            'channel_id_in_device({}) already config as ({}) in ca({})'.format(
+                                kwargs['channel_id_in_device'], chan.name, self.ca.name))
+        return super(EpiphanChannel, self).update(**kwargs)
+
+
+class AkamaiStreamingConfig(SurrogatePK, Model):
+    """configuration for streaming via akamai services."""
+
+    __tablename__ = 'akamai_config'
+    created_at = Column(db.DateTime, nullable=False, default=dt.datetime.utcnow)
+    name = Column(db.String(80), nullable=False)
+    comment = Column(db.String(256), nullable=True)
+    channels = relationship('EpiphanChannel', back_populates='stream_cfg')
+
+    stream_id = Column(db.String(80), nullable=False, unique=True)
+    stream_user = Column(db.String(80), nullable=False)
+    stream_password = Column(db.String(80), nullable=False)
+
+    primary_url_jinja2_template = Column(db.String(128), nullable=False,
+            default='rtmp://p.ep{{streaming_key}}.i.akamaientrypoint.net/EntryPoint')
+    secondary_url_jinja2_template = Column(db.String(128), nullable=False,
+            default='rtmp://b.ep{{streaming_key}}.i.akamaientrypoint.net/EntryPoint')
+    stream_name_jinja2_template = Column(db.String(128), nullable=False,
+            default='{{location_name}}-presenter-delivery.stream-{{framesize}}_1_200@{{streaming_key}}')
+
+    def __init__(self, name, stream_id, stream_user, stream_password):
+        """create instance."""
+        # check that no duplicate stream_ids
+        scfg = AkamaiStreamingConfig.query.filter_by(stream_id=stream_id).first()
+        if scfg is not None:
+            raise DuplicateAkamainStreamIdError(
+                    'duplicate stream_id({}); already configured for ({})'.format(
+                        stream_id, scfg.name))
+        return db.Model.__init__(
+                self, name=name,
+                stream_id=stream_id,
+                stream_user=stream_user,
+                stream_password=stream_password)
+
+    def delete(self, commit=True):
+        """override to check relationships before deletion."""
+        if len(self.epiphan_channels) == 0:
+            return super(AkamaiStreamingConfig, self).delete(commit)
+        else:
+            raise InvalidOperationError(
+                    'cannot delete `akamai cfg` ({}): channels still configured'.format(
+                        self.name))
+
+    def update(self, commit=True, **kwargs):
+        """override to disable updates in streaming config."""
+        raise InvalidOperationError('not allowed update `akamai streaming config`')
+
