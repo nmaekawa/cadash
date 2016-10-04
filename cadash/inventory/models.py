@@ -156,7 +156,7 @@ class Role(Model):
     __tablename__ = 'role'
     name = Column(db.String(16), nullable=False)
     ca_id = Column(db.Integer, db.ForeignKey('ca.id'), primary_key=True)
-    ca = relationship('Ca', back_populates='role')
+    ca = relationship('Ca', back_populates='role', uselist=False)
     location_id = Column(db.Integer, db.ForeignKey('location.id'))
     location = relationship(
             'Location', back_populates='capture_agents', uselist=False)
