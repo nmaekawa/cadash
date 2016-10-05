@@ -8,6 +8,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from cadash import utils
 from cadash.inventory.models import Ca
 from cadash.inventory.models import EpiphanChannel
+from cadash.inventory.models import EpiphanRecorder
 from cadash.inventory.models import Location
 from cadash.inventory.models import LocationConfig
 from cadash.inventory.models import MhCluster
@@ -582,4 +583,46 @@ class TestEpiphanChannelsModel(object):
         with pytest.raises(DuplicateEpiphanChannelIdError) as e:
             ca.channels[1].update(channel_id_in_device=1)
         assert 'channel_id_in_device(1) already config as (fake_channel) in ca({}) - cannot update'.format(
+                ca.name) in e.value
+
+    def test_add_recorder(self, simple_db):
+        ca = simple_db['ca'][0]
+        rec = EpiphanRecorder.create(name='recorder_fake', ca=ca)
+        rec = EpiphanRecorder.create(name='recorder_fake_2', ca=ca)
+        assert len(ca.recorders) == 2
+        assert ca.recorders[0].name == 'recorder_fake'
+        assert ca.recorders[1].name == 'recorder_fake_2'
+        assert ca.recorders[0].ca == ca
+
+        assert ca.map_recorder_name_to_recorder_id() == {
+                'recorder_fake': 0,
+                'recorder_fake_2': 0}
+        assert ca.map_recorder_id_to_recorder_name() == {0: 'recorder_fake_2'}
+
+    def test_should_fail_when_add_duplicate_recorder_name(self, simple_db):
+        ca = simple_db['ca'][0]
+        rec = EpiphanRecorder.create(name='recorder_fake', ca=ca)
+        rec = EpiphanRecorder.create(name='recorder_fake_2', ca=ca)
+        assert len(ca.recorders) == 2
+        assert ca.recorders[0].name == 'recorder_fake'
+        assert ca.recorders[1].name == 'recorder_fake_2'
+        assert ca.recorders[0].ca == ca
+
+        with pytest.raises(DuplicateEpiphanRecorderError) as e:
+            chan = EpiphanRecorder.create(name='recorder_fake_2', ca=ca)
+        assert 'recorder(recorder_fake_2) already in ca({})'.format(ca.name) in e.value
+
+    def test_should_fail_when_add_duplicate_recorder_id(self, simple_db):
+        ca = simple_db['ca'][0]
+        rec = EpiphanRecorder.create(name='recorder_fake', ca=ca)
+        rec = EpiphanRecorder.create(name='recorder_fake_2', ca=ca)
+        assert len(ca.recorders) == 2
+        assert ca.recorders[0].name == 'recorder_fake'
+        assert ca.recorders[1].name == 'recorder_fake_2'
+        assert ca.recorders[0].ca == ca
+
+        ca.recorders[0].update(recorder_id_in_device=1)
+        with pytest.raises(DuplicateEpiphanRecorderIdError) as e:
+            ca.recorders[1].update(recorder_id_in_device=1)
+        assert 'recorder_id_in_device(1) already config as (recorder_fake) in ca({}) - cannot update'.format(
                 ca.name) in e.value

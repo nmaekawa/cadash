@@ -220,6 +220,7 @@ class Ca(SurrogatePK, NameIdMixin, Model):
     vendor = relationship('Vendor')
     role = relationship('Role', back_populates='ca', uselist=False)
     channels = relationship('EpiphanChannel', back_populates='ca')
+    recorders = relationship('EpiphanRecorder', back_populates='ca')
 
     def __init__(self, name, address, vendor_id, serial_number=None):
         """create instance."""
@@ -269,24 +270,43 @@ class Ca(SurrogatePK, NameIdMixin, Model):
 
     def map_channel_id_to_channel_name(self):
         """return a dict with key-value == channel_id_in_device:channel_name."""
-        channel_list = {}
+        channel_map = {}
         try:  # beware that ids in device are defaulted to '0'
-            channel_list = {c.channel_id_in_device: c.name for c in self.channels}
+            channel_map = {c.channel_id_in_device: c.name for c in self.channels}
         except TypeError:
             # no channels for this ca
             pass
-        return channel_list
+        return channel_map
 
     def map_channel_name_to_channel_id(self):
         """return a dict with key-value == channel_name:channel_id_in_device."""
-        channel_list = {}
+        channel_map = {}
         try:
-            channel_list = {c.name: c.channel_id_in_device for c in self.channels}
+            channel_map = {c.name: c.channel_id_in_device for c in self.channels}
         except TypeError:
             # no channels for this ca
             pass
-        return channel_list
+        return channel_map
 
+    def map_recorder_id_to_recorder_name(self):
+        """return a dict with key-value == recorder_id_in_device:recorder_name."""
+        recorder_map = {}
+        try:  # beware that ids in device are defaulted to '0'
+            recorder_map = {r.recorder_id_in_device: r.name for r in self.recorders}
+        except TypeError:
+            # no recorders for this ca
+            pass
+        return recorder_map
+
+    def map_recorder_name_to_recorder_id(self):
+        """return a dict with key-value == channel_name:channel_id_in_device."""
+        recorder_map = {}
+        try:
+            recorder_map = {r.name: r.recorder_id_in_device for r in self.recorders}
+        except TypeError:
+            # no recorders for this ca
+            pass
+        return recorder_map
 
     def _check_constraints(self, **kwargs):
         """raise an error if args violate ca constraints."""
@@ -542,6 +562,8 @@ class EpiphanRecorder(SurrogatePK, Model):
     created_at = Column(db.DateTime, nullable=False, default=dt.datetime.utcnow)
     name = Column(db.String(80), nullable=False)
     recorder_id_in_device = Column(db.Integer, nullable=False, default=0)
+    ca_id = Column(db.Integer, db.ForeignKey('ca.id'))
+    ca = relationship('Ca', back_populates='recorders')
 
     # media recording configurations
     output_format = Column(db.String(16), nullable=False, default='avi')
@@ -550,20 +572,28 @@ class EpiphanRecorder(SurrogatePK, Model):
 
     def __init__(self, name, ca):
         """create instance."""
-        for rec in ca.role.recorders:
-            if rec.name == name:
-                raise DuplicateEpiphanRecorderError(
-                        'recorder({}) already in ca({})'.format(name, ca.name))
+        recorder_map_name = ca.map_recorder_name_to_recorder_id()
+        if name in recorder_map_name.keys():
+            raise DuplicateEpiphanRecorderError(
+                    'recorder({}) already in ca({})'.format(name, ca.name))
         db.Model.__init__(self, name=name, ca=ca)
 
     def update(self, **kwargs):
         """override to check recorder constraints."""
+        recorder_map_id = self.ca.map_recorder_id_to_recorder_name()
+        recorder_map_name = self.ca.map_recorder_name_to_recorder_id()
+
+        if 'name' in kwargs.keys():
+            if kwargs['name'] in recorder_map_name.keys():
+                raise DuplicateEpiphanRecorderError(
+                        'recorder({}) already in ca({}) - cannot update.'.format(name, self.ca.name))
         if 'recorder_id_in_device' in kwargs.keys():
-            for rec in self.ca.role.recorders:
-                if rec.recorder_id_in_device == kwargs['recorder_id_in_device']:
-                    raise DuplicateEpiphanRecorderIdError(
-                            'recorder_id_in_device({}) already config as ({}) in ca({})'.format(
-                                kwargs['recorder_id_in_device'], rec.name, self.ca.name))
+            if kwargs['recorder_id_in_device'] in recorder_map_id.keys():
+                raise DuplicateEpiphanRecorderIdError(
+                        'recorder_id_in_device({}) already config as ({}) in ca({}) - cannot update'.format(
+                            kwargs['recorder_id_in_device'],
+                            recorder_map_id[kwargs['recorder_id_in_device']],
+                            self.ca.name))
         return super(EpiphanRecorder, self).update(**kwargs)
 
 
@@ -594,29 +624,28 @@ class EpiphanChannel(SurrogatePK, Model):
 
     def __init__(self, name, ca, stream_cfg):
         """create instance."""
-        channel_list = ca.map_channel_name_to_channel_id()
-        if name in channel_list.keys():
+        channel_map = ca.map_channel_name_to_channel_id()
+        if name in channel_map.keys():
             raise DuplicateEpiphanChannelError(
                     'channel({}) already in ca({})'.format(name, ca.name))
-        else:
-            return db.Model.__init__(self, name=name, ca=ca, stream_cfg=stream_cfg)
+        return db.Model.__init__(self, name=name, ca=ca, stream_cfg=stream_cfg)
 
     def update(self, **kwargs):
         """override to check channel constraints."""
-        channel_list = self.ca.map_channel_id_to_channel_name()
+        channel_map_id = self.ca.map_channel_id_to_channel_name()
+        channel_map_name = self.ca.map_channel_name_to_channel_id()
 
         if 'name' in kwargs.keys():
-            if kwargs['name'] in channel_list.values():
+            if kwargs['name'] in channel_map_name.keys():
                 raise DuplicateEpiphanChannelError(
                         'channel({}) already in ca({}) - cannot update'.format(name, self.ca.name))
         if 'channel_id_in_device' in kwargs.keys():
-            if kwargs['channel_id_in_device'] in channel_list.keys():
+            if kwargs['channel_id_in_device'] in channel_map_id.keys():
                 raise DuplicateEpiphanChannelIdError(
                         'channel_id_in_device({}) already config as ({}) in ca({}) - cannot update'.format(
                             kwargs['channel_id_in_device'],
-                            channel_list[kwargs['channel_id_in_device']], self.ca.name))
+                            channel_map_id[kwargs['channel_id_in_device']], self.ca.name))
         return super(EpiphanChannel, self).update(**kwargs)
-
 
 
 class AkamaiStreamingConfig(SurrogatePK, Model):
