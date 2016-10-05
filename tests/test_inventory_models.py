@@ -7,6 +7,7 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from cadash import utils
 from cadash.inventory.models import Ca
+from cadash.inventory.models import EpiphanChannel
 from cadash.inventory.models import Location
 from cadash.inventory.models import LocationConfig
 from cadash.inventory.models import MhCluster
@@ -16,6 +17,10 @@ from cadash.inventory.errors import AssociationError
 from cadash.inventory.errors import DuplicateCaptureAgentNameError
 from cadash.inventory.errors import DuplicateCaptureAgentAddressError
 from cadash.inventory.errors import DuplicateCaptureAgentSerialNumberError
+from cadash.inventory.errors import DuplicateEpiphanChannelError
+from cadash.inventory.errors import DuplicateEpiphanChannelIdError
+from cadash.inventory.errors import DuplicateEpiphanRecorderError
+from cadash.inventory.errors import DuplicateEpiphanRecorderIdError
 from cadash.inventory.errors import DuplicateLocationNameError
 from cadash.inventory.errors import DuplicateMhClusterAdminHostError
 from cadash.inventory.errors import DuplicateMhClusterNameError
@@ -525,3 +530,56 @@ class TestDelete(object):
         loc.delete()
         cfg = LocationConfig.get_by_id(c.id)
         assert cfg is None
+
+
+@pytest.mark.usefixtures('db', 'simple_db')
+class TestEpiphanChannelsModel(object):
+    """test for channels and recorders."""
+
+    def test_add_channel(self, simple_db):
+        ca = simple_db['ca'][0]
+        cfg = stream_cfg=simple_db['config']
+        chan = EpiphanChannel.create(name='fake_channel', ca=ca, stream_cfg=cfg)
+        chan = EpiphanChannel.create(name='another_fake_channel', ca=ca, stream_cfg=cfg)
+        assert len(ca.channels) == 2
+        assert ca.channels[0].name == 'fake_channel'
+        assert ca.channels[1].name == 'another_fake_channel'
+        assert ca.channels[0].ca == ca
+        assert ca.channels[0].stream_cfg == simple_db['config']
+
+        assert ca.map_channel_name_to_channel_id() == {
+                'fake_channel': 0,
+                'another_fake_channel': 0}
+        assert ca.map_channel_id_to_channel_name() == {0: 'another_fake_channel'}
+
+    def test_should_fail_when_add_duplicate_channel_name(self, simple_db):
+        ca = simple_db['ca'][0]
+        cfg = stream_cfg=simple_db['config']
+        chan = EpiphanChannel.create(name='fake_channel', ca=ca, stream_cfg=cfg)
+        chan = EpiphanChannel.create(name='another_fake_channel', ca=ca, stream_cfg=cfg)
+        assert len(ca.channels) == 2
+        assert ca.channels[0].name == 'fake_channel'
+        assert ca.channels[1].name == 'another_fake_channel'
+        assert ca.channels[0].ca == ca
+        assert ca.channels[0].stream_cfg == simple_db['config']
+
+        with pytest.raises(DuplicateEpiphanChannelError) as e:
+            chan = EpiphanChannel.create(name='fake_channel', ca=ca, stream_cfg=cfg)
+        assert 'channel(fake_channel) already in ca({})'.format(ca.name) in e.value
+
+    def test_should_fail_when_add_duplicate_channel_id(self, simple_db):
+        ca = simple_db['ca'][0]
+        cfg = stream_cfg=simple_db['config']
+        chan = EpiphanChannel.create(name='fake_channel', ca=ca, stream_cfg=cfg)
+        chan = EpiphanChannel.create(name='another_fake_channel', ca=ca, stream_cfg=cfg)
+        assert len(ca.channels) == 2
+        assert ca.channels[0].name == 'fake_channel'
+        assert ca.channels[1].name == 'another_fake_channel'
+        assert ca.channels[0].ca == ca
+        assert ca.channels[0].stream_cfg == simple_db['config']
+
+        ca.channels[0].update(channel_id_in_device=1)
+        with pytest.raises(DuplicateEpiphanChannelIdError) as e:
+            ca.channels[1].update(channel_id_in_device=1)
+        assert 'channel_id_in_device(1) already config as (fake_channel) in ca({}) - cannot update'.format(
+                ca.name) in e.value

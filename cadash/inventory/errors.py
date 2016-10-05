@@ -58,3 +58,19 @@ class DuplicateMhClusterNameError(Error):
 
 class DuplicateMhClusterAdminHostError(Error):
     """mhcluster admin_host name already in inventory."""
+
+
+class DuplicateEpiphanChannelError(Error):
+    """epiphan channel name already configured for this CA."""
+
+
+class DuplicateEpiphanChannelIdError(Error):
+    """epiphan channel_id_in_device already configured for this CA."""
+
+
+class DuplicateEpiphanRecorderError(Error):
+    """epiphan channel name already configured for this CA."""
+
+
+class DuplicateEpiphanRecorderIdError(Error):
+    """epiphan channel_id_in_device already configured for this CA."""

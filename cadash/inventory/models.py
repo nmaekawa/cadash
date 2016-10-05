@@ -15,6 +15,10 @@ from cadash.inventory.errors import AssociationError
 from cadash.inventory.errors import DuplicateCaptureAgentNameError
 from cadash.inventory.errors import DuplicateCaptureAgentAddressError
 from cadash.inventory.errors import DuplicateCaptureAgentSerialNumberError
+from cadash.inventory.errors import DuplicateEpiphanChannelError
+from cadash.inventory.errors import DuplicateEpiphanChannelIdError
+from cadash.inventory.errors import DuplicateEpiphanRecorderError
+from cadash.inventory.errors import DuplicateEpiphanRecorderIdError
 from cadash.inventory.errors import DuplicateLocationNameError
 from cadash.inventory.errors import DuplicateMhClusterAdminHostError
 from cadash.inventory.errors import DuplicateMhClusterNameError
@@ -166,7 +170,6 @@ class Role(Model):
     cluster = relationship(
             'MhCluster', back_populates='capture_agents', uselist=False)
 
-
     def __init__(self, ca, location, cluster, name):
         """validate constraints and create instance."""
         # role name is valid?
@@ -216,7 +219,7 @@ class Ca(SurrogatePK, NameIdMixin, Model):
     vendor_id = Column(db.Integer, db.ForeignKey('vendor.id'), nullable=False)
     vendor = relationship('Vendor')
     role = relationship('Role', back_populates='ca', uselist=False)
-
+    channels = relationship('EpiphanChannel', back_populates='ca')
 
     def __init__(self, name, address, vendor_id, serial_number=None):
         """create instance."""
@@ -262,6 +265,27 @@ class Ca(SurrogatePK, NameIdMixin, Model):
         """override to undo all role relationships involving this ca."""
         self.role.delete()
         return super(Ca, self).delete(commit)
+
+
+    def map_channel_id_to_channel_name(self):
+        """return a dict with key-value == channel_id_in_device:channel_name."""
+        channel_list = {}
+        try:  # beware that ids in device are defaulted to '0'
+            channel_list = {c.channel_id_in_device: c.name for c in self.channels}
+        except TypeError:
+            # no channels for this ca
+            pass
+        return channel_list
+
+    def map_channel_name_to_channel_id(self):
+        """return a dict with key-value == channel_name:channel_id_in_device."""
+        channel_list = {}
+        try:
+            channel_list = {c.name: c.channel_id_in_device for c in self.channels}
+        except TypeError:
+            # no channels for this ca
+            pass
+        return channel_list
 
 
     def _check_constraints(self, **kwargs):
@@ -526,16 +550,16 @@ class EpiphanRecorder(SurrogatePK, Model):
 
     def __init__(self, name, ca):
         """create instance."""
-        for rec in ca.recorders:
+        for rec in ca.role.recorders:
             if rec.name == name:
                 raise DuplicateEpiphanRecorderError(
                         'recorder({}) already in ca({})'.format(name, ca.name))
-        return db.Model.__init__(self, name=name, ca=ca)
+        db.Model.__init__(self, name=name, ca=ca)
 
     def update(self, **kwargs):
         """override to check recorder constraints."""
         if 'recorder_id_in_device' in kwargs.keys():
-            for rec in self.ca.recorders:
+            for rec in self.ca.role.recorders:
                 if rec.recorder_id_in_device == kwargs['recorder_id_in_device']:
                     raise DuplicateEpiphanRecorderIdError(
                             'recorder_id_in_device({}) already config as ({}) in ca({})'.format(
@@ -552,6 +576,8 @@ class EpiphanChannel(SurrogatePK, Model):
     channel_id_in_device = Column(db.Integer, nullable=False, default=0)
     stream_cfg_id = Column(db.Integer, db.ForeignKey('akamai_config.id'))
     stream_cfg = relationship('AkamaiStreamingConfig', back_populates='channels')
+    ca_id = Column(db.Integer, db.ForeignKey('ca.id'))
+    ca = relationship('Ca', back_populates='channels')
 
     # a/v encodings for a channel
     audio = Column(db.Boolean, nullable=False, default=True)
@@ -568,22 +594,29 @@ class EpiphanChannel(SurrogatePK, Model):
 
     def __init__(self, name, ca, stream_cfg):
         """create instance."""
-        for chan in ca.channels:
-            if chan.name == name:
-                raise DuplicateEpiphanChannelError(
-                        'channel({}) already in ca({})'.format(name, ca.name))
-        return db.Model.__init__(
-                name=name, ca=ca, streaming_cfg=streaming_cfg)
+        channel_list = ca.map_channel_name_to_channel_id()
+        if name in channel_list.keys():
+            raise DuplicateEpiphanChannelError(
+                    'channel({}) already in ca({})'.format(name, ca.name))
+        else:
+            return db.Model.__init__(self, name=name, ca=ca, stream_cfg=stream_cfg)
 
     def update(self, **kwargs):
         """override to check channel constraints."""
+        channel_list = self.ca.map_channel_id_to_channel_name()
+
+        if 'name' in kwargs.keys():
+            if kwargs['name'] in channel_list.values():
+                raise DuplicateEpiphanChannelError(
+                        'channel({}) already in ca({}) - cannot update'.format(name, self.ca.name))
         if 'channel_id_in_device' in kwargs.keys():
-            for chan in self.ca.channels:
-                if chan.channel_id == kwargs['channel_id_in_device']:
-                    raise DuplicateEpiphanChannelIdError(
-                            'channel_id_in_device({}) already config as ({}) in ca({})'.format(
-                                kwargs['channel_id_in_device'], chan.name, self.ca.name))
+            if kwargs['channel_id_in_device'] in channel_list.keys():
+                raise DuplicateEpiphanChannelIdError(
+                        'channel_id_in_device({}) already config as ({}) in ca({}) - cannot update'.format(
+                            kwargs['channel_id_in_device'],
+                            channel_list[kwargs['channel_id_in_device']], self.ca.name))
         return super(EpiphanChannel, self).update(**kwargs)
+
 
 
 class AkamaiStreamingConfig(SurrogatePK, Model):
@@ -614,7 +647,7 @@ class AkamaiStreamingConfig(SurrogatePK, Model):
             raise DuplicateAkamainStreamIdError(
                     'duplicate stream_id({}); already configured for ({})'.format(
                         stream_id, scfg.name))
-        return db.Model.__init__(
+        db.Model.__init__(
                 self, name=name,
                 stream_id=stream_id,
                 stream_user=stream_user,

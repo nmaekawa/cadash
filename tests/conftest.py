@@ -8,6 +8,7 @@ from webtest import TestApp
 from cadash.app import create_app
 from cadash.database import db as _db
 from cadash.inventory.models import AkamaiStreamingConfig
+from cadash.inventory.models import EpiphanChannel
 from cadash.inventory.models import Role
 from cadash.ldap import LdapClient
 from cadash.settings import Config
