@@ -208,6 +208,23 @@ class Role(Model):
         raise InvalidOperationError('not allowed update `role` relatioship')
 
 
+    def delete(self, commit=True):
+        """override to undo relationships related to _ca_."""
+        try:
+            for chan in self.ca.channels:
+                chan.delete()
+        except TypeError:
+            pass  # no channels in ca
+        try:
+            for rec in self.ca.recorders:
+                rec.delete()
+        except TypeError:
+            pass  # no recorders in ca
+        if self.ca.mhpearl is not None:
+            self.ca.mhpearl.delete()
+        return super(Role, self).delete(commit)
+
+
 class Ca(SurrogatePK, NameIdMixin, Model):
     """a capture agent."""
 
@@ -219,6 +236,10 @@ class Ca(SurrogatePK, NameIdMixin, Model):
     vendor_id = Column(db.Integer, db.ForeignKey('vendor.id'), nullable=False)
     vendor = relationship('Vendor')
     role = relationship('Role', back_populates='ca', uselist=False)
+
+    # here ca is used as association object between role and channels,
+    # recorders, and mhpearl cfg. Cascading deletes are done indirectly
+    # and actually performed by class Role.
     channels = relationship('EpiphanChannel', back_populates='ca')
     recorders = relationship('EpiphanRecorder', back_populates='ca')
     mhpearl = relationship('MhpearlConfig', back_populates='ca', uselist=False)

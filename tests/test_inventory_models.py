@@ -533,6 +533,55 @@ class TestDelete(object):
         cfg = LocationConfig.get_by_id(c.id)
         assert cfg is None
 
+    def test_delete_role_and_assoc_via_ca(self, simple_db):
+        """delete role just undo associations."""
+        assert len(simple_db['room'][0].get_ca_by_role('experimental')) == 2
+        assert len(simple_db['room'][0].get_ca()) == 3
+        role = simple_db['ca'][0].role
+        ca = simple_db['ca'][0]
+
+        # add channels
+        cfg = stream_cfg=simple_db['config']
+        chan1 = EpiphanChannel.create(name='fake_channel', ca=ca, stream_cfg=cfg)
+        chan2 = EpiphanChannel.create(name='another_fake_channel', ca=ca, stream_cfg=cfg)
+        assert len(ca.channels) == 2
+        assert ca.channels[0].name == 'fake_channel'
+        assert ca.channels[1].name == 'another_fake_channel'
+        assert ca.channels[0].ca == ca
+        assert ca.channels[0].stream_cfg == simple_db['config']
+
+        # add recorders
+        rec1 = EpiphanRecorder.create(name='recorder_fake', ca=ca)
+        rec2 = EpiphanRecorder.create(name='recorder_fake_2', ca=ca)
+        assert len(ca.recorders) == 2
+        assert ca.recorders[0].name == 'recorder_fake'
+        assert ca.recorders[1].name == 'recorder_fake_2'
+        assert ca.recorders[0].ca == ca
+
+        mhcfg = MhpearlConfig.create(ca=ca)
+        assert ca.mhpearl is not None
+        assert ca.mhpearl.ca == ca
+        assert ca.mhpearl.mhpearl_version == '2.0.0'
+
+        role.delete()
+        assert Role.query.filter_by(ca_id=ca.id).first() is None
+        assert simple_db['ca'][0].id == ca.id
+        assert simple_db['ca'][0].role_name == None
+        assert simple_db['ca'][1].role_name == 'experimental'
+        assert simple_db['ca'][2].role_name == 'primary'
+        assert simple_db['ca'][2].location.name == simple_db['room'][0].name
+        assert len(simple_db['room'][0].get_ca_by_role('experimental')) == 1
+        assert len(simple_db['cluster'][0].get_ca()) == 2
+
+        assert not ca.channels
+        assert not ca.recorders
+        assert not ca.mhpearl
+        assert EpiphanChannel.get_by_id(chan1.id) is None
+        assert EpiphanChannel.get_by_id(chan2.id) is None
+        assert EpiphanRecorder.get_by_id(rec1.id) is None
+        assert EpiphanRecorder.get_by_id(rec2.id) is None
+        assert MhpearlConfig.get_by_id(mhcfg.id) is None
+
 
 @pytest.mark.usefixtures('db', 'simple_db')
 class TestEpiphanChannelsModel(object):
