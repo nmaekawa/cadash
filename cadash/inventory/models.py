@@ -221,6 +221,7 @@ class Ca(SurrogatePK, NameIdMixin, Model):
     role = relationship('Role', back_populates='ca', uselist=False)
     channels = relationship('EpiphanChannel', back_populates='ca')
     recorders = relationship('EpiphanRecorder', back_populates='ca')
+    mhpearl = relationship('MhpearlConfig', back_populates='ca', uselist=False)
 
     def __init__(self, name, address, vendor_id, serial_number=None):
         """create instance."""
@@ -695,3 +696,59 @@ class AkamaiStreamingConfig(SurrogatePK, Model):
         """override to disable updates in streaming config."""
         raise InvalidOperationError('not allowed update `akamai streaming config`')
 
+
+class MhpearlConfig(SurrogatePK, Model):
+    """configuration for dce custom mhpearl module that runs in epiphan-pearls."""
+
+    __tablename__ = 'mhpearl_config'
+    created_at = Column(db.DateTime, nullable=False, default=dt.datetime.utcnow)
+    comment = Column(db.String(256), nullable=True)
+    ca_id = Column(db.Integer, db.ForeignKey('ca.id'))
+    ca = relationship('Ca', back_populates='mhpearl')
+
+    # configs that cannot be derived from role relationships
+    # live stream follow schedule on/off or always on?
+    manage_live = Column(db.Boolean, nullable=False, default=False)
+
+    # default is current production as of 05oct16
+    mhpearl_version = Column(db.String(80), nullable=False, default='2.0.0')
+
+    # akamai stream_id
+    live_broadcast_key = Column(db.String(80), nullable=False, default='1')
+    lowbr_broadcast_key = Column(db.String(80), nullable=False, default='1')
+
+    # i think timeout to connect to matterhorn
+    connecttimeout_in_sec = Column(db.Integer, nullable=False, default=60)
+
+    # low transmission rate timeout
+    low_speed_time_in_sec = Column(db.Integer, nullable=False, default=300)
+
+    # max ingest before adding random delays
+    max_ingest = Column(db.Integer, nullable=False, default=1)
+
+    # max delay before ingest
+    ingest_delay_in_sec = Column(db.Integer, nullable=False, default=90)
+    # ingest retries
+    number_of_retries = Column(db.Integer, nullable=False, default=5)
+
+    # seconds from scheduled start
+    file_search_range_in_sec = Column(db.Integer, nullable=False, default=60)
+    # schedule update frequency
+    update_frequency_in_sec = Column(db.Integer, nullable=False, default=120)
+
+    def __init__(self, ca):
+        """create instance."""
+        if ca.mhpearl is not None:
+            raise AssociationError(
+                    'cannot add configs to ca({}): already has configs({})'.format(
+                        ca.name, ca.mhpearl.id))
+        else:
+            db.Model.__init__(self, ca=ca)
+
+    def update(self, **kwargs):
+        """override to check constraints."""
+        if 'ca' in kwargs.keys():
+            raise InvalidOperationError(
+                    'cannot update ca associated to mhpearl_config({})'.format(
+                        self.id))
+        return super(MhpearlConfig, self).update(**kwargs)

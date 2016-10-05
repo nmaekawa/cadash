@@ -12,6 +12,7 @@ from cadash.inventory.models import EpiphanRecorder
 from cadash.inventory.models import Location
 from cadash.inventory.models import LocationConfig
 from cadash.inventory.models import MhCluster
+from cadash.inventory.models import MhpearlConfig
 from cadash.inventory.models import Role
 from cadash.inventory.models import Vendor
 from cadash.inventory.errors import AssociationError
@@ -626,3 +627,37 @@ class TestEpiphanChannelsModel(object):
             ca.recorders[1].update(recorder_id_in_device=1)
         assert 'recorder_id_in_device(1) already config as (recorder_fake) in ca({}) - cannot update'.format(
                 ca.name) in e.value
+
+
+@pytest.mark.usefixtures('db', 'simple_db')
+class TestMhpearlConfigModel(object):
+    """test for mhpearl configs."""
+
+    def test_add_mhpearl_config(self, simple_db):
+        ca = simple_db['ca'][0]
+        cfg = MhpearlConfig.create(ca=ca)
+        assert ca.mhpearl is not None
+        assert ca.mhpearl.ca == ca
+        assert ca.mhpearl.mhpearl_version == '2.0.0'
+
+    def test_should_fail_adding_more_than_one_mhpearl_config(self, simple_db):
+        ca = simple_db['ca'][0]
+        cfg = MhpearlConfig.create(ca=ca)
+        assert ca.mhpearl is not None
+        assert ca.mhpearl.ca == ca
+        assert ca.mhpearl.mhpearl_version == '2.0.0'
+        with pytest.raises(AssociationError) as e:
+            cfg = MhpearlConfig.create(ca=ca)
+        assert 'cannot add configs to ca({}): already has configs({})'.format(
+                ca.name, ca.mhpearl.id) in e.value
+
+    def test_should_fail_adding_more_than_one_mhpearl_config(self, simple_db):
+        ca = simple_db['ca'][0]
+        cfg = MhpearlConfig.create(ca=ca)
+        assert ca.mhpearl is not None
+        assert ca.mhpearl.ca == ca
+        assert ca.mhpearl.mhpearl_version == '2.0.0'
+        with pytest.raises(InvalidOperationError) as e:
+            cfg.update(ca=simple_db['ca'][1])
+        assert 'cannot update ca associated to mhpearl_config({})'.format(
+                cfg.id) in e.value
