@@ -33,8 +33,11 @@ import cadash.utils as utils
 
 CA_ROLES = frozenset([u'primary', u'secondary', u'experimental'])
 MH_ENVS = frozenset([u'prod', u'dev', u'stage'])
-UPDATEABLE_CA_FIELDS = frozenset([u'name', u'address', u'serial_number'])
-UPDATEABLE_CLUSTER_FIELDS = frozenset([u'name', u'admin_host', u'env'])
+UPDATEABLE_CA_FIELDS = frozenset([
+        u'name', u'address', u'serial_number', u'capture_card_id',
+        u'username', u'password'])
+UPDATEABLE_CLUSTER_FIELDS = frozenset([u'name', u'admin_host', u'env',
+        u'username', u'password'])
 UPDATEABLE_LOCATION_FIELDS = frozenset([u'name'])
 UPDATEABLE_VENDOR_FIELDS = frozenset([u'name', u'model'])
 UPDATEABLE_VENDOR_CONFIG_FIELDS = frozenset([
@@ -227,6 +230,9 @@ class Ca(SurrogatePK, NameIdMixin, Model):
     name = Column(db.String(80), unique=True, nullable=False)
     address = Column(db.String(128), unique=True, nullable=False)
     serial_number = Column(db.String(80), unique=True, nullable=True)
+    capture_card_id = Column(db.String(80), nullable=True)
+    username = Column(db.String(80), nullable=True)
+    password = Column(db.String(80), nullable=True)
     vendor_id = Column(db.Integer, db.ForeignKey('vendor.id'), nullable=False)
     vendor = relationship('Vendor')
     role = relationship('Role', back_populates='ca', uselist=False)
@@ -443,6 +449,8 @@ class MhCluster(SurrogatePK, NameIdMixin, Model):
     created_at = Column(db.DateTime, nullable=False, default=dt.datetime.utcnow)
     name = Column(db.String(80), unique=True, nullable=False)
     admin_host = Column(db.String(128), unique=True, nullable=False)
+    username = Column(db.String(80), nullable=True)
+    password = Column(db.String(80), nullable=True)
     env = Column(db.String(80), unique=False, nullable=False)
     capture_agents = relationship('Role', back_populates='cluster')
 

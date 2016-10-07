@@ -124,6 +124,11 @@ class TestCaptureAgentModel(object):
             ca.update(vendor_id=simple_db['vendor'].id)
         assert 'not allowed to update ca fields: vendor_id' in str(e.value)
 
+    def test_update_ca_capture_card_id(self, simple_db):
+        ca = Ca.get_by_id(simple_db['ca'][0].id)
+        assert ca.capture_card_id is None
+        ca.update(capture_card_id='D1P234567')
+        assert ca.capture_card_id == 'D1P234567'
 
 
 @pytest.mark.usefixtures('db', 'simple_db')
