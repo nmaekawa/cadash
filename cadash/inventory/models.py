@@ -169,6 +169,8 @@ class Role(Model):
     cluster_id = Column(db.Integer, db.ForeignKey('mhcluster.id'))
     cluster = relationship(
             'MhCluster', back_populates='capture_agents', uselist=False)
+    epiphan_config_id = Column(db.Integer, db.ForeignKey('epiphan_config.id'))
+    epiphan_config = relationship('EpiphanConfig', back_populates='role', uselist=False)
 
     def __init__(self, ca, location, cluster, name):
         """validate constraints and create instance."""
@@ -179,7 +181,7 @@ class Role(Model):
                     'invalid ca-role(%s) - valid values: [%s]' %
                     (role_name, ','.join(list(CA_ROLES))))
         # ca already has a role?
-        if bool(ca.role):
+        if ca.role is not None:
             raise AssociationError(
                     'cannot associate ca(%s): already has a role(%s)' %
                     (ca.name_id, ca.role))
@@ -209,19 +211,11 @@ class Role(Model):
 
 
     def delete(self, commit=True):
-        """override to undo relationships related to _ca_."""
+        """override to undo relationships."""
         try:
-            for chan in self.ca.channels:
-                chan.delete()
-        except TypeError:
-            pass  # no channels in ca
-        try:
-            for rec in self.ca.recorders:
-                rec.delete()
-        except TypeError:
-            pass  # no recorders in ca
-        if self.ca.mhpearl is not None:
-            self.ca.mhpearl.delete()
+            self.epiphan_config.delete()
+        except AttributeError:
+            pass  # non-existent epiphan_config
         return super(Role, self).delete(commit)
 
 
@@ -236,13 +230,6 @@ class Ca(SurrogatePK, NameIdMixin, Model):
     vendor_id = Column(db.Integer, db.ForeignKey('vendor.id'), nullable=False)
     vendor = relationship('Vendor')
     role = relationship('Role', back_populates='ca', uselist=False)
-
-    # here ca is used as association object between role and channels,
-    # recorders, and mhpearl cfg. Cascading deletes are done indirectly
-    # and actually performed by class Role.
-    channels = relationship('EpiphanChannel', back_populates='ca')
-    recorders = relationship('EpiphanRecorder', back_populates='ca')
-    mhpearl = relationship('MhpearlConfig', back_populates='ca', uselist=False)
 
     def __init__(self, name, address, vendor_id, serial_number=None):
         """create instance."""
@@ -288,47 +275,6 @@ class Ca(SurrogatePK, NameIdMixin, Model):
         """override to undo all role relationships involving this ca."""
         self.role.delete()
         return super(Ca, self).delete(commit)
-
-
-    def map_channel_id_to_channel_name(self):
-        """return a dict with key-value == channel_id_in_device:channel_name."""
-        channel_map = {}
-        try:  # beware that ids in device are defaulted to '0'
-            channel_map = {c.channel_id_in_device: c.name for c in self.channels}
-        except TypeError:
-            # no channels for this ca
-            pass
-        return channel_map
-
-    def map_channel_name_to_channel_id(self):
-        """return a dict with key-value == channel_name:channel_id_in_device."""
-        channel_map = {}
-        try:
-            channel_map = {c.name: c.channel_id_in_device for c in self.channels}
-        except TypeError:
-            # no channels for this ca
-            pass
-        return channel_map
-
-    def map_recorder_id_to_recorder_name(self):
-        """return a dict with key-value == recorder_id_in_device:recorder_name."""
-        recorder_map = {}
-        try:  # beware that ids in device are defaulted to '0'
-            recorder_map = {r.recorder_id_in_device: r.name for r in self.recorders}
-        except TypeError:
-            # no recorders for this ca
-            pass
-        return recorder_map
-
-    def map_recorder_name_to_recorder_id(self):
-        """return a dict with key-value == channel_name:channel_id_in_device."""
-        recorder_map = {}
-        try:
-            recorder_map = {r.name: r.recorder_id_in_device for r in self.recorders}
-        except TypeError:
-            # no recorders for this ca
-            pass
-        return recorder_map
 
     def _check_constraints(self, **kwargs):
         """raise an error if args violate ca constraints."""
@@ -573,8 +519,90 @@ class MhCluster(SurrogatePK, NameIdMixin, Model):
         if environment in MH_ENVS:
             return environment
         raise InvalidMhClusterEnvironmentError(
-                'mh cluster env value not in [%s]: %s' %
-                (','.join(list(MH_ENVS)), env))
+                'mh cluster env value not in [{}]: {}'.format(
+                    ','.join(list(MH_ENVS)), env))
+
+
+class EpiphanConfig(SurrogatePK, Model):
+    """config specific for epiphan-pearl."""
+
+    __tablename__ = 'epiphan_config'
+    created_at = Column(db.DateTime, nullable=False, default=dt.datetime.utcnow)
+    role = relationship('Role', back_populates='epiphan_config', uselist=False)
+
+    channels = relationship('EpiphanChannel', back_populates='epiphan_config')
+    recorders = relationship('EpiphanRecorder', back_populates='epiphan_config')
+    mhpearl = relationship('MhpearlConfig', back_populates='epiphan_config', uselist=False)
+
+    def __init__(self, role):
+        """create instance."""
+        if role.epiphan_config is not None:
+            raise AssociationError(
+                    'cannot associate epiphan-config to ca({}): already has a config({})'.format(
+                        role.ca.id, role.epiphan_config.id))
+        db.Model.__init__(self, role=role)
+
+    @property
+    def ca(self):
+        """return the corresponding ca for associated role."""
+        return self.role.ca
+
+    def map_channel_id_to_channel_name(self):
+        """return a dict with key-value == channel_id_in_device:channel_name."""
+        channel_map = {}
+        try:  # beware that ids in device are defaulted to '0'
+            channel_map = {c.channel_id_in_device: c.name for c in self.channels}
+        except TypeError:
+            # no channels for this ca
+            pass
+        return channel_map
+
+    def map_channel_name_to_channel_id(self):
+        """return a dict with key-value == channel_name:channel_id_in_device."""
+        channel_map = {}
+        try:
+            channel_map = {c.name: c.channel_id_in_device for c in self.channels}
+        except TypeError:
+            # no channels for this ca
+            pass
+        return channel_map
+
+    def map_recorder_id_to_recorder_name(self):
+        """return a dict with key-value == recorder_id_in_device:recorder_name."""
+        recorder_map = {}
+        try:  # beware that ids in device are defaulted to '0'
+            recorder_map = {r.recorder_id_in_device: r.name for r in self.recorders}
+        except TypeError:
+            # no recorders for this ca
+            pass
+        return recorder_map
+
+    def map_recorder_name_to_recorder_id(self):
+        """return a dict with key-value == channel_name:channel_id_in_device."""
+        recorder_map = {}
+        try:
+            recorder_map = {r.name: r.recorder_id_in_device for r in self.recorders}
+        except TypeError:
+            # no recorders for this ca
+            pass
+        return recorder_map
+
+    def delete(self):
+        """remove relationships."""
+        try:
+            for chan in self.channels:
+                chan.delete()
+        except TypeError:
+            pass  # no channels in ca
+        try:
+            for rec in self.recorders:
+                rec.delete()
+        except TypeError:
+            pass  # no recorders in ca
+        if self.mhpearl is not None:
+            self.mhpearl.delete()
+        return super(EpiphanConfig, self).delete()
+
 
 
 class EpiphanRecorder(SurrogatePK, Model):
@@ -584,38 +612,43 @@ class EpiphanRecorder(SurrogatePK, Model):
     created_at = Column(db.DateTime, nullable=False, default=dt.datetime.utcnow)
     name = Column(db.String(80), nullable=False)
     recorder_id_in_device = Column(db.Integer, nullable=False, default=0)
-    ca_id = Column(db.Integer, db.ForeignKey('ca.id'))
-    ca = relationship('Ca', back_populates='recorders')
+    epiphan_config_id = Column(db.Integer, db.ForeignKey('epiphan_config.id'))
+    epiphan_config = relationship('EpiphanConfig', back_populates='recorders')
 
     # media recording configurations
     output_format = Column(db.String(16), nullable=False, default='avi')
     size_limit_in_kbytes = Column(db.Integer, nullable=False, default=64000000)
     time_limit_in_minutes = Column(db.Integer, nullable=False, default=360)
 
-    def __init__(self, name, ca):
+    def __init__(self, name, epiphan_config):
         """create instance."""
-        recorder_map_name = ca.map_recorder_name_to_recorder_id()
+        recorder_map_name = epiphan_config.map_recorder_name_to_recorder_id()
         if name in recorder_map_name.keys():
             raise DuplicateEpiphanRecorderError(
-                    'recorder({}) already in ca({})'.format(name, ca.name))
-        db.Model.__init__(self, name=name, ca=ca)
+                    'recorder({}) already in ca({})'.format(
+                        name, epiphan_config.ca.name))
+        db.Model.__init__(self, name=name, epiphan_config=epiphan_config)
 
     def update(self, **kwargs):
         """override to check recorder constraints."""
-        recorder_map_id = self.ca.map_recorder_id_to_recorder_name()
-        recorder_map_name = self.ca.map_recorder_name_to_recorder_id()
+        recorder_map_id = self.epiphan_config.map_recorder_id_to_recorder_name()
+        recorder_map_name = self.epiphan_config.map_recorder_name_to_recorder_id()
 
+        if 'epiphan_config' in kwargs.keys():
+            raise InvalidOperationError(
+                    'cannot update epiphan_config associated to recorder({})'.format(self.id))
         if 'name' in kwargs.keys():
             if kwargs['name'] in recorder_map_name.keys():
                 raise DuplicateEpiphanRecorderError(
-                        'recorder({}) already in ca({}) - cannot update.'.format(name, self.ca.name))
+                        'recorder({}) already in ca({}) - cannot update.'.format(
+                            name, self.epiphan_config.ca.name))
         if 'recorder_id_in_device' in kwargs.keys():
             if kwargs['recorder_id_in_device'] in recorder_map_id.keys():
                 raise DuplicateEpiphanRecorderIdError(
                         'recorder_id_in_device({}) already config as ({}) in ca({}) - cannot update'.format(
                             kwargs['recorder_id_in_device'],
                             recorder_map_id[kwargs['recorder_id_in_device']],
-                            self.ca.name))
+                            self.epiphan_config.ca.name))
         return super(EpiphanRecorder, self).update(**kwargs)
 
 
@@ -628,8 +661,8 @@ class EpiphanChannel(SurrogatePK, Model):
     channel_id_in_device = Column(db.Integer, nullable=False, default=0)
     stream_cfg_id = Column(db.Integer, db.ForeignKey('akamai_config.id'))
     stream_cfg = relationship('AkamaiStreamingConfig', back_populates='channels')
-    ca_id = Column(db.Integer, db.ForeignKey('ca.id'))
-    ca = relationship('Ca', back_populates='channels')
+    epiphan_config_id = Column(db.Integer, db.ForeignKey('epiphan_config.id'))
+    epiphan_config = relationship('EpiphanConfig', back_populates='channels')
 
     # a/v encodings for a channel
     audio = Column(db.Boolean, nullable=False, default=True)
@@ -644,29 +677,36 @@ class EpiphanChannel(SurrogatePK, Model):
     framesize = Column(db.String(80), nullable=False, default='1920x540')
     vbitrate = Column(db.Integer, nullable=False, default=4000)
 
-    def __init__(self, name, ca, stream_cfg):
+    def __init__(self, name, epiphan_config, stream_cfg):
         """create instance."""
-        channel_map = ca.map_channel_name_to_channel_id()
+        channel_map = epiphan_config.map_channel_name_to_channel_id()
         if name in channel_map.keys():
             raise DuplicateEpiphanChannelError(
-                    'channel({}) already in ca({})'.format(name, ca.name))
-        return db.Model.__init__(self, name=name, ca=ca, stream_cfg=stream_cfg)
+                    'channel({}) already in ca({})'.format(
+                        name, epiphan_config.ca.name))
+        return db.Model.__init__(
+                self, name=name, epiphan_config=epiphan_config, stream_cfg=stream_cfg)
 
     def update(self, **kwargs):
         """override to check channel constraints."""
-        channel_map_id = self.ca.map_channel_id_to_channel_name()
-        channel_map_name = self.ca.map_channel_name_to_channel_id()
+        channel_map_id = self.epiphan_config.map_channel_id_to_channel_name()
+        channel_map_name = self.epiphan_config.map_channel_name_to_channel_id()
 
+        if 'epiphan_config' in kwargs.keys():
+            raise InvalidOperationError(
+                    'cannot update epiphan_config associated to channel({})'.format(self.id))
         if 'name' in kwargs.keys():
             if kwargs['name'] in channel_map_name.keys():
                 raise DuplicateEpiphanChannelError(
-                        'channel({}) already in ca({}) - cannot update'.format(name, self.ca.name))
+                        'channel({}) already in ca({}) - cannot update'.format(
+                            name, self.epiphan_config.ca.name))
         if 'channel_id_in_device' in kwargs.keys():
             if kwargs['channel_id_in_device'] in channel_map_id.keys():
                 raise DuplicateEpiphanChannelIdError(
                         'channel_id_in_device({}) already config as ({}) in ca({}) - cannot update'.format(
                             kwargs['channel_id_in_device'],
-                            channel_map_id[kwargs['channel_id_in_device']], self.ca.name))
+                            channel_map_id[kwargs['channel_id_in_device']],
+                            self.epiphan_config.ca.name))
         return super(EpiphanChannel, self).update(**kwargs)
 
 
@@ -724,8 +764,8 @@ class MhpearlConfig(SurrogatePK, Model):
     __tablename__ = 'mhpearl_config'
     created_at = Column(db.DateTime, nullable=False, default=dt.datetime.utcnow)
     comment = Column(db.String(256), nullable=True)
-    ca_id = Column(db.Integer, db.ForeignKey('ca.id'))
-    ca = relationship('Ca', back_populates='mhpearl')
+    epiphan_config_id = Column(db.Integer, db.ForeignKey('epiphan_config.id'))
+    epiphan_config = relationship('EpiphanConfig', back_populates='mhpearl')
 
     # configs that cannot be derived from role relationships
     # live stream follow schedule on/off or always on?
@@ -757,19 +797,19 @@ class MhpearlConfig(SurrogatePK, Model):
     # schedule update frequency
     update_frequency_in_sec = Column(db.Integer, nullable=False, default=120)
 
-    def __init__(self, ca):
+    def __init__(self, epiphan_config):
         """create instance."""
-        if ca.mhpearl is not None:
+        if epiphan_config.mhpearl is not None:
             raise AssociationError(
                     'cannot add configs to ca({}): already has configs({})'.format(
-                        ca.name, ca.mhpearl.id))
+                        epiphan_config.ca.name, epiphan_config.mhpearl.id))
         else:
-            db.Model.__init__(self, ca=ca)
+            db.Model.__init__(self, epiphan_config=epiphan_config)
 
     def update(self, **kwargs):
         """override to check constraints."""
-        if 'ca' in kwargs.keys():
+        if 'epiphan_config' in kwargs.keys():
             raise InvalidOperationError(
-                    'cannot update ca associated to mhpearl_config({})'.format(
+                    'cannot update epiphan_config associated to mhpearl_config({})'.format(
                         self.id))
         return super(MhpearlConfig, self).update(**kwargs)
