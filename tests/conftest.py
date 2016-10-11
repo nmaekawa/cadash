@@ -9,6 +9,9 @@ from cadash.app import create_app
 from cadash.database import db as _db
 from cadash.inventory.models import AkamaiStreamingConfig
 from cadash.inventory.models import EpiphanChannel
+from cadash.inventory.models import EpiphanConfig
+from cadash.inventory.models import EpiphanRecorder
+from cadash.inventory.models import MhpearlConfig
 from cadash.inventory.models import Role
 from cadash.ldap import LdapClient
 from cadash.settings import Config
@@ -100,7 +103,7 @@ def simple_db(db):
     stream_cfg = AkamaiStreamingConfig.create(
             name='stream_name123', stream_id='stream_id123',
             stream_user='stream_user123', stream_password='stream_pwd123')
-    mini_db['config'] = stream_cfg
+    mini_db['stream_config'] = stream_cfg
 
     db.session.commit()
 
@@ -118,5 +121,17 @@ def simple_db(db):
             name='primary')
 
     db.session.commit()
+
+    # create channels, recorders, mhcfg for ca[0]
+    ca = mini_db['ca'][0]
+    epi_config = EpiphanConfig.create(role=ca.role)
+    stream_cfg = mini_db['stream_config']
+    chan1 = EpiphanChannel.create(name='fake_channel',
+            epiphan_config=epi_config, stream_cfg=mini_db['stream_config'])
+    chan2 = EpiphanChannel.create(name='another_fake_channel',
+            epiphan_config=epi_config, stream_cfg=stream_cfg)
+    rec1 = EpiphanRecorder.create(name='recorder_fake', epiphan_config=epi_config)
+    rec2 = EpiphanRecorder.create(name='recorder_fake_2', epiphan_config=epi_config)
+    mh_cfg = MhpearlConfig.create(epiphan_config=epi_config)
 
     return mini_db

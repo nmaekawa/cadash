@@ -545,32 +545,13 @@ class TestDelete(object):
         assert len(simple_db['room'][0].get_ca()) == 3
         role = simple_db['ca'][0].role
         ca = simple_db['ca'][0]
-        epi_config = EpiphanConfig.create(role=role)
+        epi_config = ca.role.epiphan_config
 
-        # add channels
-        cfg = stream_cfg=simple_db['config']
-        chan1 = EpiphanChannel.create(name='fake_channel',
-                epiphan_config=epi_config, stream_cfg=stream_cfg)
-        chan2 = EpiphanChannel.create(name='another_fake_channel',
-                epiphan_config=epi_config, stream_cfg=stream_cfg)
-        assert len(epi_config.channels) == 2
-        assert epi_config.channels[0].name == 'fake_channel'
-        assert epi_config.channels[1].name == 'another_fake_channel'
-        assert epi_config.channels[0].epiphan_config == epi_config
-        assert epi_config.channels[0].stream_cfg == simple_db['config']
-
-        # add recorders
-        rec1 = EpiphanRecorder.create(name='recorder_fake', epiphan_config=epi_config)
-        rec2 = EpiphanRecorder.create(name='recorder_fake_2', epiphan_config=epi_config)
-        assert len(epi_config.recorders) == 2
-        assert epi_config.recorders[0].name == 'recorder_fake'
-        assert epi_config.recorders[1].name == 'recorder_fake_2'
-        assert epi_config.recorders[0].epiphan_config == epi_config
-
-        mhcfg = MhpearlConfig.create(epiphan_config=epi_config)
-        assert epi_config.mhpearl is not None
-        assert epi_config.mhpearl.epiphan_config == epi_config
-        assert epi_config.mhpearl.mhpearl_version == '2.0.0'
+        chan1 = epi_config.channels[0]
+        chan2 = epi_config.channels[1]
+        rec1 = epi_config.recorders[0]
+        rec2 = epi_config.recorders[1]
+        mhcfg = epi_config.mhpearl
 
         role.delete()
         assert Role.query.filter_by(ca_id=ca.id).first() is None
@@ -596,19 +577,12 @@ class TestEpiphanChannelModel(object):
 
     def test_add_channel(self, simple_db):
         ca = simple_db['ca'][0]
-        role = ca.role
-        epi_config = EpiphanConfig.create(role=role)
-        stream_cfg=simple_db['config']
-        chan = EpiphanChannel.create(name='fake_channel',
-                epiphan_config=epi_config, stream_cfg=stream_cfg)
-        chan = EpiphanChannel.create(name='another_fake_channel',
-                epiphan_config=epi_config, stream_cfg=stream_cfg)
+        epi_config = ca.role.epiphan_config
         assert len(epi_config.channels) == 2
         assert epi_config.channels[0].name == 'fake_channel'
         assert epi_config.channels[1].name == 'another_fake_channel'
         assert epi_config.channels[0].epiphan_config == epi_config
-        assert epi_config.channels[0].stream_cfg == simple_db['config']
-
+        assert epi_config.channels[0].stream_cfg == simple_db['stream_config']
         assert epi_config.map_channel_name_to_channel_id() == {
                 'fake_channel': 0,
                 'another_fake_channel': 0}
@@ -616,40 +590,16 @@ class TestEpiphanChannelModel(object):
 
     def test_should_fail_when_add_duplicate_channel_name(self, simple_db):
         ca = simple_db['ca'][0]
-        role = ca.role
-        epi_config = EpiphanConfig.create(role=role)
-        stream_cfg=simple_db['config']
-        chan = EpiphanChannel.create(name='fake_channel',
-                epiphan_config=epi_config, stream_cfg=stream_cfg)
-        chan = EpiphanChannel.create(name='another_fake_channel',
-                epiphan_config=epi_config, stream_cfg=stream_cfg)
-        assert len(epi_config.channels) == 2
-        assert epi_config.channels[0].name == 'fake_channel'
-        assert epi_config.channels[1].name == 'another_fake_channel'
-        assert epi_config.channels[0].epiphan_config == epi_config
-        assert epi_config.channels[0].stream_cfg == simple_db['config']
-
+        epi_config = ca.role.epiphan_config
         with pytest.raises(DuplicateEpiphanChannelError) as e:
             chan = EpiphanChannel.create(name='fake_channel',
-                    epiphan_config=epi_config, stream_cfg=stream_cfg)
+                    epiphan_config=epi_config, stream_cfg=simple_db['stream_config'])
         assert 'channel(fake_channel) already in ca({})'.format(
                 epi_config.ca.name) in e.value
 
     def test_should_fail_when_add_duplicate_channel_id(self, simple_db):
         ca = simple_db['ca'][0]
-        role = ca.role
-        epi_config = EpiphanConfig.create(role=role)
-        stream_cfg=simple_db['config']
-        chan = EpiphanChannel.create(name='fake_channel',
-                epiphan_config=epi_config, stream_cfg=stream_cfg)
-        chan = EpiphanChannel.create(name='another_fake_channel',
-                epiphan_config=epi_config, stream_cfg=stream_cfg)
-        assert len(epi_config.channels) == 2
-        assert epi_config.channels[0].name == 'fake_channel'
-        assert epi_config.channels[1].name == 'another_fake_channel'
-        assert epi_config.channels[0].epiphan_config == epi_config
-        assert epi_config.channels[0].stream_cfg == simple_db['config']
-
+        epi_config = ca.role.epiphan_config
         epi_config.channels[0].update(channel_id_in_device=1)
         with pytest.raises(DuplicateEpiphanChannelIdError) as e:
             epi_config.channels[1].update(channel_id_in_device=1)
@@ -658,15 +608,11 @@ class TestEpiphanChannelModel(object):
 
     def test_add_recorder(self, simple_db):
         ca = simple_db['ca'][0]
-        role = ca.role
-        epi_config = EpiphanConfig.create(role=role)
-        rec = EpiphanRecorder.create(name='recorder_fake', epiphan_config=epi_config)
-        rec = EpiphanRecorder.create(name='recorder_fake_2', epiphan_config=epi_config)
+        epi_config = ca.role.epiphan_config
         assert len(epi_config.recorders) == 2
         assert epi_config.recorders[0].name == 'recorder_fake'
         assert epi_config.recorders[1].name == 'recorder_fake_2'
         assert epi_config.recorders[0].epiphan_config == epi_config
-
         assert epi_config.map_recorder_name_to_recorder_id() == {
                 'recorder_fake': 0,
                 'recorder_fake_2': 0}
@@ -674,36 +620,19 @@ class TestEpiphanChannelModel(object):
 
     def test_should_fail_when_add_duplicate_recorder_name(self, simple_db):
         ca = simple_db['ca'][0]
-        role = ca.role
-        epi_config = EpiphanConfig.create(role=role)
-        rec = EpiphanRecorder.create(name='recorder_fake', epiphan_config=epi_config)
-        rec = EpiphanRecorder.create(name='recorder_fake_2', epiphan_config=epi_config)
-        assert len(epi_config.recorders) == 2
-        assert epi_config.recorders[0].name == 'recorder_fake'
-        assert epi_config.recorders[1].name == 'recorder_fake_2'
-        assert epi_config.recorders[0].epiphan_config == epi_config
-
+        epi_config = ca.role.epiphan_config
         with pytest.raises(DuplicateEpiphanRecorderError) as e:
             rec = EpiphanRecorder.create(name='recorder_fake_2', epiphan_config=epi_config)
         assert 'recorder(recorder_fake_2) already in ca({})'.format(epi_config.ca.name) in e.value
 
     def test_should_fail_when_add_duplicate_recorder_id(self, simple_db):
         ca = simple_db['ca'][0]
-        role = ca.role
-        epi_config = EpiphanConfig.create(role=role)
-        rec = EpiphanRecorder.create(name='recorder_fake', epiphan_config=epi_config)
-        rec = EpiphanRecorder.create(name='recorder_fake_2', epiphan_config=epi_config)
-        assert len(epi_config.recorders) == 2
-        assert epi_config.recorders[0].name == 'recorder_fake'
-        assert epi_config.recorders[1].name == 'recorder_fake_2'
-        assert epi_config.recorders[0].epiphan_config == epi_config
-
+        epi_config = ca.role.epiphan_config
         epi_config.recorders[0].update(recorder_id_in_device=1)
         with pytest.raises(DuplicateEpiphanRecorderIdError) as e:
             epi_config.recorders[1].update(recorder_id_in_device=1)
         assert 'recorder_id_in_device(1) already config as (recorder_fake) in ca({}) - cannot update'.format(
                 epi_config.ca.name) in e.value
-
 
 @pytest.mark.usefixtures('db', 'simple_db')
 class TestMhpearlConfigModel(object):
@@ -711,21 +640,14 @@ class TestMhpearlConfigModel(object):
 
     def test_add_mhpearl_config(self, simple_db):
         ca = simple_db['ca'][0]
-        role = ca.role
-        epi_config = EpiphanConfig.create(role=role)
-        mh_cfg = MhpearlConfig.create(epiphan_config=epi_config)
+        epi_config = ca.role.epiphan_config
         assert epi_config.mhpearl is not None
         assert epi_config.mhpearl.epiphan_config == epi_config
         assert epi_config.mhpearl.mhpearl_version == '2.0.0'
 
     def test_should_fail_adding_more_than_one_mhpearl_config(self, simple_db):
         ca = simple_db['ca'][0]
-        role = ca.role
-        epi_config = EpiphanConfig.create(role=role)
-        mh_cfg = MhpearlConfig.create(epiphan_config=epi_config)
-        assert epi_config.mhpearl is not None
-        assert epi_config.mhpearl.epiphan_config == epi_config
-        assert epi_config.mhpearl.mhpearl_version == '2.0.0'
+        epi_config = ca.role.epiphan_config
         with pytest.raises(AssociationError) as e:
             cfg = MhpearlConfig.create(epiphan_config=epi_config)
         assert 'cannot add configs to ca({}): already has configs({})'.format(
@@ -733,12 +655,8 @@ class TestMhpearlConfigModel(object):
 
     def test_should_fail_when_updating_config_association(self, simple_db):
         ca = simple_db['ca'][0]
-        role = ca.role
-        epi_config = EpiphanConfig.create(role=role)
-        mh_cfg = MhpearlConfig.create(epiphan_config=epi_config)
-        assert epi_config.mhpearl is not None
-        assert epi_config.mhpearl.epiphan_config == epi_config
-        assert epi_config.mhpearl.mhpearl_version == '2.0.0'
+        epi_config = ca.role.epiphan_config
+        mh_cfg = epi_config.mhpearl
         with pytest.raises(InvalidOperationError) as e:
             mh_cfg.update(epiphan_config=epi_config)
         assert 'cannot update epiphan_config associated to mhpearl_config({})'.format(
