@@ -38,7 +38,8 @@ MH_ENVS = frozenset([u'prod', u'dev', u'stage'])
 UPDATEABLE_CA_FIELDS = frozenset([
         u'name', u'address', u'serial_number', u'capture_card_id',
         u'username', u'password'])
-UPDATEABLE_CLUSTER_FIELDS = frozenset([u'name', u'admin_host', u'env',
+UPDATEABLE_CLUSTER_FIELDS = frozenset([
+        u'name', u'admin_host', u'env',
         u'username', u'password'])
 UPDATEABLE_LOCATION_FIELDS = frozenset([u'name'])
 UPDATEABLE_VENDOR_FIELDS = frozenset([u'name', u'model'])
@@ -185,8 +186,8 @@ class Role(Model):
     cluster_id = Column(db.Integer, db.ForeignKey('mhcluster.id'))
     cluster = relationship(
             'MhCluster', back_populates='capture_agents', uselist=False)
-    epiphan_config_id = Column(db.Integer, db.ForeignKey('epiphan_config.id'))
-    epiphan_config = relationship('EpiphanConfig', back_populates='role', uselist=False)
+    config_id = Column(db.Integer, db.ForeignKey('epiphan_config.id'))
+    config = relationship('EpiphanConfig', back_populates='role', uselist=False)
 
     def __init__(self, ca, location, cluster, name):
         """validate constraints and create instance."""
@@ -229,9 +230,9 @@ class Role(Model):
     def delete(self, commit=True):
         """override to undo relationships."""
         try:
-            self.epiphan_config.delete()
+            self.config.delete()
         except AttributeError:
-            pass  # non-existent epiphan_config
+            pass  # non-existent config
         return super(Role, self).delete(commit)
 
 
@@ -549,7 +550,7 @@ class EpiphanConfig(SurrogatePK, Model):
 
     __tablename__ = 'epiphan_config'
     created_at = Column(db.DateTime, nullable=False, default=dt.datetime.utcnow)
-    role = relationship('Role', back_populates='epiphan_config', uselist=False)
+    role = relationship('Role', back_populates='config', uselist=False)
 
     channels = relationship('EpiphanChannel', back_populates='epiphan_config')
     recorders = relationship('EpiphanRecorder', back_populates='epiphan_config')
@@ -557,10 +558,10 @@ class EpiphanConfig(SurrogatePK, Model):
 
     def __init__(self, role):
         """create instance."""
-        if role.epiphan_config is not None:
+        if role.config is not None:
             raise AssociationError(
                     'cannot associate epiphan-config to ca({}): already has a config({})'.format(
-                        role.ca.id, role.epiphan_config.id))
+                        role.ca.id, role.config.id))
         db.Model.__init__(self, role=role)
 
     @property

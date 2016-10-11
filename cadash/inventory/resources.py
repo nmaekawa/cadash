@@ -12,14 +12,20 @@ from cadash.inventory.errors import AssociationError
 from cadash.inventory.errors import DuplicateCaptureAgentNameError
 from cadash.inventory.errors import DuplicateCaptureAgentAddressError
 from cadash.inventory.errors import DuplicateCaptureAgentSerialNumberError
+from cadash.inventory.errors import DuplicateEpiphanChannelError
+from cadash.inventory.errors import DuplicateEpiphanChannelIdError
+from cadash.inventory.errors import DuplicateEpiphanRecorderError
+from cadash.inventory.errors import DuplicateEpiphanRecorderIdError
 from cadash.inventory.errors import DuplicateLocationNameError
 from cadash.inventory.errors import DuplicateMhClusterAdminHostError
 from cadash.inventory.errors import DuplicateMhClusterNameError
 from cadash.inventory.errors import DuplicateVendorNameModelError
 from cadash.inventory.errors import InvalidCaRoleError
 from cadash.inventory.errors import InvalidEmptyValueError
+from cadash.inventory.errors import InvalidJsonValueError
 from cadash.inventory.errors import InvalidMhClusterEnvironmentError
 from cadash.inventory.errors import InvalidOperationError
+from cadash.inventory.errors import InvalidTimezoneError
 from cadash.inventory.errors import MissingVendorError
 from cadash.inventory.models import Ca
 from cadash.inventory.models import Location
@@ -36,6 +42,14 @@ RESOURCE_FIELDS = {
             'name_id': fields.String,
             'name': fields.String,
             'model': fields.String,
+            'config_id': fields.Integer,
+            'datetime_ntpserver': fields.String(attribute='config.datetime_ntpserver'),
+            'datetime_timezone': fields.String(attribute='config.datetime_timezone'),
+            'firmware_version': fields.String(attribute='config.firmware_version'),
+            'maintenance_permanent_logs': fields.Boolean(attribute='config.maintenance_permanent_logs'),
+            'source_deinterlacing': fields.Boolean(attribute='source_deinterlacing'),
+            'touchscreen_allow_recording': fields.Boolean(attribute='touchscreen_allow_recording'),
+            'touchscreen_timeout_secs': fields.Integer(attribute='touchscreen_timeout_secs'),
         },
         'Ca': {
             'id': fields.Integer,
@@ -44,11 +58,13 @@ RESOURCE_FIELDS = {
             'address': fields.String,
             'serial_number': fields.String(default='not available'),
             'vendor_name_id': fields.String(attribute='vendor.name_id'),
+            'capture_card_id': fields.String(default='not available'),
         },
         'Location': {
             'id': fields.Integer,
             'name_id': fields.String,
             'name': fields.String,
+            'config_id': fields.Integer,
         },
         'MhCluster': {
             'id': fields.Integer,
@@ -62,6 +78,7 @@ RESOURCE_FIELDS = {
             'ca_id': fields.Integer,
             'location_id': fields.Integer,
             'cluster_id': fields.Integer,
+            'config_id': fields.Integer,
         },
 }
 
@@ -146,14 +163,20 @@ class Resource_API(Resource):
                 DuplicateCaptureAgentNameError,
                 DuplicateCaptureAgentAddressError,
                 DuplicateCaptureAgentSerialNumberError,
+                DuplicateEpiphanChannelError,
+                DuplicateEpiphanChannelIdError,
+                DuplicateEpiphanRecorderError,
+                DuplicateEpiphanRecorderIdError,
                 DuplicateLocationNameError,
                 DuplicateMhClusterAdminHostError,
                 DuplicateMhClusterNameError,
                 DuplicateVendorNameModelError,
                 InvalidCaRoleError,
                 InvalidEmptyValueError,
+                InvalidJsonValueError,
                 InvalidMhClusterEnvironmentError,
                 InvalidOperationError,
+                InvalidTimezoneError,
                 MissingVendorError) as e:
             abort(400, message=e.message)
         else:
@@ -199,14 +222,20 @@ class Resource_ListAPI(Resource):
                 DuplicateCaptureAgentNameError,
                 DuplicateCaptureAgentAddressError,
                 DuplicateCaptureAgentSerialNumberError,
+                DuplicateEpiphanChannelError,
+                DuplicateEpiphanChannelIdError,
+                DuplicateEpiphanRecorderError,
+                DuplicateEpiphanRecorderIdError,
                 DuplicateLocationNameError,
                 DuplicateMhClusterAdminHostError,
                 DuplicateMhClusterNameError,
                 DuplicateVendorNameModelError,
                 InvalidCaRoleError,
                 InvalidEmptyValueError,
+                InvalidJsonValueError,
                 InvalidMhClusterEnvironmentError,
                 InvalidOperationError,
+                InvalidTimezoneError,
                 MissingVendorError) as e:
             abort(400, message=e.message)
         else:
