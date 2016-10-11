@@ -239,6 +239,9 @@ class TestVendorResource(object):
         json_data = json.loads(res.body)
         assert isinstance(json_data, dict)
         assert json_data['name_id'] == simple_db['vendor'].name_id
+        assert json_data['datetime_ntpserver'] == '0.pool.ntp.org'
+        assert json_data['touchscreen_allow_recording'] == False
+        assert json_data['touchscreen_timeout_secs'] == 600
 
     def test_create_vendor(self, testapp_login_disabled, simple_db):
         """create new vendor - happy path."""
@@ -254,6 +257,9 @@ class TestVendorResource(object):
 
         vendor = Vendor.get_by_id(json_data['id'])
         assert vendor.name == v['name']
+        assert vendor.config.datetime_ntpserver == '0.pool.ntp.org'
+        assert vendor.config.touchscreen_allow_recording == False
+        assert vendor.config.touchscreen_timeout_secs == 600
 
 
     def test_should_fail_when_create_duplicate_name(
