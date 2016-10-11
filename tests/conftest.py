@@ -129,7 +129,7 @@ def simple_db(db):
     chan1 = EpiphanChannel.create(name='fake_channel',
             epiphan_config=epi_config, stream_cfg=mini_db['stream_config'])
     chan2 = EpiphanChannel.create(name='another_fake_channel',
-            epiphan_config=epi_config, stream_cfg=stream_cfg)
+            epiphan_config=epi_config)
     rec1 = EpiphanRecorder.create(name='recorder_fake', epiphan_config=epi_config)
     rec2 = EpiphanRecorder.create(name='recorder_fake_2', epiphan_config=epi_config)
     mh_cfg = MhpearlConfig.create(epiphan_config=epi_config)

@@ -189,7 +189,7 @@ class Role(Model):
     config_id = Column(db.Integer, db.ForeignKey('epiphan_config.id'))
     config = relationship('EpiphanConfig', back_populates='role', uselist=False)
 
-    def __init__(self, ca, location, cluster, name):
+    def __init__(self, ca, location, cluster, name, config=None):
         """validate constraints and create instance."""
         # role name is valid?
         role_name = name.lower()
@@ -212,7 +212,7 @@ class Role(Model):
 
         db.Model.__init__(
                 self, ca=ca, location=location,
-                cluster=cluster, name=role_name)
+                cluster=cluster, name=role_name, config=config)
 
 
     def __repr__(self):
@@ -706,7 +706,7 @@ class EpiphanChannel(SurrogatePK, Model):
     vprofile = Column(db.String(8), nullable=False, default='100')
     source_layout = Column(db.Text, nullable=False, default='{}')  # should be a valid json object
 
-    def __init__(self, name, epiphan_config, stream_cfg):
+    def __init__(self, name, epiphan_config, stream_cfg=None):
         """create instance."""
         channel_map = epiphan_config.map_channel_name_to_channel_id()
         if name in channel_map.keys():

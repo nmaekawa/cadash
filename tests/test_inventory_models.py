@@ -451,6 +451,7 @@ class TestRelationship(object):
         role = simple_db['ca'][0].role
         with pytest.raises(InvalidOperationError):
             role.update(name='primary')
+        role.config is None
 
     def test_delete_role(self, simple_db):
         """test all role relationships are deleted."""
@@ -583,6 +584,7 @@ class TestEpiphanChannelModel(object):
         assert len(epi_config.channels) == 2
         assert epi_config.channels[0].name == 'fake_channel'
         assert epi_config.channels[1].name == 'another_fake_channel'
+        assert epi_config.channels[1].stream_cfg is None
         assert epi_config.channels[0].epiphan_config == epi_config
         assert epi_config.channels[0].stream_cfg == simple_db['stream_config']
         assert epi_config.map_channel_name_to_channel_id() == {
