@@ -16,6 +16,10 @@ class InvalidEmptyValueError(Error):
     """value must be not_empty."""
 
 
+class InvalidJsonValueError(Error):
+    """value is not valid json."""
+
+
 class InvalidOperationError(Error):
     """can't execute given operation in this object."""
 

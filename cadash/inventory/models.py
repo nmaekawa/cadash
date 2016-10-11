@@ -3,6 +3,7 @@
 
 from Crypto.Cipher import AES
 import datetime as dt
+import json
 import pytz
 
 from cadash.database import Column
@@ -25,6 +26,7 @@ from cadash.inventory.errors import DuplicateMhClusterNameError
 from cadash.inventory.errors import DuplicateVendorNameModelError
 from cadash.inventory.errors import InvalidCaRoleError
 from cadash.inventory.errors import InvalidEmptyValueError
+from cadash.inventory.errors import InvalidJsonValueError
 from cadash.inventory.errors import InvalidMhClusterEnvironmentError
 from cadash.inventory.errors import InvalidOperationError
 from cadash.inventory.errors import InvalidTimezoneError
@@ -49,6 +51,17 @@ UPDATEABLE_LOCATION_CONFIG_FIELDS = frozenset([
         u'primary_pn_vconnector', u'primary_pn_vinput',
         u'secondary_pr_vconnector', u'secondary_pr_vinput',
         u'secondary_pn_vconnector', u'secondary_pn_vinput'])
+UPDATEABLE_EPIPHAN_RECORDER_FIELDS = frozenset([
+        u'recorder_id_in_device', u'ouput_format',
+        u'size_limit_in_kbytes', u'time_limit_in_minutes'])
+UPDATEABLE_EPIPHAN_CHANNEL_FIELDS = frozenset([
+        u'stream_cfg', u'channel_id_in_device',
+        u'audio', u'audiobitrate', u'audiochannels',
+        u'audioframesize', u'codec', u'fpslimit', u'framesize',
+        u'vbitrate', u'vencpreset', u'vkeyframeinterval',
+        u'vprofile', u'source_layout'])
+
+
 
 
 class Location(SurrogatePK, NameIdMixin, Model):
@@ -639,26 +652,32 @@ class EpiphanRecorder(SurrogatePK, Model):
 
     def update(self, **kwargs):
         """override to check recorder constraints."""
+        x = set(kwargs.keys()).difference(UPDATEABLE_EPIPHAN_RECORDER_FIELDS)
+        if len(x) > 0:
+            raise InvalidOperationError(
+                    'not allowed to update epiphan_recorder fields: %s' %
+                    ', '.join(list(x)))
+
+        if self._check_constraints(**kwargs):
+            return super(EpiphanRecorder, self).update(commit=False, **kwargs)
+
+    def _check_constraints(self, **kwargs):
+        """raise an error if args violate epiphan recorder constraints."""
         recorder_map_id = self.epiphan_config.map_recorder_id_to_recorder_name()
         recorder_map_name = self.epiphan_config.map_recorder_name_to_recorder_id()
-
-        if 'epiphan_config' in kwargs.keys():
-            raise InvalidOperationError(
-                    'cannot update epiphan_config associated to recorder({})'.format(self.id))
-        if 'name' in kwargs.keys():
-            if kwargs['name'] in recorder_map_name.keys():
-                raise DuplicateEpiphanRecorderError(
-                        'recorder({}) already in ca({}) - cannot update.'.format(
-                            name, self.epiphan_config.ca.name))
-        if 'recorder_id_in_device' in kwargs.keys():
-            if kwargs['recorder_id_in_device'] in recorder_map_id.keys():
-                raise DuplicateEpiphanRecorderIdError(
-                        'recorder_id_in_device({}) already config as ({}) in ca({}) - cannot update'.format(
-                            kwargs['recorder_id_in_device'],
-                            recorder_map_id[kwargs['recorder_id_in_device']],
-                            self.epiphan_config.ca.name))
-        return super(EpiphanRecorder, self).update(**kwargs)
-
+        for k, value in kwargs.items():
+            if k == 'name':
+                if value in recorder_map_name.keys():
+                    raise DuplicateEpiphanRecorderError(
+                            'recorder({}) already in ca({}) - cannot update.'.format(
+                                value, self.epiphan_config.ca.name))
+            if k == 'recorder_id_in_device':
+                if value in recorder_map_id.keys():
+                    raise DuplicateEpiphanRecorderIdError(
+                            'recorder_id_in_device({}) already config as ({}) in ca({}) - cannot update'.format(
+                                value, recorder_map_id[value],
+                                self.epiphan_config.ca.name))
+        return True  # no constraint to check
 
 class EpiphanChannel(SurrogatePK, Model):
     """channel configuration for an epiphan-pearl CA."""
@@ -674,16 +693,17 @@ class EpiphanChannel(SurrogatePK, Model):
 
     # a/v encodings for a channel
     audio = Column(db.Boolean, nullable=False, default=True)
+    audiobitrate = Column(db.Integer, nullable=False, default=96)
     audiochannels = Column(db.String(8), nullable=False, default='1')
     autoframesize = Column(db.Boolean, nullable=False, default=False)
     codec = Column(db.String(80), nullable=False, default='h.264')
     fpslimit = Column(db.Integer, nullable=False, default=30)
+    framesize = Column(db.String(80), nullable=False, default='1920x540')
+    vbitrate = Column(db.Integer, nullable=False, default=4000)
     vencpreset = Column(db.String(8), nullable=False, default='5')
     vkeyframeinterval = Column(db.Numeric, nullable=False, default=1)
     vprofile = Column(db.String(8), nullable=False, default='100')
-    audiobitrate = Column(db.Integer, nullable=False, default=96)
-    framesize = Column(db.String(80), nullable=False, default='1920x540')
-    vbitrate = Column(db.Integer, nullable=False, default=4000)
+    source_layout = Column(db.Text, nullable=False, default='{}')  # should be a valid json object
 
     def __init__(self, name, epiphan_config, stream_cfg):
         """create instance."""
@@ -697,26 +717,51 @@ class EpiphanChannel(SurrogatePK, Model):
 
     def update(self, **kwargs):
         """override to check channel constraints."""
+        x = set(kwargs.keys()).difference(UPDATEABLE_EPIPHAN_CHANNEL_FIELDS)
+        if len(x) > 0:
+            raise InvalidOperationError(
+                'not allowed to update epiphan-channel fields: {}'.format(
+                        ', '.join(list(x)) ) )
+        if self._check_constraints(**kwargs):
+            return super(EpiphanChannel, self).update(**kwargs)
+
+    def _check_constraints(self, **kwargs):
+        """raise an error if args violate config constraints."""
         channel_map_id = self.epiphan_config.map_channel_id_to_channel_name()
         channel_map_name = self.epiphan_config.map_channel_name_to_channel_id()
 
-        if 'epiphan_config' in kwargs.keys():
-            raise InvalidOperationError(
-                    'cannot update epiphan_config associated to channel({})'.format(self.id))
-        if 'name' in kwargs.keys():
-            if kwargs['name'] in channel_map_name.keys():
-                raise DuplicateEpiphanChannelError(
-                        'channel({}) already in ca({}) - cannot update'.format(
-                            name, self.epiphan_config.ca.name))
-        if 'channel_id_in_device' in kwargs.keys():
-            if kwargs['channel_id_in_device'] in channel_map_id.keys():
-                raise DuplicateEpiphanChannelIdError(
-                        'channel_id_in_device({}) already config as ({}) in ca({}) - cannot update'.format(
-                            kwargs['channel_id_in_device'],
-                            channel_map_id[kwargs['channel_id_in_device']],
-                            self.epiphan_config.ca.name))
-        return super(EpiphanChannel, self).update(**kwargs)
-
+        for k, value in kwargs.items():
+            if k == 'datetime_timezone':
+                if kwargs['datetime_timezone'] not in pytz.all_timezones:
+                    raise InvalidTimezoneError('invalid timezone ({})'.format(
+                                value))
+                next
+            if k == 'name':
+                if value in channel_map_name.keys():
+                    raise DuplicateEpiphanChannelError(
+                            'channel({}) already in ca({}) - cannot update'.format(
+                                value, self.epiphan_config.ca.name))
+                next
+            if k == 'channel_id_in_device':
+                if value in channel_map_id.keys():
+                    raise DuplicateEpiphanChannelIdError(
+                            'channel_id_in_device({}) already config as ({}) in ca({}) - cannot update'.format(
+                                value, channel_map_id[value],
+                                self.epiphan_config.ca.name))
+            if k == 'source_layout':
+                try:
+                    x = json.loads(value)
+                except ValueError:
+                    raise InvalidJsonValueError(
+                            'source_layout({}...) cannot parse json'.format(value[:10]))
+                try:
+                    dummy = x['video']
+                except (KeyError, TypeError):
+                    raise InvalidJsonValueError(
+                            'source_layout({}...) not valid json as source_layout object'.format(
+                                value[:10]))
+                next
+        return True  # no constraints to check
 
 class AkamaiStreamingConfig(SurrogatePK, Model):
     """configuration for streaming via akamai services."""

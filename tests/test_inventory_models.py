@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """Tests for `models` in redunlive webapp."""
 import datetime as dt
+import json
 import pytest
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.exc import SQLAlchemyError
@@ -30,6 +31,7 @@ from cadash.inventory.errors import DuplicateMhClusterNameError
 from cadash.inventory.errors import DuplicateVendorNameModelError
 from cadash.inventory.errors import InvalidCaRoleError
 from cadash.inventory.errors import InvalidEmptyValueError
+from cadash.inventory.errors import InvalidJsonValueError
 from cadash.inventory.errors import InvalidMhClusterEnvironmentError
 from cadash.inventory.errors import InvalidOperationError
 from cadash.inventory.errors import InvalidTimezoneError
@@ -575,7 +577,7 @@ class TestDelete(object):
 class TestEpiphanChannelModel(object):
     """test for channels and recorders."""
 
-    def test_add_channel(self, simple_db):
+    def test_channel(self, simple_db):
         ca = simple_db['ca'][0]
         epi_config = ca.role.epiphan_config
         assert len(epi_config.channels) == 2
@@ -606,7 +608,7 @@ class TestEpiphanChannelModel(object):
         assert 'channel_id_in_device(1) already config as (fake_channel) in ca({}) - cannot update'.format(
                 epi_config.ca.name) in e.value
 
-    def test_add_recorder(self, simple_db):
+    def test_recorder(self, simple_db):
         ca = simple_db['ca'][0]
         epi_config = ca.role.epiphan_config
         assert len(epi_config.recorders) == 2
@@ -633,6 +635,66 @@ class TestEpiphanChannelModel(object):
             epi_config.recorders[1].update(recorder_id_in_device=1)
         assert 'recorder_id_in_device(1) already config as (recorder_fake) in ca({}) - cannot update'.format(
                 epi_config.ca.name) in e.value
+
+    def test_add_channel_layout(self, simple_db):
+        epi_config = simple_db['ca'][0].role.epiphan_config
+        chan = epi_config.channels[0]
+        assert chan.source_layout == '{}'
+        slayout = {
+                'audio': [
+                    {
+                        'settings': '{}.{}-{}-audio'.format(
+                            epi_config.ca.capture_card_id,
+                            epi_config.ca.role.location.config.primary_pr_vconnector,
+                            epi_config.ca.role.location.config.primary_pr_vinput
+                            ),
+                        'type': 'source'
+                        }
+                    ],
+                'background': '#000000',
+                'nosignal': {
+                    'id': 'default'
+                    },
+                'video': [
+                    {
+                        'position': {
+                            'height': '100%',
+                            'keep_aspect_ratio': True,
+                            'left': '0%',
+                            'top': '0%',
+                            'width': '100%'
+                            },
+                        'settings': {
+                            'source': '{}.{}-{}'.format(
+                                epi_config.ca.capture_card_id,
+                                epi_config.ca.role.location.config.primary_pr_vconnector,
+                                epi_config.ca.role.location.config.primary_pr_vinput
+                                )
+                            },
+                        'type': 'source'
+                        }
+                    ],
+                }
+        chan.update(source_layout=json.dumps(slayout))
+        assert chan.source_layout != '{}'
+        assert json.loads(chan.source_layout) == slayout
+
+    def test_should_fail_when_layout_is_invalid_json(self, simple_db):
+        epi_config = simple_db['ca'][0].role.epiphan_config
+        chan = epi_config.channels[0]
+        assert chan.source_layout == '{}'
+        with pytest.raises(InvalidJsonValueError) as e:
+            chan.update(source_layout='{some non-json thing,}')
+        assert 'cannot parse json' in e.value.message
+
+    def test_should_fail_when_layout_is_invalid_layout_json(self, simple_db):
+        epi_config = simple_db['ca'][0].role.epiphan_config
+        chan = epi_config.channels[0]
+        assert chan.source_layout == '{}'
+        with pytest.raises(InvalidJsonValueError) as e:
+            chan.update(source_layout='{"some_key": "some value"}')
+        assert 'not valid json as source_layout object' in e.value.message
+
 
 @pytest.mark.usefixtures('db', 'simple_db')
 class TestMhpearlConfigModel(object):
