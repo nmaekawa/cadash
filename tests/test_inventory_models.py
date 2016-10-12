@@ -9,13 +9,13 @@ from sqlalchemy.exc import SQLAlchemyError
 from cadash import utils
 from cadash.inventory.models import Ca
 from cadash.inventory.models import EpiphanChannel
-from cadash.inventory.models import EpiphanConfig
 from cadash.inventory.models import EpiphanRecorder
 from cadash.inventory.models import Location
 from cadash.inventory.models import LocationConfig
 from cadash.inventory.models import MhCluster
 from cadash.inventory.models import MhpearlConfig
 from cadash.inventory.models import Role
+from cadash.inventory.models import RoleConfig
 from cadash.inventory.models import Vendor
 from cadash.inventory.errors import AssociationError
 from cadash.inventory.errors import DuplicateCaptureAgentNameError
@@ -566,7 +566,7 @@ class TestDelete(object):
         assert len(simple_db['room'][0].get_ca_by_role('experimental')) == 1
         assert len(simple_db['cluster'][0].get_ca()) == 2
 
-        assert EpiphanConfig.get_by_id(epi_config.id) is None
+        assert RoleConfig.get_by_id(epi_config.id) is None
         assert EpiphanChannel.get_by_id(chan1.id) is None
         assert EpiphanChannel.get_by_id(chan2.id) is None
         assert EpiphanRecorder.get_by_id(rec1.id) is None

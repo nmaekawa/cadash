@@ -186,7 +186,7 @@ class Role(Model):
     cluster = relationship(
             'MhCluster', back_populates='capture_agents', uselist=False)
     config_id = Column(db.Integer, db.ForeignKey('epiphan_config.id'))
-    config = relationship('EpiphanConfig', back_populates='role', uselist=False)
+    config = relationship('RoleConfig', back_populates='role', uselist=False)
 
     def __init__(self, ca, location, cluster, name, config=None):
         """validate constraints and create instance."""
@@ -544,7 +544,7 @@ class MhCluster(SurrogatePK, NameIdMixin, Model):
                     ','.join(list(MH_ENVS)), env))
 
 
-class EpiphanConfig(SurrogatePK, Model):
+class RoleConfig(SurrogatePK, Model):
     """config specific for epiphan-pearl."""
 
     __tablename__ = 'epiphan_config'
@@ -622,7 +622,7 @@ class EpiphanConfig(SurrogatePK, Model):
             pass  # no recorders in ca
         if self.mhpearl is not None:
             self.mhpearl.delete()
-        return super(EpiphanConfig, self).delete()
+        return super(RoleConfig, self).delete()
 
 
 
@@ -634,7 +634,7 @@ class EpiphanRecorder(SurrogatePK, Model):
     name = Column(db.String(80), nullable=False)
     recorder_id_in_device = Column(db.Integer, nullable=False, default=0)
     epiphan_config_id = Column(db.Integer, db.ForeignKey('epiphan_config.id'))
-    epiphan_config = relationship('EpiphanConfig', back_populates='recorders')
+    epiphan_config = relationship('RoleConfig', back_populates='recorders')
 
     # media recording configurations
     output_format = Column(db.String(16), nullable=False, default='avi')
@@ -689,7 +689,7 @@ class EpiphanChannel(SurrogatePK, Model):
     stream_cfg_id = Column(db.Integer, db.ForeignKey('akamai_config.id'))
     stream_cfg = relationship('AkamaiStreamingConfig', back_populates='channels')
     epiphan_config_id = Column(db.Integer, db.ForeignKey('epiphan_config.id'))
-    epiphan_config = relationship('EpiphanConfig', back_populates='channels')
+    epiphan_config = relationship('RoleConfig', back_populates='channels')
 
     # a/v encodings for a channel
     audio = Column(db.Boolean, nullable=False, default=True)
@@ -818,7 +818,7 @@ class MhpearlConfig(SurrogatePK, Model):
     created_at = Column(db.DateTime, nullable=False, default=dt.datetime.utcnow)
     comment = Column(db.String(256), nullable=True)
     epiphan_config_id = Column(db.Integer, db.ForeignKey('epiphan_config.id'))
-    epiphan_config = relationship('EpiphanConfig', back_populates='mhpearl')
+    epiphan_config = relationship('RoleConfig', back_populates='mhpearl')
 
     # configs that cannot be derived from role relationships
     # live stream follow schedule on/off or always on?
