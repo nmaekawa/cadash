@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """capture agent models."""
 
-from Crypto.Cipher import AES
 import datetime as dt
 import json
 import pytz

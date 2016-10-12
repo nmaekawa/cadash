@@ -32,6 +32,10 @@ from cadash.inventory.models import Location
 from cadash.inventory.models import MhCluster
 from cadash.inventory.models import Role
 from cadash.inventory.models import Vendor
+from cadash.inventory.models import UPDATEABLE_VENDOR_FIELDS
+from cadash.inventory.models import UPDATEABLE_VENDOR_CONFIG_FIELDS
+from cadash.inventory.models import UPDATEABLE_LOCATION_FIELDS
+from cadash.inventory.models import UPDATEABLE_LOCATION_CONFIG_FIELDS
 
 
 # dicts to define output json objects
@@ -42,13 +46,20 @@ RESOURCE_FIELDS = {
             'name_id': fields.String,
             'name': fields.String,
             'model': fields.String,
-            'datetime_ntpserver': fields.String(attribute='config.datetime_ntpserver'),
-            'datetime_timezone': fields.String(attribute='config.datetime_timezone'),
-            'firmware_version': fields.String(attribute='config.firmware_version'),
-            'maintenance_permanent_logs': fields.Boolean(attribute='config.maintenance_permanent_logs'),
-            'source_deinterlacing': fields.Boolean(attribute='config.source_deinterlacing'),
-            'touchscreen_allow_recording': fields.Boolean(attribute='config.touchscreen_allow_recording'),
-            'touchscreen_timeout_secs': fields.Integer(attribute='config.touchscreen_timeout_secs'),
+            'datetime_ntpserver': fields.String(
+                attribute='config.datetime_ntpserver'),
+            'datetime_timezone': fields.String(
+                attribute='config.datetime_timezone'),
+            'firmware_version': fields.String(
+                attribute='config.firmware_version'),
+            'maintenance_permanent_logs': fields.Boolean(
+                attribute='config.maintenance_permanent_logs'),
+            'source_deinterlacing': fields.Boolean(
+                attribute='config.source_deinterlacing'),
+            'touchscreen_allow_recording': fields.Boolean(
+                attribute='config.touchscreen_allow_recording'),
+            'touchscreen_timeout_secs': fields.Integer(
+                attribute='config.touchscreen_timeout_secs'),
         },
         'Ca': {
             'id': fields.Integer,
@@ -79,6 +90,12 @@ RESOURCE_FIELDS = {
             'cluster_id': fields.Integer,
             'config_id': fields.Integer,
         },
+}
+UPDATEABLE_FIELDS = {
+        'Vendor': UPDATEABLE_VENDOR_FIELDS,
+        'VendorConfig': UPDATEABLE_VENDOR_CONFIG_FIELDS,
+        'Location': UPDATEABLE_LOCATION_FIELDS,
+        'LocationConfig': UPDATEABLE_LOCATION_CONFIG_FIELDS,
 }
 
 
@@ -190,6 +207,84 @@ class Resource_API(Resource):
         return '', 204
 
 
+class ResourceConfig_API(Resource_API):
+    """base for resource with config rest api put.
+
+    naomi 12oct16: resources with config are treated by rest endpoints
+    as having the configs in the same model entity.
+    for now, a new config with default values is created when the
+    corresponding resource is created. changing a config value requires
+    a PUT request to update the ResourceConfig.
+    """
+
+    def put(self, r_id):
+        """override to deal with resource config fields."""
+        resource = self._resource_model_class.get_by_id(r_id)
+        abort_404_if_resource_none(
+                resource,
+                '%s[%i]' % (self._resource_model_class_name, r_id))
+
+        args = self._parser_update.parse_args()
+        kwargs = {}
+        for key in UPDATEABLE_FIELDS[self._resource_model_class_name]:
+            if key in args.keys():
+                kwargs[key] = args[key]
+        try:
+            resource.update(**kwargs)
+        except (AssociationError,
+                DuplicateCaptureAgentNameError,
+                DuplicateCaptureAgentAddressError,
+                DuplicateCaptureAgentSerialNumberError,
+                DuplicateEpiphanChannelError,
+                DuplicateEpiphanChannelIdError,
+                DuplicateEpiphanRecorderError,
+                DuplicateEpiphanRecorderIdError,
+                DuplicateLocationNameError,
+                DuplicateMhClusterAdminHostError,
+                DuplicateMhClusterNameError,
+                DuplicateVendorNameModelError,
+                InvalidCaRoleError,
+                InvalidEmptyValueError,
+                InvalidJsonValueError,
+                InvalidMhClusterEnvironmentError,
+                InvalidOperationError,
+                InvalidTimezoneError,
+                MissingVendorError) as e:
+            abort(400, message=e.message)
+
+        kwargs = {}
+        for key in UPDATEABLE_FIELDS['{}Config'.format(
+            self._resource_model_class_name)]:
+            if key in args.keys():
+                kwargs[key] = args[key]
+        try:
+            resource.config.update(**kwargs)
+        except (AssociationError,
+                DuplicateCaptureAgentNameError,
+                DuplicateCaptureAgentAddressError,
+                DuplicateCaptureAgentSerialNumberError,
+                DuplicateEpiphanChannelError,
+                DuplicateEpiphanChannelIdError,
+                DuplicateEpiphanRecorderError,
+                DuplicateEpiphanRecorderIdError,
+                DuplicateLocationNameError,
+                DuplicateMhClusterAdminHostError,
+                DuplicateMhClusterNameError,
+                DuplicateVendorNameModelError,
+                InvalidCaRoleError,
+                InvalidEmptyValueError,
+                InvalidJsonValueError,
+                InvalidMhClusterEnvironmentError,
+                InvalidOperationError,
+                InvalidTimezoneError,
+                MissingVendorError) as e:
+            abort(400, message=e.message)
+        else:
+            return marshal(
+                    resource,
+                    RESOURCE_FIELDS[self._resource_model_class_name]), 200
+
+
 class Resource_ListAPI(Resource):
     """base resource for rest api: get list, post."""
 
@@ -280,7 +375,7 @@ class Ca_ListAPI(Resource_ListAPI):
                 location='json', store_missing=False)
 
 
-class Location_API(Resource_API):
+class Location_API(ResourceConfig_API):
     """location resource for rest endpoints."""
 
     def __init__(self):
@@ -288,6 +383,30 @@ class Location_API(Resource_API):
         super(Location_API, self).__init__()
         self._parser_update.add_argument(
                 'name', type=str, location='json',
+                store_missing=False)
+        self._parser_update.add_argument(
+                'primary_pr_vconnector', type=str, location='json',
+                store_missing=False)
+        self._parser_update.add_argument(
+                'primary_pr_vinput', type=str, location='json',
+                store_missing=False)
+        self._parser_update.add_argument(
+                'primary_pn_vconnector', type=str, location='json',
+                store_missing=False)
+        self._parser_update.add_argument(
+                'primary_pn_vinput', type=str, location='json',
+                store_missing=False)
+        self._parser_update.add_argument(
+                'secondary_pr_vconnector', type=str, location='json',
+                store_missing=False)
+        self._parser_update.add_argument(
+                'secondary_pr_vinput', type=str, location='json',
+                store_missing=False)
+        self._parser_update.add_argument(
+                'secondary_pn_vconnector', type=str, location='json',
+                store_missing=False)
+        self._parser_update.add_argument(
+                'secondary_pn_vinput', type=str, location='json',
                 store_missing=False)
 
 
@@ -302,18 +421,39 @@ class Location_ListAPI(Resource_ListAPI):
                 help='`name` cannot be blank', required=True)
 
 
-class Vendor_API(Resource_API):
+class Vendor_API(ResourceConfig_API):
     """vendor resource for rest endpoints."""
 
     def __init__(self):
         """create instance."""
         super(Vendor_API, self).__init__()
         self._parser_update.add_argument(
-                'name', type=str, location='json',
-                store_missing=False)
+            'name', type=str, location='json',
+            store_missing=False)
         self._parser_update.add_argument(
-                'model', type=str, location='json',
-                store_missing=False)
+            'model', type=str, location='json',
+            store_missing=False)
+        self._parser_update.add_argument(
+            'datetime_ntpserver', type=str, location='json',
+            store_missing=False)
+        self._parser_update.add_argument(
+            'datetime_timezone', type=str, location='json',
+            store_missing=False)
+        self._parser_update.add_argument(
+            'firmware_version', type=str, location='json',
+            store_missing=False)
+        self._parser_update.add_argument(
+            'maintenance_permanent_logs', type=bool, location='json',
+            store_missing=False)
+        self._parser_update.add_argument(
+            'source_deinterlacing', type=bool, location='json',
+            store_missing=False)
+        self._parser_update.add_argument(
+            'touchscreen_allow_recording', type=bool, location='json',
+            store_missing=False)
+        self._parser_update.add_argument(
+            'touchscreen_timeout_secs', type=int, location='json',
+            store_missing=False)
 
 
 class Vendor_ListAPI(Resource_ListAPI):
@@ -323,11 +463,11 @@ class Vendor_ListAPI(Resource_ListAPI):
         """create instance."""
         super(Vendor_ListAPI, self).__init__()
         self._parser_create.add_argument(
-                'name', type=str, location='json',
-                help='`name` cannot be blank', required=True)
+            'name', type=str, location='json',
+            help='`name` cannot be blank', required=True)
         self._parser_create.add_argument(
-                'model', type=str, location='json',
-                help='`model` cannot be blank', required=True)
+            'model', type=str, location='json',
+            help='`model` cannot be blank', required=True)
 
 
 class MhCluster_API(Resource_API):

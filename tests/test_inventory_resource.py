@@ -202,12 +202,18 @@ class TestLocationResource(object):
         loc = Location.get_by_id(simple_db['room'][2].id)
         assert loc.name == simple_db['room'][2].name
 
-        l = dict(name='special_new_name')
+        l = dict(
+                name='special_new_name',
+                primary_pr_vconnector='hdmi',
+                primary_pr_vinput='k',
+                )
         url = '/api/inventory/locations/%i' % simple_db['room'][2].id
         res = testapp_login_disabled.put_json(url, params=l)
 
         loc = Location.get_by_id(simple_db['room'][2].id)
         assert loc.name == 'special_new_name'
+        assert loc.config.primary_pr_vconnector == 'hdmi'
+        assert loc.config.primary_pr_vinput == 'k'
 
 
     def test_should_fail_when_update_blank_name(
@@ -280,13 +286,20 @@ class TestVendorResource(object):
         vendor = Vendor.get_by_id(simple_db['vendor'].id)
         assert vendor.name_id == simple_db['vendor'].name_id
 
-        v = dict(model='tralala')
+        v = dict(
+                model='tralala',
+                datetime_ntpserver='ntp.harvard.edu',
+                source_deinterlacing=False,
+                touchscreen_timeout_secs=123)
         url = '/api/inventory/vendors/%i' % simple_db['vendor'].id
         res = testapp_login_disabled.put_json(url, params=v)
 
         vendor = Vendor.get_by_id(simple_db['vendor'].id)
         assert vendor.name_id == Vendor.computed_name_id(
                 name=simple_db['vendor'].name, model='tralala')
+        assert vendor.config.datetime_ntpserver == 'ntp.harvard.edu'
+        assert vendor.config.source_deinterlacing == False
+        assert vendor.config.touchscreen_timeout_secs == 123
 
 
     def test_update_blank_name(
