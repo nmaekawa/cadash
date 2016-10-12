@@ -78,3 +78,7 @@ class DuplicateEpiphanRecorderError(Error):
 
 class DuplicateEpiphanRecorderIdError(Error):
     """epiphan channel_id_in_device already configured for this CA."""
+
+
+class DuplicateAkamaiStreamIdError(Error):
+    """akamai stream_id already exist in inventory."""

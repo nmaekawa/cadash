@@ -13,6 +13,7 @@ from flask import url_for
 from mock import patch
 
 from cadash import utils
+from cadash.inventory.models import AkamaiStreamingConfig
 from cadash.inventory.models import Ca
 from cadash.inventory.models import Location
 from cadash.inventory.models import MhCluster
@@ -157,6 +158,8 @@ class TestLocationResource(object):
         json_data = json.loads(res.body)
         assert isinstance(json_data, dict)
         assert json_data['name'] == simple_db['room'][1].name
+        assert json_data['primary_pr_vconnector'] == 'sdi'
+        assert json_data['primary_pr_vinput'] == 'a'
 
     def test_create_location(self, testapp_login_disabled, simple_db):
         """create new location - happy path."""
@@ -423,4 +426,66 @@ class TestRoleResource(object):
                 simple_db['ca'][2].id)
         assert res.status_int == 204
         assert simple_db['ca'][2].role is None
+
+
+@pytest.mark.usefixtures('db', 'simple_db', 'testapp_login_disabled')
+class TestStreamingConfigResource(object):
+    """akamai_streaming_config rest resource."""
+
+    def test_can_get_streamcfg_list(self, testapp_login_disabled, simple_db):
+        """get list of streamcfg."""
+        res = testapp_login_disabled.get('/api/inventory/streamcfgs')
+        assert bool(res)
+        json_data = json.loads(res.body)
+        assert len(json_data) == 1
+        assert json_data[0]['name'] == simple_db['stream_config'].name
+
+    def test_get_streamcfg(self, testapp_login_disabled, simple_db):
+        """get streamcfg by id."""
+        url = '/api/inventory/streamcfgs/%i' % simple_db['stream_config'].id
+        res = testapp_login_disabled.get(url)
+        json_data = json.loads(res.body)
+        assert isinstance(json_data, dict)
+        assert json_data['name'] == simple_db['stream_config'].name
+
+    def test_create_cluster(self, testapp_login_disabled, simple_db):
+        """create new streamcfg - happy path."""
+        c = dict(
+                name='gojira', stream_id='333333',
+                stream_user='jon', stream_password='snow')
+        res = testapp_login_disabled.post_json('/api/inventory/streamcfgs', c)
+        assert res.status_int == 201
+
+        c_list = AkamaiStreamingConfig.query.all()
+        assert len(c_list) == 2
+
+        json_data = json.loads(res.body)
+        assert bool(json_data['id'])
+
+        stream_config = AkamaiStreamingConfig.get_by_id(json_data['id'])
+        assert stream_config.name == c['name']
+
+
+    def test_should_fail_when_create_duplicate_stream_id(
+            self, testapp_login_disabled, simple_db):
+        """stream_id is unique."""
+        c = dict(name='different_name_for_stream',
+                stream_id=simple_db['stream_config'].stream_id,
+                stream_user='jon', stream_password='snow')
+        res = testapp_login_disabled.post_json('/api/inventory/streamcfgs',
+                params=c, expect_errors=True)
+        json_data = json.loads(res.body)
+
+        assert res.status_int == 400
+        error_msg = 'duplicate stream_id({})'.format(
+                simple_db['stream_config'].stream_id)
+        assert error_msg in res.body
+
+
+    def test_should_fail_when_update(self, testapp_login_disabled, simple_db):
+        """update happy path."""
+        url = '/api/inventory/streamcfgs/%i' % simple_db['stream_config'].id
+        res = testapp_login_disabled.put_json(url, expect_errors=True)
+        assert res.status_int == 405
+        assert 'not allowed to update' in res.body
 

@@ -12,6 +12,7 @@ from cadash.database import SurrogatePK
 from cadash.database import db
 from cadash.database import relationship
 from cadash.inventory.errors import AssociationError
+from cadash.inventory.errors import DuplicateAkamaiStreamIdError
 from cadash.inventory.errors import DuplicateCaptureAgentNameError
 from cadash.inventory.errors import DuplicateCaptureAgentAddressError
 from cadash.inventory.errors import DuplicateCaptureAgentSerialNumberError
@@ -788,7 +789,7 @@ class AkamaiStreamingConfig(SurrogatePK, Model):
         # check that no duplicate stream_ids
         scfg = AkamaiStreamingConfig.query.filter_by(stream_id=stream_id).first()
         if scfg is not None:
-            raise DuplicateAkamainStreamIdError(
+            raise DuplicateAkamaiStreamIdError(
                     'duplicate stream_id({}); already configured for ({})'.format(
                         stream_id, scfg.name))
         db.Model.__init__(

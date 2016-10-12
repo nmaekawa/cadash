@@ -9,6 +9,7 @@ from flask_restful import marshal
 from flask_restful import reqparse
 
 from cadash.inventory.errors import AssociationError
+from cadash.inventory.errors import DuplicateAkamaiStreamIdError
 from cadash.inventory.errors import DuplicateCaptureAgentNameError
 from cadash.inventory.errors import DuplicateCaptureAgentAddressError
 from cadash.inventory.errors import DuplicateCaptureAgentSerialNumberError
@@ -27,6 +28,7 @@ from cadash.inventory.errors import InvalidMhClusterEnvironmentError
 from cadash.inventory.errors import InvalidOperationError
 from cadash.inventory.errors import InvalidTimezoneError
 from cadash.inventory.errors import MissingVendorError
+from cadash.inventory.models import AkamaiStreamingConfig
 from cadash.inventory.models import Ca
 from cadash.inventory.models import Location
 from cadash.inventory.models import MhCluster
@@ -75,6 +77,22 @@ RESOURCE_FIELDS = {
             'name_id': fields.String,
             'name': fields.String,
             'config_id': fields.Integer,
+            'primary_pr_vconnector': fields.String(
+                attribute='config.primary_pr_vconnector'),
+            'primary_pr_vinput': fields.String(
+                attribute='config.primary_pr_vinput'),
+            'primary_pn_vconnector': fields.String(
+                attribute='config.primary_pn_vconnector'),
+            'primary_pn_vinput': fields.String(
+                attribute='config.primary_pn_vinput'),
+            'secondary_pr_vconnector': fields.String(
+                attribute='config.secondary_pr_vconnector'),
+            'secondary_pr_vinput': fields.String(
+                attribute='config.secondary_pr_vinput'),
+            'secondary_pn_vconnector': fields.String(
+                attribute='config.secondary_pn_vconnector'),
+            'secondary_pn_vinput': fields.String(
+                attribute='config.secondary_pn_vinput'),
         },
         'MhCluster': {
             'id': fields.Integer,
@@ -89,6 +107,17 @@ RESOURCE_FIELDS = {
             'location_id': fields.Integer,
             'cluster_id': fields.Integer,
             'config_id': fields.Integer,
+        },
+        'AkamaiStreamingConfig': {
+            'id': fields.Integer,
+            'name': fields.String,
+            'comment': fields.String,
+            'stream_id': fields.String,
+            'stream_user': fields.String,
+            'stream_password': fields.String,
+            'primary_url_jinja2_template': fields.String,
+            'secondary_url_jinja2_template': fields.String,
+            'stream_name_jinja2_template': fields.String,
         },
 }
 UPDATEABLE_FIELDS = {
@@ -131,6 +160,12 @@ def register_resources(api):
     api.add_resource(
             Role_ListAPI,
             '/api/inventory/roles', endpoint='api_rolelist')
+    api.add_resource(
+            AkamaiStreamingConfig_API,
+            '/api/inventory/streamcfgs/<int:r_id>', endpoint='api_streamcfg')
+    api.add_resource(
+            AkamaiStreamingConfig_ListAPI,
+            '/api/inventory/streamcfgs', endpoint='api_streamcfglist')
 
 
 def abort_404_if_resource_none(resource, resource_id):
@@ -176,6 +211,7 @@ class Resource_API(Resource):
         try:
             resource.update(**args)
         except (AssociationError,
+                DuplicateAkamaiStreamIdError,
                 DuplicateCaptureAgentNameError,
                 DuplicateCaptureAgentAddressError,
                 DuplicateCaptureAgentSerialNumberError,
@@ -232,6 +268,7 @@ class ResourceConfig_API(Resource_API):
         try:
             resource.update(**kwargs)
         except (AssociationError,
+                DuplicateAkamaiStreamIdError,
                 DuplicateCaptureAgentNameError,
                 DuplicateCaptureAgentAddressError,
                 DuplicateCaptureAgentSerialNumberError,
@@ -260,6 +297,7 @@ class ResourceConfig_API(Resource_API):
         try:
             resource.config.update(**kwargs)
         except (AssociationError,
+                DuplicateAkamaiStreamIdError,
                 DuplicateCaptureAgentNameError,
                 DuplicateCaptureAgentAddressError,
                 DuplicateCaptureAgentSerialNumberError,
@@ -313,6 +351,7 @@ class Resource_ListAPI(Resource):
         try:
             resource = self._resource_model_class.create(**args)
         except (AssociationError,
+                DuplicateAkamaiStreamIdError,
                 DuplicateCaptureAgentNameError,
                 DuplicateCaptureAgentAddressError,
                 DuplicateCaptureAgentSerialNumberError,
@@ -572,3 +611,43 @@ class Role_ListAPI(Resource):
             abort(400, message=e.message)
         else:
             return marshal(resource, RESOURCE_FIELDS['Role']), 201
+
+
+class AkamaiStreamingConfig_API(Resource_API):
+    """akamai streaming config resource."""
+
+    def put(self, r_id):
+        """override to disable updates in akamai streaming config."""
+        abort(405, message='not allowed to update')
+
+
+class AkamaiStreamingConfig_ListAPI(Resource_ListAPI):
+    """akamai streaming config list and create resource."""
+
+    def __init__(self):
+        """create instance."""
+        super(AkamaiStreamingConfig_ListAPI, self).__init__()
+        self._parser_create.add_argument(
+                'name', type=str, required=True,
+                help='`name` cannot be blank', location='json')
+        self._parser_create.add_argument(
+                'comment', type=str, required=False,
+                store_missing=False, location='json')
+        self._parser_create.add_argument(
+                'stream_id', type=str, required=True,
+                help='`stream_id` cannot be blank', location='json')
+        self._parser_create.add_argument(
+                'stream_user', type=str, required=True,
+                help='`stream_user` cannot be blank', location='json')
+        self._parser_create.add_argument(
+                'stream_password', type=str, required=True,
+                help='`stream_password` cannot be blank', location='json')
+        self._parser_create.add_argument(
+                'primary_url_jinja2_template', type=str, required=False,
+                store_missing=False, location='json')
+        self._parser_create.add_argument(
+                'secondary_url_jinja2_template', type=str, required=False,
+                store_missing=False, location='json')
+        self._parser_create.add_argument(
+                'stream_name_jinja2_template', type=str, required=False,
+                store_missing=False, location='json')

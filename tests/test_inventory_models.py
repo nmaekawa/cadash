@@ -142,6 +142,8 @@ class TestLocationModel(object):
         loc = Location.create(name='room A')
         retrieved = Location.get_by_id(loc.id)
         assert retrieved == loc
+        assert retrieved.config is not None
+        assert retrieved.config.primary_pr_vconnector == 'sdi'
 
     def test_created_at_defaults_to_datetime(self):
         """test creation date."""
