@@ -633,7 +633,7 @@ class EpiphanRecorder(SurrogatePK, Model):
     __tablename__ = 'epiphan_recorder'
     created_at = Column(db.DateTime, nullable=False, default=dt.datetime.utcnow)
     name = Column(db.String(80), nullable=False)
-    recorder_id_in_device = Column(db.Integer, nullable=False, default=0)
+    recorder_id_in_device = Column(db.Integer, nullable=False, default=9999)
     epiphan_config_id = Column(db.Integer, db.ForeignKey('epiphan_config.id'))
     epiphan_config = relationship('RoleConfig', back_populates='recorders')
 
@@ -673,7 +673,7 @@ class EpiphanRecorder(SurrogatePK, Model):
                             'recorder({}) already in ca({}) - cannot update.'.format(
                                 value, self.epiphan_config.ca.name))
             if k == 'recorder_id_in_device':
-                if value in recorder_map_id.keys():
+                if value != 9999 and value in recorder_map_id.keys():
                     raise DuplicateEpiphanRecorderIdError(
                             'recorder_id_in_device({}) already config as ({}) in ca({}) - cannot update'.format(
                                 value, recorder_map_id[value],
@@ -686,7 +686,7 @@ class EpiphanChannel(SurrogatePK, Model):
     __tablename__ = 'epiphan_channel'
     created_at = Column(db.DateTime, nullable=False, default=dt.datetime.utcnow)
     name = Column(db.String(80), nullable=False)
-    channel_id_in_device = Column(db.Integer, nullable=False, default=0)
+    channel_id_in_device = Column(db.Integer, nullable=False, default=9999)
     stream_cfg_id = Column(db.Integer, db.ForeignKey('akamai_config.id'))
     stream_cfg = relationship('AkamaiStreamingConfig', back_populates='channels')
     epiphan_config_id = Column(db.Integer, db.ForeignKey('epiphan_config.id'))
@@ -744,7 +744,7 @@ class EpiphanChannel(SurrogatePK, Model):
                                 value, self.epiphan_config.ca.name))
                 next
             if k == 'channel_id_in_device':
-                if value in channel_map_id.keys():
+                if value != 9999 and value in channel_map_id.keys():
                     raise DuplicateEpiphanChannelIdError(
                             'channel_id_in_device({}) already config as ({}) in ca({}) - cannot update'.format(
                                 value, channel_map_id[value],

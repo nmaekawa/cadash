@@ -590,9 +590,9 @@ class TestEpiphanChannelModel(object):
         assert epi_config.channels[0].epiphan_config == epi_config
         assert epi_config.channels[0].stream_cfg == simple_db['stream_config']
         assert epi_config.map_channel_name_to_channel_id() == {
-                'fake_channel': 0,
-                'another_fake_channel': 0}
-        assert epi_config.map_channel_id_to_channel_name() == {0: 'another_fake_channel'}
+                'fake_channel': 9999,
+                'another_fake_channel': 9999}
+        assert epi_config.map_channel_id_to_channel_name() == {9999: 'another_fake_channel'}
 
     def test_should_fail_when_add_duplicate_channel_name(self, simple_db):
         ca = simple_db['ca'][0]
@@ -620,9 +620,9 @@ class TestEpiphanChannelModel(object):
         assert epi_config.recorders[1].name == 'recorder_fake_2'
         assert epi_config.recorders[0].epiphan_config == epi_config
         assert epi_config.map_recorder_name_to_recorder_id() == {
-                'recorder_fake': 0,
-                'recorder_fake_2': 0}
-        assert epi_config.map_recorder_id_to_recorder_name() == {0: 'recorder_fake_2'}
+                'recorder_fake': 9999,
+                'recorder_fake_2': 9999}
+        assert epi_config.map_recorder_id_to_recorder_name() == {9999: 'recorder_fake_2'}
 
     def test_should_fail_when_add_duplicate_recorder_name(self, simple_db):
         ca = simple_db['ca'][0]
