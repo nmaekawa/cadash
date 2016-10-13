@@ -57,8 +57,8 @@ UPDATEABLE_EPIPHAN_RECORDER_FIELDS = frozenset([
         u'size_limit_in_kbytes', u'time_limit_in_minutes'])
 UPDATEABLE_EPIPHAN_CHANNEL_FIELDS = frozenset([
         u'stream_cfg', u'channel_id_in_device',
-        u'audio', u'audiobitrate', u'audiochannels',
-        u'audioframesize', u'codec', u'fpslimit', u'framesize',
+        u'audio', u'audiobitrate', u'audiochannels', u'audiopreset',
+        u'autoframesize', u'codec', u'fpslimit', u'framesize',
         u'vbitrate', u'vencpreset', u'vkeyframeinterval',
         u'vprofile', u'source_layout'])
 
@@ -189,7 +189,7 @@ class Role(Model):
     config_id = Column(db.Integer, db.ForeignKey('epiphan_config.id'))
     config = relationship('RoleConfig', back_populates='role', uselist=False)
 
-    def __init__(self, ca, location, cluster, name, config=None):
+    def __init__(self, ca, location, cluster, name):
         """validate constraints and create instance."""
         # role name is valid?
         role_name = name.lower()
@@ -212,7 +212,7 @@ class Role(Model):
 
         db.Model.__init__(
                 self, ca=ca, location=location,
-                cluster=cluster, name=role_name, config=config)
+                cluster=cluster, name=role_name, config=None)
 
 
     def __repr__(self):
@@ -696,13 +696,14 @@ class EpiphanChannel(SurrogatePK, Model):
     audio = Column(db.Boolean, nullable=False, default=True)
     audiobitrate = Column(db.Integer, nullable=False, default=96)
     audiochannels = Column(db.String(8), nullable=False, default='1')
+    audiopreset = Column(db.String(80), nullable=False, default='libfaac;44100')
     autoframesize = Column(db.Boolean, nullable=False, default=False)
     codec = Column(db.String(80), nullable=False, default='h.264')
     fpslimit = Column(db.Integer, nullable=False, default=30)
     framesize = Column(db.String(80), nullable=False, default='1920x540')
     vbitrate = Column(db.Integer, nullable=False, default=4000)
     vencpreset = Column(db.String(8), nullable=False, default='5')
-    vkeyframeinterval = Column(db.Numeric, nullable=False, default=1)
+    vkeyframeinterval = Column(db.Integer, nullable=False, default=1)
     vprofile = Column(db.String(8), nullable=False, default='100')
     source_layout = Column(db.Text, nullable=False, default='{}')  # should be a valid json object
 
@@ -778,11 +779,11 @@ class AkamaiStreamingConfig(SurrogatePK, Model):
     stream_password = Column(db.String(80), nullable=False)
 
     primary_url_jinja2_template = Column(db.String(128), nullable=False,
-            default='rtmp://p.ep{{streaming_key}}.i.akamaientrypoint.net/EntryPoint')
+            default='rtmp://p.ep{{stream_id}}.i.akamaientrypoint.net/EntryPoint')
     secondary_url_jinja2_template = Column(db.String(128), nullable=False,
-            default='rtmp://b.ep{{streaming_key}}.i.akamaientrypoint.net/EntryPoint')
+            default='rtmp://b.ep{{stream_id}}.i.akamaientrypoint.net/EntryPoint')
     stream_name_jinja2_template = Column(db.String(128), nullable=False,
-            default='{{location_name}}-presenter-delivery.stream-{{framesize}}_1_200@{{streaming_key}}')
+            default='{{location_name}}-presenter-delivery.stream-{{framesize}}_1_200@{{stream_id}}')
 
     def __init__(self, name, stream_id, stream_user, stream_password):
         """create instance."""

@@ -1,40 +1,23 @@
 # -*- coding: utf-8 -*-
-"""capture agent models."""
+"""dce ca models."""
 
 from jinja2 import Template
 import json
 
-from cadash.inventory.errors import AssociationError
-from cadash.inventory.errors import DuplicateAkamaiStreamIdError
-from cadash.inventory.errors import DuplicateCaptureAgentNameError
-from cadash.inventory.errors import DuplicateCaptureAgentAddressError
-from cadash.inventory.errors import DuplicateCaptureAgentSerialNumberError
-from cadash.inventory.errors import DuplicateEpiphanChannelError
-from cadash.inventory.errors import DuplicateEpiphanChannelIdError
-from cadash.inventory.errors import DuplicateEpiphanRecorderError
-from cadash.inventory.errors import DuplicateEpiphanRecorderIdError
-from cadash.inventory.errors import DuplicateLocationNameError
-from cadash.inventory.errors import DuplicateMhClusterAdminHostError
-from cadash.inventory.errors import DuplicateMhClusterNameError
-from cadash.inventory.errors import DuplicateVendorNameModelError
-from cadash.inventory.errors import InvalidCaRoleError
-from cadash.inventory.errors import InvalidEmptyValueError
-from cadash.inventory.errors import InvalidJsonValueError
-from cadash.inventory.errors import InvalidMhClusterEnvironmentError
-from cadash.inventory.errors import InvalidOperationError
-from cadash.inventory.errors import InvalidTimezoneError
-from cadash.inventory.errors import MissingVendorError
 from cadash.inventory.models import AkamaiStreamingConfig
 from cadash.inventory.models import Ca
+from cadash.inventory.models import EpiphanChannel
+from cadash.inventory.models import EpiphanRecorder
 from cadash.inventory.models import Location
 from cadash.inventory.models import LocationConfig
 from cadash.inventory.models import MhCluster
+from cadash.inventory.models import MhpearlConfig
 from cadash.inventory.models import Role
 from cadash.inventory.models import RoleConfig
 from cadash.inventory.models import Vendor
 from cadash.inventory.models import VendorConfig
-import cadash.utils as utils
 
+# default dce values for encoding
 DCE_CHANNEL_CONFIGS = {
         'dce_live': {
             'flavor': 'live',
@@ -74,7 +57,9 @@ DCE_CHANNEL_CONFIGS = {
             },
         }
 
-_layout_single_channel_template = Template('''{
+# default dce source layout for channel
+# (separate channels for presenter and presentation)
+SINGLE_CHANNEL_LAYOUT_TEMPLATE = Template('''{
     "audio": [
         {
             "settings": {
@@ -105,7 +90,9 @@ _layout_single_channel_template = Template('''{
 }
 ''')
 
-_layout_combined_channels_template = Template('''{
+# default dce source layout for live channel
+# (combined presenter and presentation in same channel)
+COMBINED_CHANNELS_LAYOUT_TEMPLATE = Template('''{
     "audio": [
         {
             "settings": {
@@ -151,26 +138,18 @@ _layout_combined_channels_template = Template('''{
 }''')
 
 
-class DceEpiphanConfig(Object):
+class DceEpiphanCa(object):
     """a capture agent dce-custom config for epiphan-pearl.
 
     wrapper over RoleConfig to apply some DCE business logic
-    on how to configure an epiphan-pearl capture agent.
+    on how to set a base configuration for an epiphan-pearl
+    capture agent.
     """
 
     def __init__(self, ca_config):
         """create instance, based on RoleConfig ca_config."""
         self.config = ca_config
-        self.ca = self.config.ca
-        self.role_name = self.ca.role.name
-        self.vendor = self.ca.vendor
-        self.vendor_cfg = self.vendor.config
-        self.location = self.config.role.location
-        self.location_cfg = self.location.config
-        self.cluster = self.config.role.cluster
-        self.channels = self.config.channels
-        self.recorders = self.config.recorders
-        self.mhpearl = self.config.mhpearl
+        self.channel_cfg = DCE_CHANNEL_CONFIGS.copy()
         # for easier access to ca connectors
         self.conn = {
             'primary': {
@@ -194,27 +173,74 @@ class DceEpiphanConfig(Object):
                     },
                 },
             }
-        self.channel_cfg = DCE_CHANNEL_CONFIGS.copy()
+        # creates dce base config for channels and recorders
+        self.create_dce_config_recorder()
+        self.create_dce_config_channels()
+        self.create_dce_config_mhpearl()
+
+    @property
+    def ca(self):
+        return self.config.ca
+
+    @property
+    def role_name(self):
+        return self.ca.role.name
+
+    @property
+    def vendor(self):
+        return self.ca.vendor
+
+    @property
+    def vendor_cfg(self):
+        return self.vendor.config
+
+    @property
+    def location(self):
+        return self.config.role.location
+
+    @property
+    def location_cfg(self):
+        return self.location.config
+
+    @property
+    def cluster(self):
+        return self.config.role.cluster
+
+    @property
+    def channels(self):
+        return self.config.channels
+
+    @property
+    def recorders(self):
+        return self.config.recorders
+
+    @property
+    def mhpearl(self):
+        return self.config.mhpearl
+
+    @property
+    def channel_default_cfg(self):
+        return self.channel_cfg
 
 
-    def _config_dce_recorder(self):
+    def create_dce_config_recorder(self):
         """create and config channels for a dce ca."""
         rec = EpiphanRecorder.create(
                 name=self.location.name_id,
-                epiphan_config=self.ca_config)
+                epiphan_config=self.config)
         # for now, defaults are enough!
 
 
-    def _config_dce_channels(self):
+    def create_dce_config_channels(self):
         """create and config channels for a dce ca."""
         # populate channel_cfg with stream config for live channels
-        self._find_stream_cfg()
+        self.find_stream_cfg()
 
-        for channel_name in self.encodings.keys():
+        for channel_name in self.channel_cfg.keys():
             # create channel in model
             chan = EpiphanChannel.create(
                     name=channel_name,
-                    epiphan_config=self.ca_config,
+                    epiphan_config=self.config,
                     stream_cfg=self.channel_cfg[channel_name]['stream_cfg'])
 
             params = {}
@@ -222,7 +248,7 @@ class DceEpiphanConfig(Object):
             flavor = self.channel_cfg[channel_name]['flavor']
             if flavor == 'live':
                 connector = self.conn[self.role_name]
-                l = _layout_combined_channels_template.render(
+                l = COMBINED_CHANNELS_LAYOUT_TEMPLATE.render(
                         source_id=self.ca.capture_card_id,
                         pr_vconnector=connector['pr']['vconnector'],
                         pr_vinput=connector['pr']['vinput'],
@@ -232,7 +258,7 @@ class DceEpiphanConfig(Object):
                         pr_ainput=connector['pr']['vinput'])
             else:
                 connector = self.conn[self.role_name][flavor]
-                l = _layout_combined_channel_template.render(
+                l = SINGLE_CHANNEL_LAYOUT_TEMPLATE.render(
                         source_id=self.ca.capture_card_id,
                         vconnector=connector['vconnector'],
                         vinput=connector['vinput'],
@@ -245,7 +271,7 @@ class DceEpiphanConfig(Object):
             chan.update(**params)
 
 
-    def _find_stream_cfg(self):
+    def find_stream_cfg(self):
         """define some criteria to pick stream config for live channels."""
         scfg_list = AkamaiStreamingConfig.query.all()
         stream_cfg = None
@@ -255,4 +281,105 @@ class DceEpiphanConfig(Object):
                 break
         self.channel_cfg['dce_live']['stream_cfg'] = stream_cfg
         self.channel_cfg['dce_live_lowbr']['stream_cfg'] = stream_cfg
+
+
+    def create_dce_config_mhpearl(self):
+        """configure mhpearl."""
+        MhpearlConfig.create(epiphan_config=self.config)
+
+
+    def get_epiphan_dce_config(self):
+        """return a dce_config for an epiphan-pearl ca as dict."""
+        config = {}
+        config['ca_capture_card_id'] = self.ca.capture_card_id
+        config['ca_name_id'] = self.location.name_id
+        config['ca_serial_number'] = self.ca.serial_number
+        config['ca_url'] = self.ca.address
+        # take defaults from any already configure channel
+        chan = self.channels[0]
+        config['channel_encodings'] = {
+                'audio': 'on' if chan.audio else '',
+                'audiochannels': chan.audiochannels,
+                'audiopreset': chan.audiopreset,
+                'autoframesize': 'on' if chan.autoframesize else '',
+                'codec': chan.codec,
+                'fpslimit': chan.fpslimit,
+                'vencpreset': chan.vencpreset,
+                'vkeyframeinterval': chan.vkeyframeinterval,
+                'vprofile': chan.vprofile,
+                }
+        channels = {}
+        for chan in self.channels:
+            cfg = {}
+            if chan.channel_id_in_device > 0:
+                cfg['channel_id'] = chan.channel_id_in_device
+            else:
+                cfg['channel_id'] = 'CHANGE_ME'
+            cfg['encodings'] = {
+                    'audio': 'on' if chan.audio else '',
+                    'audiobitrate': chan.audiobitrate,
+                    'audiochannels': chan.audiochannels,
+                    'audiopreset': chan.audiopreset,
+                    'autoframesize': chan.autoframesize,
+                    'codec': chan.codec,
+                    'fpslimit': chan.fpslimit,
+                    'framesize': chan.framesize,
+                    'vbitrate': chan.vbitrate,
+                    'vencpreset': chan.vencpreset,
+                    'vkeyframeinterval': chan.vkeyframeinterval,
+                    'vprofile': chan.vprofile,
+                    'source_layout': json.loads(chan.source_layout),
+                    }
+            if chan.stream_cfg is not None:
+                if self.role_name == 'primary':
+                    str_tpl = Template(chan.stream_cfg.primary_url_jinja2_template)
+                else:  # role is secondary or experimental
+                    str_tpl = Template(chan.stream_cfg.secondary_url_jinja2_template)
+                cfg['rtmp_url'] = str_tpl.render(
+                        stream_id=chan.stream_cfg.stream_id)
+                str_name_tpl = Template(chan.stream_cfg.stream_name_jinja2_template)
+                cfg['stream_name'] = str_name_tpl.render(
+                        location_name=self.location.name_id,
+                        framesize=cfg['encodings']['framesize'],
+                        stream_id=chan.stream_cfg.stream_id)
+            channels[chan.name] = cfg
+        config['channels'] = channels
+        config['cluster_env'] = self.cluster.env
+        config['cluster_name_id'] = self.cluster.name_id
+        config['firmware_version'] = self.vendor_cfg.firmware_version
+        config['location_name_id'] = self.location.name_id
+        config['mh_admin_url'] = self.cluster.admin_host
+        config['mh_ca_name'] = self.location.name_id
+        config['mhpearl_file_search_range'] = self.mhpearl.file_search_range_in_sec
+        config['mhpearl_update_frequency'] = self.mhpearl.update_frequency_in_sec
+        config['mhpearl_version'] = self.mhpearl.mhpearl_version
+        config['role'] = self.role_name
+        if self.vendor_cfg.source_deinterlacing:
+            config['source_deinterlacing'] = 'on'
+        else:
+            config['source_deinterlacing'] = ''
+        if self.vendor_cfg.maintenance_permanent_logs:
+            config['maintenance'] = {'permanent_logs': 'on'}
+        else:
+            config['maintenance'] = {'permanent_logs': ''}
+        recorders = {}
+        for rec in self.recorders:
+            cfg = {}
+            if rec.recorder_id_in_device > 0:
+                cfg['recorder_id'] = rec.recorder_id_in_device
+            else:
+                cfg['recorder_id'] = 'CHANGE_ME'
+            cfg['output_format'] = rec.output_format
+            cfg['sizelimit'] = rec.size_limit_in_kbytes
+            cfg['timelimit'] = rec.time_limit_in_minutes
+            recorders[rec.name] = cfg
+        config['recorders'] = recorders
+        config['touchscreen'] = {
+                'episcreen_timeout': self.vendor_cfg.touchscreen_timeout_secs}
+        return config
+
+
+
+
+
 
