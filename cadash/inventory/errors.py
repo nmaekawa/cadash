@@ -32,6 +32,10 @@ class AssociationError(Error):
     """can't associate entities due to some constraint."""
 
 
+class MissingConfigSettingError(Error):
+    """config setting is missing; can't generate a full config object."""
+
+
 class MissingVendorError(Error):
     """vendor is not in inventory."""
 

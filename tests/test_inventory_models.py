@@ -73,7 +73,7 @@ class TestCaptureAgentModel(object):
         """vendor is mandatory for every capture agent."""
         with pytest.raises(MissingVendorError):
             ca = Ca.create(name='fake-epiphan',
-                    vendor_id=999999,
+                    vendor_id=33333,
                     address='fake-epiphan.blah.bloh.net')
 
     def test_should_fail_when_create_ca_duplicate_name(self, simple_db):
@@ -128,7 +128,7 @@ class TestCaptureAgentModel(object):
 
     def test_update_ca_capture_card_id(self, simple_db):
         ca = Ca.get_by_id(simple_db['ca'][0].id)
-        assert ca.capture_card_id is None
+        assert ca.capture_card_id == '111111111110'
         ca.update(capture_card_id='D1P234567')
         assert ca.capture_card_id == 'D1P234567'
 
@@ -590,9 +590,9 @@ class TestEpiphanChannelModel(object):
         assert epi_config.channels[0].epiphan_config == epi_config
         assert epi_config.channels[0].stream_cfg == simple_db['stream_config']
         assert epi_config.map_channel_name_to_channel_id() == {
-                'fake_channel': 9999,
-                'another_fake_channel': 9999}
-        assert epi_config.map_channel_id_to_channel_name() == {9999: 'another_fake_channel'}
+                'fake_channel': 99999,
+                'another_fake_channel': 99999}
+        assert epi_config.map_channel_id_to_channel_name() == {99999: 'another_fake_channel'}
 
     def test_should_fail_when_add_duplicate_channel_name(self, simple_db):
         ca = simple_db['ca'][0]
@@ -620,9 +620,9 @@ class TestEpiphanChannelModel(object):
         assert epi_config.recorders[1].name == 'recorder_fake_2'
         assert epi_config.recorders[0].epiphan_config == epi_config
         assert epi_config.map_recorder_name_to_recorder_id() == {
-                'recorder_fake': 9999,
-                'recorder_fake_2': 9999}
-        assert epi_config.map_recorder_id_to_recorder_name() == {9999: 'recorder_fake_2'}
+                'recorder_fake': 99999,
+                'recorder_fake_2': 99999}
+        assert epi_config.map_recorder_id_to_recorder_name() == {99999: 'recorder_fake_2'}
 
     def test_should_fail_when_add_duplicate_recorder_name(self, simple_db):
         ca = simple_db['ca'][0]

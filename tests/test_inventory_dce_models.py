@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 """Tests for `models` in redunlive webapp."""
 import json
+import os
 import pytest
 
 from cadash import utils
@@ -36,6 +37,9 @@ from cadash.inventory.errors import InvalidTimezoneError
 from cadash.inventory.errors import MissingVendorError
 
 
+json_base_config_filename = os.path.join(
+        os.path.abspath(os.path.dirname(__file__)), 'base_dce_ca_config.json')
+
 @pytest.mark.usefixtures('db', 'simple_db')
 class TestDceCaConfigModel(object):
     """tests dce wrapper around role-config."""
@@ -59,5 +63,25 @@ class TestDceCaConfigModel(object):
         assert len(dce_cfg.channels) == 4
         assert dce_cfg.recorders[0].name == dce_cfg.location.name_id
 
+
+    def test_get_ca_config(self, simple_db):
+        """check that config is correct."""
+        ca = simple_db['ca'][2]
+        cfg = RoleConfig(role=ca.role)
+
+        dce_cfg = DceEpiphanCa(ca_config=cfg)
+
+        # must update channel/recorder ids
+        i = 1
+        for rec in sorted(cfg.recorders, key=lambda rec: rec.name):
+            rec.recorder_id_in_device = i
+            i += 1
+        for chan in sorted(cfg.channels, key=lambda chan: chan.name):
+            chan.channel_id_in_device = i
+            i += 1
+
         full_config = dce_cfg.get_epiphan_dce_config()
-        assert json.dumps(full_config) == '{"ha": "ho"}'
+        with open(json_base_config_filename, 'r') as f:
+            base_config = json.load(f)
+        assert full_config == base_config
+

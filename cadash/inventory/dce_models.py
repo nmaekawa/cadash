@@ -4,6 +4,7 @@
 from jinja2 import Template
 import json
 
+from cadash.inventory.errors import MissingConfigSettingError
 from cadash.inventory.models import AkamaiStreamingConfig
 from cadash.inventory.models import Ca
 from cadash.inventory.models import EpiphanChannel
@@ -17,45 +18,6 @@ from cadash.inventory.models import RoleConfig
 from cadash.inventory.models import Vendor
 from cadash.inventory.models import VendorConfig
 
-# default dce values for encoding
-DCE_CHANNEL_CONFIGS = {
-        'dce_live': {
-            'flavor': 'live',
-            'stream_cfg': None,
-            'encodings': {
-                'audiobitrate': 96,
-                'framesize': '1920x540',
-                'vbitrate': 4000,
-                },
-            },
-        'dce_live_lowbr': {
-            'flavor': 'live',
-            'stream_cfg': None,
-            'encodings': {
-                'audiobitrate': 64,
-                'framesize': '960x270',
-                'vbitrate': 250,
-                },
-            },
-        'dce_pr': {
-            'flavor': 'pr',
-            'stream_cfg': None,
-            'encodings': {
-                'audiobitrate': 160,
-                'framesize': '1280x720',
-                'vbitrate': 9000,
-                },
-            },
-        'dce_pn': {
-            'flavor': 'pn',
-            'stream_cfg': None,
-            'encodings': {
-                'audiobitrate': 160,
-                'framesize': '1920x1080',
-                'vbitrate': 9000,
-                },
-            },
-        }
 
 # default dce source layout for channel
 # (separate channels for presenter and presentation)
@@ -149,34 +111,10 @@ class DceEpiphanCa(object):
     def __init__(self, ca_config):
         """create instance, based on RoleConfig ca_config."""
         self.config = ca_config
-        self.channel_cfg = DCE_CHANNEL_CONFIGS.copy()
-        # for easier access to ca connectors
-        self.conn = {
-            'primary': {
-                'pr': {
-                    'vconnector': self.location.config.primary_pr_vconnector,
-                    'vinput': self.location.config.primary_pr_vinput,
-                    },
-                'pn': {
-                    'vconnector': self.location.config.primary_pn_vconnector,
-                    'vinput': self.location.config.primary_pn_vinput,
-                    },
-                },
-            'secondary': {
-                'pr': {
-                    'vconnector': self.location.config.secondary_pr_vconnector,
-                    'vinput': self.location.config.secondary_pr_vinput,
-                    },
-                'pn': {
-                    'vconnector': self.location.config.secondary_pn_vconnector,
-                    'vinput': self.location.config.secondary_pn_vinput,
-                    },
-                },
-            }
         # creates dce base config for channels and recorders
-        self.create_dce_config_recorder()
-        self.create_dce_config_channels()
-        self.create_dce_config_mhpearl()
+        self.create_dce_recorder()
+        self.create_dce_channels()
+        self.create_dce_mhpearl()
 
     @property
     def ca(self):
@@ -220,10 +158,73 @@ class DceEpiphanCa(object):
 
     @property
     def channel_default_cfg(self):
-        return self.channel_cfg
+        # default dce values for encoding
+        return {
+                'dce_live': {
+                    'flavor': 'live',
+                    'stream_cfg': None,
+                    'encodings': {
+                        'audiobitrate': 96,
+                        'framesize': '1920x540',
+                        'vbitrate': 4000,
+                        },
+                    },
+                'dce_live_lowbr': {
+                    'flavor': 'live',
+                    'stream_cfg': None,
+                    'encodings': {
+                        'audiobitrate': 64,
+                        'framesize': '960x270',
+                        'vbitrate': 250,
+                        },
+                    },
+                'dce_pr': {
+                    'flavor': 'pr',
+                    'stream_cfg': None,
+                    'encodings': {
+                        'audiobitrate': 160,
+                        'framesize': '1280x720',
+                        'vbitrate': 9000,
+                        },
+                    },
+                'dce_pn': {
+                    'flavor': 'pn',
+                    'stream_cfg': None,
+                    'encodings': {
+                        'audiobitrate': 160,
+                        'framesize': '1920x1080',
+                        'vbitrate': 9000,
+                        },
+                    },
+                }
 
+    @property
+    def connectors(self):
+        # dynamic because there might be changes in location!
+        return {
+            'primary': {
+                'pr': {
+                    'vconnector': self.location.config.primary_pr_vconnector,
+                    'vinput': self.location.config.primary_pr_vinput,
+                    },
+                'pn': {
+                    'vconnector': self.location.config.primary_pn_vconnector,
+                    'vinput': self.location.config.primary_pn_vinput,
+                    },
+                },
+            'secondary': {
+                'pr': {
+                    'vconnector': self.location.config.secondary_pr_vconnector,
+                    'vinput': self.location.config.secondary_pr_vinput,
+                    },
+                'pn': {
+                    'vconnector': self.location.config.secondary_pn_vconnector,
+                    'vinput': self.location.config.secondary_pn_vinput,
+                    },
+                },
+            }
 
-    def create_dce_config_recorder(self):
+    def create_dce_recorder(self):
         """create and config channels for a dce ca."""
         rec = EpiphanRecorder.create(
                 name=self.location.name_id,
@@ -231,23 +232,23 @@ class DceEpiphanCa(object):
         # for now, defaults are enough!
 
 
-    def create_dce_config_channels(self):
+    def create_dce_channels(self):
         """create and config channels for a dce ca."""
         # populate channel_cfg with stream config for live channels
         self.find_stream_cfg()
 
-        for channel_name in self.channel_cfg.keys():
+        for channel_name in self.channel_default_cfg.keys():
             # create channel in model
             chan = EpiphanChannel.create(
                     name=channel_name,
                     epiphan_config=self.config,
-                    stream_cfg=self.channel_cfg[channel_name]['stream_cfg'])
+                    stream_cfg=self.channel_default_cfg[channel_name]['stream_cfg'])
 
             params = {}
             # config layout for input sources
-            flavor = self.channel_cfg[channel_name]['flavor']
+            flavor = self.channel_default_cfg[channel_name]['flavor']
             if flavor == 'live':
-                connector = self.conn[self.role_name]
+                connector = self.connectors[self.role_name]
                 l = COMBINED_CHANNELS_LAYOUT_TEMPLATE.render(
                         source_id=self.ca.capture_card_id,
                         pr_vconnector=connector['pr']['vconnector'],
@@ -257,17 +258,17 @@ class DceEpiphanCa(object):
                         pr_aconnector=connector['pr']['vconnector'],
                         pr_ainput=connector['pr']['vinput'])
             else:
-                connector = self.conn[self.role_name][flavor]
+                connector = self.connectors[self.role_name][flavor]
                 l = SINGLE_CHANNEL_LAYOUT_TEMPLATE.render(
                         source_id=self.ca.capture_card_id,
                         vconnector=connector['vconnector'],
                         vinput=connector['vinput'],
                         # assume that audio always come from presenter
-                        aconnector=self.conn[self.role_name]['pr']['vconnector'],
-                        ainput=self.conn[self.role_name]['pr']['vinput'])
+                        aconnector=self.connectors[self.role_name]['pr']['vconnector'],
+                        ainput=self.connectors[self.role_name]['pr']['vinput'])
 
             params['source_layout'] = l.replace(' ', '').replace('\n', '')
-            params.update(self.channel_cfg[channel_name]['encodings'])
+            params.update(self.channel_default_cfg[channel_name]['encodings'])
             chan.update(**params)
 
 
@@ -279,11 +280,11 @@ class DceEpiphanCa(object):
             if 'prod' in s.name:
                 stream_cfg = s
                 break
-        self.channel_cfg['dce_live']['stream_cfg'] = stream_cfg
-        self.channel_cfg['dce_live_lowbr']['stream_cfg'] = stream_cfg
+        self.channel_default_cfg['dce_live']['stream_cfg'] = stream_cfg
+        self.channel_default_cfg['dce_live_lowbr']['stream_cfg'] = stream_cfg
 
 
-    def create_dce_config_mhpearl(self):
+    def create_dce_mhpearl(self):
         """configure mhpearl."""
         MhpearlConfig.create(epiphan_config=self.config)
 
@@ -292,9 +293,10 @@ class DceEpiphanCa(object):
         """return a dce_config for an epiphan-pearl ca as dict."""
 
         # validation
-        self.ca.capture_card_id is not None
-
-
+        if self.ca.capture_card_id is None:
+            raise MissingConfigSettingError(
+                    'config failed - ca({}), missing capture_card_id'.format(
+                        self.ca.name_id))
 
         config = {}
         config['ca_capture_card_id'] = self.ca.capture_card_id
@@ -317,10 +319,12 @@ class DceEpiphanCa(object):
         channels = {}
         for chan in self.channels:
             cfg = {}
-            if chan.channel_id_in_device != 9999:
-                cfg['channel_id'] = chan.channel_id_in_device
+            if chan.channel_id_in_device > 999:
+                raise MissingConfigSettingError(
+                        'config failed - ca({}), missing channel_id({})'.format(
+                            self.ca.name_id, chan.name))
             else:
-                cfg['channel_id'] = 'CHANGE_ME'
+                cfg['channel_id'] = chan.channel_id_in_device
             cfg['encodings'] = {
                     'audio': 'on' if chan.audio else '',
                     'audiobitrate': chan.audiobitrate,
@@ -371,10 +375,12 @@ class DceEpiphanCa(object):
         recorders = {}
         for rec in self.recorders:
             cfg = {}
-            if rec.recorder_id_in_device != 9999:
-                cfg['recorder_id'] = rec.recorder_id_in_device
+            if rec.recorder_id_in_device > 999:
+                raise MissingConfigSettingError(
+                        'config failed - ca({}), missing recorder_id({})'.format(
+                            self.ca.name_id, rec.name))
             else:
-                cfg['recorder_id'] = 'CHANGE_ME'
+                cfg['recorder_id'] = rec.recorder_id_in_device
             cfg['output_format'] = rec.output_format
             cfg['sizelimit'] = rec.size_limit_in_kbytes
             cfg['timelimit'] = rec.time_limit_in_minutes

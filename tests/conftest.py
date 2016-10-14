@@ -88,6 +88,7 @@ def simple_db(db):
     mini_db['ca'] = []
     for i in range(5):
         mini_db['ca'].append(CaFactory(vendor_id=mini_db['vendor'].id))
+        mini_db['ca'][i].capture_card_id = '11111111111{}'.format(i)
 
     # create a bunch of rooms
     mini_db['room'] = []
@@ -101,7 +102,7 @@ def simple_db(db):
 
     # create streaming config
     stream_cfg = AkamaiStreamingConfig.create(
-            name='stream_name123', stream_id='stream_id123',
+            name='fake_prod', stream_id='stream_id123',
             stream_user='stream_user123', stream_password='stream_pwd123')
     mini_db['stream_config'] = stream_cfg
 
