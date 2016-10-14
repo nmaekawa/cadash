@@ -169,6 +169,8 @@ class LocationConfig(SurrogatePK, Model):
             if not value or not value.strip():
                 raise InvalidEmptyValueError(
                         'not allowed empty value for location config `{}`'.format(k))
+        # TODO: changes in connectors cascade into changes in epiphan channel
+        # source layout. just give a warning?
         return True
 
 

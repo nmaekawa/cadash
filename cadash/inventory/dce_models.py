@@ -24,7 +24,7 @@ DCE_CHANNEL_CONFIGS = {
             'stream_cfg': None,
             'encodings': {
                 'audiobitrate': 96,
-                'framesize': '1920x1080',
+                'framesize': '1920x540',
                 'vbitrate': 4000,
                 },
             },
@@ -51,7 +51,7 @@ DCE_CHANNEL_CONFIGS = {
             'stream_cfg': None,
             'encodings': {
                 'audiobitrate': 160,
-                'framesize': '1920x540',
+                'framesize': '1920x1080',
                 'vbitrate': 9000,
                 },
             },
@@ -290,9 +290,15 @@ class DceEpiphanCa(object):
 
     def get_epiphan_dce_config(self):
         """return a dce_config for an epiphan-pearl ca as dict."""
+
+        # validation
+        self.ca.capture_card_id is not None
+
+
+
         config = {}
         config['ca_capture_card_id'] = self.ca.capture_card_id
-        config['ca_name_id'] = self.location.name_id
+        config['ca_name_id'] = self.ca.name_id
         config['ca_serial_number'] = self.ca.serial_number
         config['ca_url'] = self.ca.address
         # take defaults from any already configure channel
@@ -311,7 +317,7 @@ class DceEpiphanCa(object):
         channels = {}
         for chan in self.channels:
             cfg = {}
-            if chan.channel_id_in_device > 0:
+            if chan.channel_id_in_device != 9999:
                 cfg['channel_id'] = chan.channel_id_in_device
             else:
                 cfg['channel_id'] = 'CHANGE_ME'
@@ -365,7 +371,7 @@ class DceEpiphanCa(object):
         recorders = {}
         for rec in self.recorders:
             cfg = {}
-            if rec.recorder_id_in_device > 0:
+            if rec.recorder_id_in_device != 9999:
                 cfg['recorder_id'] = rec.recorder_id_in_device
             else:
                 cfg['recorder_id'] = 'CHANGE_ME'
