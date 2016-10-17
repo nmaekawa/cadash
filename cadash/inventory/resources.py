@@ -8,6 +8,8 @@ from flask_restful import fields
 from flask_restful import marshal
 from flask_restful import reqparse
 
+from cadanh.inventory.dce_models import DceConfigForEpiphanCa
+from cadanh.inventory.dce_models import DceConfigForEpiphanCaFactory
 from cadash.inventory.errors import AssociationError
 from cadash.inventory.errors import DuplicateAkamaiStreamIdError
 from cadash.inventory.errors import DuplicateCaptureAgentNameError
@@ -27,6 +29,7 @@ from cadash.inventory.errors import InvalidJsonValueError
 from cadash.inventory.errors import InvalidMhClusterEnvironmentError
 from cadash.inventory.errors import InvalidOperationError
 from cadash.inventory.errors import InvalidTimezoneError
+from cadash.inventory.errors import MissingConfigSettingError
 from cadash.inventory.errors import MissingVendorError
 from cadash.inventory.models import AkamaiStreamingConfig
 from cadash.inventory.models import Ca
@@ -118,10 +121,6 @@ RESOURCE_FIELDS = {
             'primary_url_jinja2_template': fields.String,
             'secondary_url_jinja2_template': fields.String,
             'stream_name_jinja2_template': fields.String,
-        },
-        'DceCaConfig': {
-            'id': fields.Integer,
-            'name': fields.String,
         },
 }
 UPDATEABLE_FIELDS = {
@@ -658,6 +657,22 @@ class AkamaiStreamingConfig_ListAPI(Resource_ListAPI):
 
 class DceCaConfig(Resource_API):
     """configuration for a dce capture agent."""
+
+    def get(self, r_id):
+        """override to pull dce config."""
+        role_cfg = DceConfigForEpiphanCaFactory.retrieve(r_id)
+        abort_404_if_resource_none(
+                role_cfg,
+                'CA({}) not associated with any Location, MhCluster, nor Role'.format(
+                    r_id))
+        try:
+            resource = cfg.epiphan_dce_config
+        except MissingConfigSettingError as e:
+            abort_404_if_resource_none(
+                    resource,
+                    'CA({}) config not found - {}'.format(r_id, e.message)
+
+        return json.dumps(resource), 200
 
 
     def put(self, r_id):
