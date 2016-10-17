@@ -5,7 +5,8 @@ import os
 import pytest
 
 from cadash import utils
-from cadash.inventory.dce_models import DceEpiphanCa
+from cadash.inventory.dce_models import DceConfigForEpiphanCa
+from cadash.inventory.dce_models import DceConfigForEpiphanCaFactory
 from cadash.inventory.models import Ca
 from cadash.inventory.models import EpiphanChannel
 from cadash.inventory.models import EpiphanRecorder
@@ -47,9 +48,8 @@ class TestDceCaConfigModel(object):
     def test_create_config(self, simple_db):
         """create a dce ca config."""
         ca = simple_db['ca'][2]
-        cfg = RoleConfig(role=ca.role)
-
-        dce_cfg = DceEpiphanCa(ca_config=cfg)
+        dce_cfg = DceConfigForEpiphanCaFactory.retrieve(ca_id=ca.id)
+        cfg = ca.role.config
 
         assert cfg is not None
         assert dce_cfg is not None
@@ -67,9 +67,8 @@ class TestDceCaConfigModel(object):
     def test_get_ca_config(self, simple_db):
         """check that config is correct."""
         ca = simple_db['ca'][2]
-        cfg = RoleConfig(role=ca.role)
-
-        dce_cfg = DceEpiphanCa(ca_config=cfg)
+        dce_cfg = DceConfigForEpiphanCaFactory.retrieve(ca_id=ca.id)
+        cfg = ca.role.config
 
         # must update channel/recorder ids
         i = 1
@@ -80,7 +79,7 @@ class TestDceCaConfigModel(object):
             chan.channel_id_in_device = i
             i += 1
 
-        full_config = dce_cfg.get_epiphan_dce_config()
+        full_config = dce_cfg.epiphan_dce_config
         with open(json_base_config_filename, 'r') as f:
             base_config = json.load(f)
         assert full_config == base_config

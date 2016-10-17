@@ -119,6 +119,10 @@ RESOURCE_FIELDS = {
             'secondary_url_jinja2_template': fields.String,
             'stream_name_jinja2_template': fields.String,
         },
+        'DceCaConfig': {
+            'id': fields.Integer,
+            'name': fields.String,
+        },
 }
 UPDATEABLE_FIELDS = {
         'Vendor': UPDATEABLE_VENDOR_FIELDS,
@@ -615,7 +619,6 @@ class Role_ListAPI(Resource):
 
 class AkamaiStreamingConfig_API(Resource_API):
     """akamai streaming config resource."""
-
     def put(self, r_id):
         """override to disable updates in akamai streaming config."""
         abort(405, message='not allowed to update')
@@ -651,3 +654,16 @@ class AkamaiStreamingConfig_ListAPI(Resource_ListAPI):
         self._parser_create.add_argument(
                 'stream_name_jinja2_template', type=str, required=False,
                 store_missing=False, location='json')
+
+
+class DceCaConfig(Resource_API):
+    """configuration for a dce capture agent."""
+
+
+    def put(self, r_id):
+        """updates in ca configuration."""
+        abort(501, message='update ca config not implemented yet.')
+
+
+
+

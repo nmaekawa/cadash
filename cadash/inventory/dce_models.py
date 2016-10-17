@@ -100,7 +100,23 @@ COMBINED_CHANNELS_LAYOUT_TEMPLATE = Template('''{
 }''')
 
 
-class DceEpiphanCa(object):
+class DceConfigForEpiphanCaFactory(object):
+    """put together a DceConfigForEpiphanCa."""
+
+    @classmethod
+    def retrieve(cls, ca_id):
+        """."""
+        ca = Ca.get_by_id(ca_id)
+        if ca.role is not None:
+            if ca.role.config is None:
+                # create roleConfig if not present
+                role_config = RoleConfig(ca.role)
+                cfg = DceConfigForEpiphanCa(ca.role.config)
+                return cfg
+        return None
+
+
+class DceConfigForEpiphanCa(object):
     """a capture agent dce-custom config for epiphan-pearl.
 
     wrapper over RoleConfig to apply some DCE business logic
@@ -111,10 +127,15 @@ class DceEpiphanCa(object):
     def __init__(self, ca_config):
         """create instance, based on RoleConfig ca_config."""
         self.config = ca_config
-        # creates dce base config for channels and recorders
-        self.create_dce_recorder()
-        self.create_dce_channels()
-        self.create_dce_mhpearl()
+
+        # create recorders, channels, mhpearl if not there
+        if not self.config.recorders:
+            self.create_dce_recorder()
+        if not self.config.channels:
+            self.create_dce_channels()
+        if not self.config.mhpearl:
+            self.create_dce_mhpearl()
+
 
     @property
     def ca(self):
@@ -289,7 +310,8 @@ class DceEpiphanCa(object):
         MhpearlConfig.create(epiphan_config=self.config)
 
 
-    def get_epiphan_dce_config(self):
+    @property
+    def epiphan_dce_config(self):
         """return a dce_config for an epiphan-pearl ca as dict."""
 
         # validation
@@ -389,7 +411,6 @@ class DceEpiphanCa(object):
         config['touchscreen'] = {
                 'episcreen_timeout': self.vendor_cfg.touchscreen_timeout_secs}
         return config
-
 
 
 

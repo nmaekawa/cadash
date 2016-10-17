@@ -448,7 +448,7 @@ class TestStreamingConfigResource(object):
         assert isinstance(json_data, dict)
         assert json_data['name'] == simple_db['stream_config'].name
 
-    def test_create_cluster(self, testapp_login_disabled, simple_db):
+    def test_create_streamcfg(self, testapp_login_disabled, simple_db):
         """create new streamcfg - happy path."""
         c = dict(
                 name='gojira', stream_id='333333',
