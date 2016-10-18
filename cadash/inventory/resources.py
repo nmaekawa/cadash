@@ -7,9 +7,10 @@ from flask_restful import abort
 from flask_restful import fields
 from flask_restful import marshal
 from flask_restful import reqparse
+import json
 
-from cadanh.inventory.dce_models import DceConfigForEpiphanCa
-from cadanh.inventory.dce_models import DceConfigForEpiphanCaFactory
+from cadash.inventory.dce_models import DceConfigForEpiphanCa
+from cadash.inventory.dce_models import DceConfigForEpiphanCaFactory
 from cadash.inventory.errors import AssociationError
 from cadash.inventory.errors import DuplicateAkamaiStreamIdError
 from cadash.inventory.errors import DuplicateCaptureAgentNameError
@@ -133,6 +134,9 @@ UPDATEABLE_FIELDS = {
 
 def register_resources(api):
     """add resources to rest-api."""
+    api.add_resource(
+            DceCaConfig,
+            '/api/inventory/cas/<int:r_id>/config', endpoint='api_ca_config')
     api.add_resource(
             Ca_API,
             '/api/inventory/cas/<int:r_id>', endpoint='api_ca')
@@ -661,18 +665,12 @@ class DceCaConfig(Resource_API):
     def get(self, r_id):
         """override to pull dce config."""
         role_cfg = DceConfigForEpiphanCaFactory.retrieve(r_id)
-        abort_404_if_resource_none(
-                role_cfg,
-                'CA({}) not associated with any Location, MhCluster, nor Role'.format(
-                    r_id))
+        abort_404_if_resource_none(resource=role_cfg, resource_id=r_id)
         try:
-            resource = cfg.epiphan_dce_config
+            resource = role_cfg.epiphan_dce_config
         except MissingConfigSettingError as e:
-            abort_404_if_resource_none(
-                    resource,
-                    'CA({}) config not found - {}'.format(r_id, e.message)
-
-        return json.dumps(resource), 200
+            abort(400, message='CA({}) config error: {}'.format(r_id, e.message))
+        return resource, 200
 
 
     def put(self, r_id):

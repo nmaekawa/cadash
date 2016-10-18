@@ -13,6 +13,8 @@ from flask import url_for
 from mock import patch
 
 from cadash import utils
+from cadash.inventory.dce_models import DceConfigForEpiphanCa
+from cadash.inventory.dce_models import DceConfigForEpiphanCaFactory
 from cadash.inventory.models import AkamaiStreamingConfig
 from cadash.inventory.models import Ca
 from cadash.inventory.models import Location
@@ -488,4 +490,30 @@ class TestStreamingConfigResource(object):
         res = testapp_login_disabled.put_json(url, expect_errors=True)
         assert res.status_int == 405
         assert 'not allowed to update' in res.body
+
+
+@pytest.mark.usefixtures('db', 'simple_db', 'testapp_login_disabled')
+class TestCaConfigResource(object):
+    """capture agent Config rest resource."""
+
+    def test_get_cacfg(self, testapp_login_disabled, simple_db):
+        """get ca config by ca_id."""
+        ca = simple_db['ca'][2]
+        ca_cfg = DceConfigForEpiphanCaFactory.retrieve(ca_id=ca.id)
+        local_cfg = ca.role.config
+        i = 10
+        for rec in local_cfg.recorders:
+            rec.update(recorder_id_in_device=i)
+            i += 1
+        for chan in local_cfg.channels:
+            chan.update(channel_id_in_device=i)
+            i += 1
+
+        url = '/api/inventory/cas/{}/config'.format(ca.id)
+        res = testapp_login_disabled.get(url)
+        json_data = json.loads(res.body)
+        assert isinstance(json_data, dict)
+        assert json_data['role'] == ca_cfg.role_name
+        assert json_data == ca_cfg.epiphan_dce_config
+
 

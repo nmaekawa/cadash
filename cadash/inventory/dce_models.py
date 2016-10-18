@@ -109,10 +109,9 @@ class DceConfigForEpiphanCaFactory(object):
         ca = Ca.get_by_id(ca_id)
         if ca.role is not None:
             if ca.role.config is None:
-                # create roleConfig if not present
-                role_config = RoleConfig(ca.role)
-                cfg = DceConfigForEpiphanCa(ca.role.config)
-                return cfg
+                role_config = RoleConfig(ca.role)  # create cfg
+            cfg = DceConfigForEpiphanCa(ca.role.config)
+            return cfg
         return None
 
 
@@ -341,7 +340,7 @@ class DceConfigForEpiphanCa(object):
         channels = {}
         for chan in self.channels:
             cfg = {}
-            if chan.channel_id_in_device > 999:
+            if chan.channel_id_in_device > 99998:
                 raise MissingConfigSettingError(
                         'config failed - ca({}), missing channel_id({})'.format(
                             self.ca.name_id, chan.name))
@@ -397,7 +396,7 @@ class DceConfigForEpiphanCa(object):
         recorders = {}
         for rec in self.recorders:
             cfg = {}
-            if rec.recorder_id_in_device > 999:
+            if rec.recorder_id_in_device > 99998:
                 raise MissingConfigSettingError(
                         'config failed - ca({}), missing recorder_id({})'.format(
                             self.ca.name_id, rec.name))
