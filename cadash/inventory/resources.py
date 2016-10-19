@@ -665,7 +665,8 @@ class DceCaConfig(Resource_API):
     def get(self, r_id):
         """override to pull dce config."""
         role_cfg = DceConfigForEpiphanCaFactory.retrieve(r_id)
-        abort_404_if_resource_none(resource=role_cfg, resource_id=r_id)
+        abort_404_if_resource_none(
+                resource=role_cfg, resource_id='CaConfig[{}]'.format(r_id))
         try:
             resource = role_cfg.epiphan_dce_config
         except MissingConfigSettingError as e:

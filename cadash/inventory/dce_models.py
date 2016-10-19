@@ -107,7 +107,7 @@ class DceConfigForEpiphanCaFactory(object):
     def retrieve(cls, ca_id):
         """."""
         ca = Ca.get_by_id(ca_id)
-        if ca.role is not None:
+        if ca is not None and ca.role is not None:
             if ca.role.config is None:
                 role_config = RoleConfig(ca.role)  # create cfg
             cfg = DceConfigForEpiphanCa(ca.role.config)
