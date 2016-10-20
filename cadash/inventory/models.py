@@ -53,7 +53,7 @@ UPDATEABLE_LOCATION_CONFIG_FIELDS = frozenset([
         u'secondary_pr_vconnector', u'secondary_pr_vinput',
         u'secondary_pn_vconnector', u'secondary_pn_vinput'])
 UPDATEABLE_EPIPHAN_RECORDER_FIELDS = frozenset([
-        u'recorder_id_in_device', u'ouput_format',
+        u'recorder_id_in_device', u'output_format',
         u'size_limit_in_kbytes', u'time_limit_in_minutes'])
 UPDATEABLE_EPIPHAN_CHANNEL_FIELDS = frozenset([
         u'stream_cfg', u'channel_id_in_device',

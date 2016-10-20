@@ -247,7 +247,7 @@ class DceConfigForEpiphanCa(object):
     def create_dce_channels(self):
         """create and config channels for a dce ca."""
         # populate channel_cfg with stream config for live channels
-        self.find_stream_cfg()
+        self.find_default_stream_cfg()
         if self.role_name == 'experimental':
             role_name = 'secondary'
         else:
@@ -288,12 +288,12 @@ class DceConfigForEpiphanCa(object):
             chan.update(**params)
 
 
-    def find_stream_cfg(self):
+    def find_default_stream_cfg(self):
         """define some criteria to pick stream config for live channels."""
         scfg_list = AkamaiStreamingConfig.query.all()
         stream_cfg = None
         for s in scfg_list:
-            if 'prod' in s.name:
+            if 'default' in s.name:
                 stream_cfg = s
                 break
         self.channel_default_cfg['dce_live']['stream_cfg'] = stream_cfg

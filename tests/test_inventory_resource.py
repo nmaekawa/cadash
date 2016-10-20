@@ -17,6 +17,7 @@ from cadash.inventory.dce_models import DceConfigForEpiphanCa
 from cadash.inventory.dce_models import DceConfigForEpiphanCaFactory
 from cadash.inventory.models import AkamaiStreamingConfig
 from cadash.inventory.models import Ca
+from cadash.inventory.models import EpiphanRecorder
 from cadash.inventory.models import Location
 from cadash.inventory.models import MhCluster
 from cadash.inventory.models import Role
@@ -515,5 +516,63 @@ class TestCaConfigResource(object):
         assert isinstance(json_data, dict)
         assert json_data['role'] == ca_cfg.role_name
         assert json_data == ca_cfg.epiphan_dce_config
+
+
+@pytest.mark.usefixtures('db', 'simple_db', 'testapp_login_disabled')
+class TestEpiphanRecorderResource(object):
+    """recorders configured for a capture agent."""
+
+    def test_get_recorder(self, testapp_login_disabled, simple_db):
+        ca = simple_db['ca'][0]
+        recorders = ca.role.config.recorders
+
+        url = '/api/inventory/cas/{}/recorders/{}'.format(
+                ca.id, recorders[0].name)
+        res = testapp_login_disabled.get(url)
+        json_data = json.loads(res.body)
+        assert isinstance(json_data, dict)
+        for key in json_data:
+            assert json_data[key] == recorders[0].__getattribute__(key)
+
+    def test_update_recorder(self, testapp_login_disabled, simple_db):
+        ca = simple_db['ca'][0]
+        rec = ca.role.config.recorders[1]
+
+        url = '/api/inventory/cas/{}/recorders/{}'.format(ca.id, rec.name)
+        params = dict(recorder_id_in_device=6, output_format='mp4',
+                time_limit_in_minutes=120)
+        res = testapp_login_disabled.put_json(url, params=params)
+        json_data = json.loads(res.body)
+        assert isinstance(json_data, dict)
+        assert json_data['recorder_id_in_device'] == 6
+        assert json_data['output_format'] == 'mp4'
+        assert json_data['time_limit_in_minutes'] == 120
+        assert json_data['size_limit_in_kbytes'] == 64000000
+
+    def test_get_recorder_list(self, testapp_login_disabled, simple_db):
+        ca = simple_db['ca'][0]
+
+        url = '/api/inventory/cas/{}/recorders/'.format(ca.id)
+        res = testapp_login_disabled.get(url)
+        json_data = json.loads(res.body)
+        assert isinstance(json_data, list)
+        assert len(json_data) == 2
+        assert json_data[0]['name'] == 'recorder_fake'
+        assert json_data[1]['name'] == 'recorder_fake_2'  # can guarantee order?
+
+    def test_create_recorder(self, testapp_login_disabled, simple_db):
+        ca = simple_db['ca'][0]
+
+        url = '/api/inventory/cas/{}/recorders/'.format(ca.id)
+        params = dict(name='brand_new_recorder')
+        res = testapp_login_disabled.post_json(url, params=params)
+        json_data = json.loads(res.body)
+        assert isinstance(json_data, dict)
+        assert json_data['name'] == 'brand_new_recorder'
+        assert json_data['output_format'] == 'avi'
+        assert json_data['recorder_id_in_device'] == 99999
+
+
+
 
 

@@ -34,10 +34,13 @@ from cadash.inventory.errors import MissingConfigSettingError
 from cadash.inventory.errors import MissingVendorError
 from cadash.inventory.models import AkamaiStreamingConfig
 from cadash.inventory.models import Ca
+from cadash.inventory.models import EpiphanRecorder
 from cadash.inventory.models import Location
 from cadash.inventory.models import MhCluster
 from cadash.inventory.models import Role
 from cadash.inventory.models import Vendor
+from cadash.inventory.models import UPDATEABLE_EPIPHAN_CHANNEL_FIELDS
+from cadash.inventory.models import UPDATEABLE_EPIPHAN_RECORDER_FIELDS
 from cadash.inventory.models import UPDATEABLE_VENDOR_FIELDS
 from cadash.inventory.models import UPDATEABLE_VENDOR_CONFIG_FIELDS
 from cadash.inventory.models import UPDATEABLE_LOCATION_FIELDS
@@ -123,8 +126,51 @@ RESOURCE_FIELDS = {
             'secondary_url_jinja2_template': fields.String,
             'stream_name_jinja2_template': fields.String,
         },
+        'EpiphanRecorder': {
+            'id': fields.Integer,
+            'recorder_id_in_device': fields.Integer,
+            'name': fields.String,
+            'output_format': fields.String,
+            'size_limit_in_kbytes': fields.Integer,
+            'time_limit_in_minutes': fields.Integer,
+        },
+        'EpiphanChannel': {
+            'id': fields.Integer,
+            'channel_id_in_device': fields.Integer,
+            'name': fields.String,
+            'stream_id': fields.String(
+                attribute='stream_cfg.stream_id'),
+            'primary_url_jinja2_template': fields.String(
+                attribute='stream_cfg.primary_url_jinja2_template'),
+            'secondary_url_jinja2_template': fields.String(
+                attribute='stream_cfg.secondary_url_jinja2_template'),
+            'stream_name_jinja2_template': fields.String(
+                attribute='stream_cfg.stream_name_jinja2_template'),
+            'audio': fields.Boolean,
+            'audiobitrate': fields.Integer,
+            'audiochannels': fields.String,
+            'audiopreset': fields.String,
+            'autoframesize': fields.Boolean,
+            'codec': fields.String,
+            'fpslimit': fields.Integer,
+            'framesize': fields.String,
+            'vbitrate': fields.Integer,
+            'vencpreset': fields.String,
+            'vkeyframeinterval': fields.Integer,
+            'vprofile': fields.String,
+            'source_layout': fields.String
+        },
+        'MhpearlConfig': {
+            'id': fields.Integer,
+            'comment': fields.String,
+            'mhpearl_version': fields.String,
+            'file_search_range_in_sec': fields.Integer,
+            'update_frequency_in_sec': fields.Integer,
+        },
 }
 UPDATEABLE_FIELDS = {
+        'EpiphanChannel': UPDATEABLE_EPIPHAN_CHANNEL_FIELDS,
+        'EpiphanRecorder': UPDATEABLE_EPIPHAN_RECORDER_FIELDS,
         'Vendor': UPDATEABLE_VENDOR_FIELDS,
         'VendorConfig': UPDATEABLE_VENDOR_CONFIG_FIELDS,
         'Location': UPDATEABLE_LOCATION_FIELDS,
@@ -134,8 +180,17 @@ UPDATEABLE_FIELDS = {
 
 def register_resources(api):
     """add resources to rest-api."""
+
     api.add_resource(
-            DceCaConfig,
+            EpiphanRecorder_API,
+            '/api/inventory/cas/<int:r_id>/recorders/<string:r_name>',
+            endpoint='api_ca_recorder')
+    api.add_resource(
+            EpiphanRecorder_ListAPI,
+            '/api/inventory/cas/<int:r_id>/recorders/',
+            endpoint='api_ca_recorderlist')
+    api.add_resource(
+            DceCaConfig_API,
             '/api/inventory/cas/<int:r_id>/config', endpoint='api_ca_config')
     api.add_resource(
             Ca_API,
@@ -661,7 +716,7 @@ class AkamaiStreamingConfig_ListAPI(Resource_ListAPI):
                 store_missing=False, location='json')
 
 
-class DceCaConfig(Resource_API):
+class DceCaConfig_API(Resource_API):
     """configuration for a dce capture agent."""
 
     def get(self, r_id):
@@ -678,7 +733,128 @@ class DceCaConfig(Resource_API):
 
     def put(self, r_id):
         """updates in ca configuration."""
-        abort(501, message='update ca config not implemented yet.')
+        abort(405, message='not allowed to update')
+
+
+
+class EpiphanRecorder_API(Resource_API):
+    """recorders configured in a ca."""
+
+    def __init__(self):
+        """create instance."""
+        super(EpiphanRecorder_API, self).__init__()
+        self._parser_update.add_argument(
+                'recorder_id_in_device', type=int,
+                location='json', store_missing=False)
+        self._parser_update.add_argument(
+                'output_format', type=str,
+                location='json', store_missing=False)
+        self._parser_update.add_argument(
+                'size_limit_in_kbytes', type=int,
+                location='json', store_missing=False)
+        self._parser_update.add_argument(
+                'time_limit_in_minutes', type=int,
+                location='json', store_missing=False)
+
+
+    @classmethod
+    def find_recorder(cls, ca_id, recorder_name):
+        """given a capture agent, find its recorder by name."""
+        ca = Ca.get_by_id(ca_id)
+        if ca is not None:
+            if ca.role is not None and ca.role.config is not None:
+                for rec in ca.role.config.recorders:
+                    if rec.name == recorder_name:
+                        return rec
+        return None
+
+    def get(self, r_id, r_name):
+        rec = EpiphanRecorder_API.find_recorder(r_id, r_name)
+        abort_404_if_resource_none(
+                rec, 'EpiphanRecorder({}) for ca({}) not found.'.format(
+                    r_name, r_id))
+        return marshal(
+                rec, RESOURCE_FIELDS['EpiphanRecorder']), 200
+
+
+    def put(self, r_id, r_name):
+        rec = EpiphanRecorder_API.find_recorder(r_id, r_name)
+        abort_404_if_resource_none(
+                rec, 'EpiphanRecorder({}) for ca({}) not found.'.format(
+                    r_name, r_id))
+
+        args = self._parser_update.parse_args()
+        try:
+            rec.update(**args)
+        except (
+                DuplicateEpiphanRecorderError,
+                DuplicateEpiphanRecorderIdError,
+                DuplicateLocationNameError,
+                InvalidJsonValueError,
+                InvalidOperationError) as e:
+            abort(400, message=e.message)
+        else:
+            return marshal(
+                    rec, RESOURCE_FIELDS['EpiphanRecorder']), 200
+
+    def delete(self, r_id):
+        rec = EpiphanRecorder_API.find_recorder(r_id, r_name)
+        if not rec:
+            rec.delete()
+        return '', 204
+
+
+class EpiphanRecorder_ListAPI(Resource_ListAPI):
+    """recorder list configured for a ca."""
+
+    def __init__(self):
+        """create instance."""
+        super(EpiphanRecorder_ListAPI, self).__init__()
+        self._parser_create.add_argument(
+                'name', type=str, required=True,
+                help='`name` cannot be blank', location='json')
+        self._parser_create.add_argument(
+                'recorder_id_in_device', type=int,
+                location='json', store_missing=False)
+        self._parser_create.add_argument(
+                'output_format', type=str,
+                location='json', store_missing=False)
+        self._parser_create.add_argument(
+                'size_limit_in_kbytes', type=int,
+                location='json', store_missing=False)
+        self._parser_create.add_argument(
+                'time_limit_in_minutes', type=int,
+                location='json', store_missing=False)
+
+    def get(self, r_id):
+        ca = Ca.get_by_id(r_id)
+        if ca is not None:
+            if ca.role is not None and ca.role.config is not None:
+                return marshal(
+                    ca.role.config.recorders,
+                    RESOURCE_FIELDS['EpiphanRecorder']), 200
+        abort(404, 'EpiphanRecorders not found for ca({})'.format(r_id))
+
+
+    def post(self, r_id):
+        ca = Ca.get_by_id(r_id)
+        if ca is not None:
+            if ca.role is not None and ca.role.config is not None:
+                args = self._parser_create.parse_args()
+                if 'name' in args:
+                    try:
+                        recorder = EpiphanRecorder.create(
+                                name=args['name'], epiphan_config=ca.role.config)
+                    except DuplicateEpiphanRecorderError as e:
+                        abort(400, message=e.message)
+                    else:
+                        return marshal(
+                                recorder,
+                                RESOURCE_FIELDS['EpiphanRecorder']), 200
+                else:
+                    abort(400, 'Missing EpiphanRecorder name for CA({})'.format(r_id))
+        abort(404, 'Capture Agent({}) not found'.format(r_id))
+
 
 
 
