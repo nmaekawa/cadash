@@ -233,17 +233,17 @@
     "cluster_env": "dev",
     "cluster_name_id": "cluster_3",
     "firmware_version": "3.15.3f",
-    "location_name_id": "room_5",
+    "location_name_id": "room-5",
     "maintenance": {
         "permanent_logs": "on"
     },
     "mh_admin_url": "http://cluster3.fake.test",
-    "mh_ca_name": "room_5",
+    "mh_ca_name": "room-5",
     "mhpearl_file_search_range": 60,
     "mhpearl_update_frequency": 120,
     "mhpearl_version": "2.0.0",
     "recorders": {
-        "room_5": {
+        "dce_room-5": {
             "output_format": "avi",
             "recorder_id": 1,
             "sizelimit": 64000000,

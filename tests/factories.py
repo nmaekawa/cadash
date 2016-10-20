@@ -34,7 +34,7 @@ class CaFactory(BaseFactory):
 
 class LocationFactory(BaseFactory):
     """location factory."""
-    name = Sequence(lambda n: 'room %s' % n)
+    name = Sequence(lambda n: 'room-%s' % n)
 
     class Meta:
         """factory configuration."""

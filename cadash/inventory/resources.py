@@ -195,7 +195,8 @@ class Resource_API(Resource):
         # arg parser for updates - must be init'd by child class
         self._parser_update = reqparse.RequestParser()
         # decorators for authenticated rest-endpoints
-        self.method_decorators = [login_required]
+        # naomi naomi naomi remove this!
+        #self.method_decorators = [login_required]
 
 
     def get(self, r_id):
@@ -344,7 +345,8 @@ class Resource_ListAPI(Resource):
         # arg parser for creates - must be init'd by child class
         self._parser_create = reqparse.RequestParser()
         # decorators for authenticated rest-endpoints
-        self.method_decorators = [login_required]
+        # naomi naomi naomi remove this!
+        #self.method_decorators = [login_required]
 
 
     def get(self):

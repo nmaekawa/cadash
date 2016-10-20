@@ -149,16 +149,8 @@ class DceConfigForEpiphanCa(object):
         return self.ca.vendor
 
     @property
-    def vendor_cfg(self):
-        return self.vendor.config
-
-    @property
     def location(self):
         return self.config.role.location
-
-    @property
-    def location_cfg(self):
-        return self.location.config
 
     @property
     def cluster(self):
@@ -247,7 +239,7 @@ class DceConfigForEpiphanCa(object):
     def create_dce_recorder(self):
         """create and config channels for a dce ca."""
         rec = EpiphanRecorder.create(
-                name=self.location.name_id,
+                name='dce_{}'.format(self.location.name),
                 epiphan_config=self.config)
         # for now, defaults are enough!
 
@@ -256,6 +248,10 @@ class DceConfigForEpiphanCa(object):
         """create and config channels for a dce ca."""
         # populate channel_cfg with stream config for live channels
         self.find_stream_cfg()
+        if self.role_name == 'experimental':
+            role_name = 'secondary'
+        else:
+            role_name = self.role_name
 
         for channel_name in self.channel_default_cfg.keys():
             # create channel in model
@@ -268,7 +264,7 @@ class DceConfigForEpiphanCa(object):
             # config layout for input sources
             flavor = self.channel_default_cfg[channel_name]['flavor']
             if flavor == 'live':
-                connector = self.connectors[self.role_name]
+                connector = self.connectors[role_name]
                 l = COMBINED_CHANNELS_LAYOUT_TEMPLATE.render(
                         source_id=self.ca.capture_card_id,
                         pr_vconnector=connector['pr']['vconnector'],
@@ -278,14 +274,14 @@ class DceConfigForEpiphanCa(object):
                         pr_aconnector=connector['pr']['vconnector'],
                         pr_ainput=connector['pr']['vinput'])
             else:
-                connector = self.connectors[self.role_name][flavor]
+                connector = self.connectors[role_name][flavor]
                 l = SINGLE_CHANNEL_LAYOUT_TEMPLATE.render(
                         source_id=self.ca.capture_card_id,
                         vconnector=connector['vconnector'],
                         vinput=connector['vinput'],
                         # assume that audio always come from presenter
-                        aconnector=self.connectors[self.role_name]['pr']['vconnector'],
-                        ainput=self.connectors[self.role_name]['pr']['vinput'])
+                        aconnector=self.connectors[role_name]['pr']['vconnector'],
+                        ainput=self.connectors[role_name]['pr']['vinput'])
 
             params['source_layout'] = l.replace(' ', '').replace('\n', '')
             params.update(self.channel_default_cfg[channel_name]['encodings'])
@@ -370,26 +366,26 @@ class DceConfigForEpiphanCa(object):
                         stream_id=chan.stream_cfg.stream_id)
                 str_name_tpl = Template(chan.stream_cfg.stream_name_jinja2_template)
                 cfg['stream_name'] = str_name_tpl.render(
-                        location_name=self.location.name_id,
+                        location_name=self.location.name,
                         framesize=cfg['encodings']['framesize'],
                         stream_id=chan.stream_cfg.stream_id)
             channels[chan.name] = cfg
         config['channels'] = channels
         config['cluster_env'] = self.cluster.env
         config['cluster_name_id'] = self.cluster.name_id
-        config['firmware_version'] = self.vendor_cfg.firmware_version
-        config['location_name_id'] = self.location.name_id
+        config['firmware_version'] = self.vendor.config.firmware_version
+        config['location_name_id'] = self.location.name
         config['mh_admin_url'] = self.cluster.admin_host
-        config['mh_ca_name'] = self.location.name_id
+        config['mh_ca_name'] = self.location.name
         config['mhpearl_file_search_range'] = self.mhpearl.file_search_range_in_sec
         config['mhpearl_update_frequency'] = self.mhpearl.update_frequency_in_sec
         config['mhpearl_version'] = self.mhpearl.mhpearl_version
         config['role'] = self.role_name
-        if self.vendor_cfg.source_deinterlacing:
+        if self.vendor.config.source_deinterlacing:
             config['source_deinterlacing'] = 'on'
         else:
             config['source_deinterlacing'] = ''
-        if self.vendor_cfg.maintenance_permanent_logs:
+        if self.vendor.config.maintenance_permanent_logs:
             config['maintenance'] = {'permanent_logs': 'on'}
         else:
             config['maintenance'] = {'permanent_logs': ''}
@@ -408,7 +404,7 @@ class DceConfigForEpiphanCa(object):
             recorders[rec.name] = cfg
         config['recorders'] = recorders
         config['touchscreen'] = {
-                'episcreen_timeout': self.vendor_cfg.touchscreen_timeout_secs}
+                'episcreen_timeout': self.vendor.config.touchscreen_timeout_secs}
         return config
 
 

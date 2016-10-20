@@ -55,13 +55,13 @@ class TestDceCaConfigModel(object):
         assert dce_cfg is not None
         assert dce_cfg.role_name == ca.role.name
         assert dce_cfg.location == ca.role.location
-        assert dce_cfg.location_cfg == ca.role.location.config
-        assert dce_cfg.vendor_cfg == ca.vendor.config
+        assert dce_cfg.location.config == ca.role.location.config
+        assert dce_cfg.vendor.config == ca.vendor.config
         assert dce_cfg.vendor == ca.vendor
         assert dce_cfg.cluster == ca.role.cluster
         assert len(dce_cfg.recorders) == 1
         assert len(dce_cfg.channels) == 4
-        assert dce_cfg.recorders[0].name == dce_cfg.location.name_id
+        assert dce_cfg.recorders[0].name == 'dce_{}'.format(dce_cfg.location.name)
 
 
     def test_get_ca_config(self, simple_db):
