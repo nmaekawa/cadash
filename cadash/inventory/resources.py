@@ -34,6 +34,7 @@ from cadash.inventory.errors import MissingConfigSettingError
 from cadash.inventory.errors import MissingVendorError
 from cadash.inventory.models import AkamaiStreamingConfig
 from cadash.inventory.models import Ca
+from cadash.inventory.models import EpiphanChannel
 from cadash.inventory.models import EpiphanRecorder
 from cadash.inventory.models import Location
 from cadash.inventory.models import MhCluster
@@ -181,6 +182,14 @@ UPDATEABLE_FIELDS = {
 def register_resources(api):
     """add resources to rest-api."""
 
+    api.add_resource(
+            EpiphanChannel_API,
+            '/api/inventory/cas/<int:r_id>/channels/<string:r_name>',
+            endpoint='api_ca_channel')
+    api.add_resource(
+            EpiphanChannel_ListAPI,
+            '/api/inventory/cas/<int:r_id>/channels/',
+            endpoint='api_ca_channellist')
     api.add_resource(
             EpiphanRecorder_API,
             '/api/inventory/cas/<int:r_id>/recorders/<string:r_name>',
@@ -716,7 +725,7 @@ class AkamaiStreamingConfig_ListAPI(Resource_ListAPI):
                 store_missing=False, location='json')
 
 
-class DceCaConfig_API(Resource_API):
+class DceCaConfig_API(Resource):
     """configuration for a dce capture agent."""
 
     def get(self, r_id):
@@ -789,8 +798,6 @@ class EpiphanRecorder_API(Resource_API):
         except (
                 DuplicateEpiphanRecorderError,
                 DuplicateEpiphanRecorderIdError,
-                DuplicateLocationNameError,
-                InvalidJsonValueError,
                 InvalidOperationError) as e:
             abort(400, message=e.message)
         else:
@@ -813,18 +820,7 @@ class EpiphanRecorder_ListAPI(Resource_ListAPI):
         self._parser_create.add_argument(
                 'name', type=str, required=True,
                 help='`name` cannot be blank', location='json')
-        self._parser_create.add_argument(
-                'recorder_id_in_device', type=int,
-                location='json', store_missing=False)
-        self._parser_create.add_argument(
-                'output_format', type=str,
-                location='json', store_missing=False)
-        self._parser_create.add_argument(
-                'size_limit_in_kbytes', type=int,
-                location='json', store_missing=False)
-        self._parser_create.add_argument(
-                'time_limit_in_minutes', type=int,
-                location='json', store_missing=False)
+
 
     def get(self, r_id):
         ca = Ca.get_by_id(r_id)
@@ -841,21 +837,152 @@ class EpiphanRecorder_ListAPI(Resource_ListAPI):
         if ca is not None:
             if ca.role is not None and ca.role.config is not None:
                 args = self._parser_create.parse_args()
-                if 'name' in args:
-                    try:
-                        recorder = EpiphanRecorder.create(
-                                name=args['name'], epiphan_config=ca.role.config)
-                    except DuplicateEpiphanRecorderError as e:
-                        abort(400, message=e.message)
-                    else:
-                        return marshal(
-                                recorder,
-                                RESOURCE_FIELDS['EpiphanRecorder']), 200
+                try:
+                    recorder = EpiphanRecorder.create(
+                            name=args['name'], epiphan_config=ca.role.config)
+                except DuplicateEpiphanRecorderError as e:
+                    abort(400, message=e.message)
                 else:
-                    abort(400, 'Missing EpiphanRecorder name for CA({})'.format(r_id))
+                    return marshal(
+                            recorder,
+                            RESOURCE_FIELDS['EpiphanRecorder']), 200
         abort(404, 'Capture Agent({}) not found'.format(r_id))
 
 
+class EpiphanChannel_API(Resource_API):
+    """channel configured in a ca."""
+
+    def __init__(self):
+        """create instance."""
+        super(EpiphanChannel_API, self).__init__()
+        self._parser_update.add_argument(
+                'channel_id_in_device', type=int,
+                location='json', store_missing=False)
+        self._parser_update.add_argument(
+                'stream_cfg_id', type=int,
+                location='json', store_missing=False)
+        self._parser_update.add_argument(
+                'audio', type=bool,
+                location='json', store_missing=False)
+        self._parser_update.add_argument(
+                'audiobitrate', type=int,
+                location='json', store_missing=False)
+        self._parser_update.add_argument(
+                'audiochannels', type=str,
+                location='json', store_missing=False)
+        self._parser_update.add_argument(
+                'audiopreset', type=str,
+                location='json', store_missing=False)
+        self._parser_update.add_argument(
+                'autoframesize', type=bool,
+                location='json', store_missing=False)
+        self._parser_update.add_argument(
+                'codec', type=str,
+                location='json', store_missing=False)
+        self._parser_update.add_argument(
+                'fpslimit', type=int,
+                location='json', store_missing=False)
+        self._parser_update.add_argument(
+                'framesize', type=str,
+                location='json', store_missing=False)
+        self._parser_update.add_argument(
+                'vbitrate', type=int,
+                location='json', store_missing=False)
+        self._parser_update.add_argument(
+                'vencpreset', type=str,
+                location='json', store_missing=False)
+        self._parser_update.add_argument(
+                'vkeyframeinterval', type=int,
+                location='json', store_missing=False)
+        self._parser_update.add_argument(
+                'vprofile', type=str,
+                location='json', store_missing=False)
+        self._parser_update.add_argument(
+                'source_layout', type=str,
+                location='json', store_missing=False)
+
+
+    @classmethod
+    def find_channel(cls, ca_id, channel_name):
+        """given a capture agent, find a channel by name."""
+        ca = Ca.get_by_id(ca_id)
+        if ca is not None:
+            if ca.role is not None and ca.role.config is not None:
+                for chan in ca.role.config.channels:
+                    if chan.name == channel_name:
+                        return chan
+        return None
+
+    def get(self, r_id, r_name):
+        chan = EpiphanChannel_API.find_channel(r_id, r_name)
+        abort_404_if_resource_none(
+                chan, 'EpiphanChannel({}) for ca({}) not found.'.format(
+                    r_name, r_id))
+        return marshal(
+                chan, RESOURCE_FIELDS['EpiphanChannel']), 200
+
+
+    def put(self, r_id, r_name):
+        chan = EpiphanChannel_API.find_channel(r_id, r_name)
+        abort_404_if_resource_none(
+                chan, 'EpiphanChannel({}) for ca({}) not found.'.format(
+                    r_name, r_id))
+
+        args = self._parser_update.parse_args()
+        try:
+            chan.update(**args)
+        except (
+                DuplicateEpiphanChannelError,
+                DuplicateEpiphanChannelIdError,
+                InvalidJsonValueError,
+                InvalidOperationError) as e:
+            abort(400, message=e.message)
+        else:
+            return marshal(
+                    chan, RESOURCE_FIELDS['EpiphanChannel']), 200
+
+    def delete(self, r_id):
+        chan = EpiphanChannel_API.find_channel(r_id, r_name)
+        if not chan:
+            chan.delete()
+        return '', 204
+
+
+class EpiphanChannel_ListAPI(Resource_ListAPI):
+    """channel list configured for a ca."""
+
+    def __init__(self):
+        """create instance."""
+        super(EpiphanChannel_ListAPI, self).__init__()
+        self._parser_create.add_argument(
+                'name', type=str, required=True,
+                help='`name` cannot be blank', location='json')
+
+    def get(self, r_id):
+        ca = Ca.get_by_id(r_id)
+        if ca is not None:
+            if ca.role is not None and ca.role.config is not None:
+                return marshal(
+                    ca.role.config.channels,
+                    RESOURCE_FIELDS['EpiphanChannel']), 200
+        abort(404, 'EpiphanChannels not found for ca({})'.format(r_id))
+
+
+    def post(self, r_id):
+        ca = Ca.get_by_id(r_id)
+        if ca is not None:
+            if ca.role is not None and ca.role.config is not None:
+                args = self._parser_create.parse_args()
+                try:
+                    channel = EpiphanChannel.create(
+                            name=args['name'], epiphan_config=ca.role.config)
+                except DuplicateEpiphanChannelError as e:
+                    abort(400, message=e.message)
+                else:
+                    return marshal(
+                            channel,
+                            RESOURCE_FIELDS['EpiphanChannel']), 200
+        abort(404, 'Capture Agent({}) not found'.format(r_id))
 
 
 

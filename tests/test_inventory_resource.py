@@ -572,7 +572,81 @@ class TestEpiphanRecorderResource(object):
         assert json_data['output_format'] == 'avi'
         assert json_data['recorder_id_in_device'] == 99999
 
+    def test_should_fail_when_create_without_name(
+            self, testapp_login_disabled, simple_db):
+        ca = simple_db['ca'][0]
 
+        url = '/api/inventory/cas/{}/recorders/'.format(ca.id)
+        res = testapp_login_disabled.post_json(url, params={}, expect_errors=True)
+        assert res.status_int == 400
+
+
+@pytest.mark.usefixtures('db', 'simple_db', 'testapp_login_disabled')
+class TestEpiphanChannelResource(object):
+    """channels configured for a capture agent."""
+
+    def test_get_channel(self, testapp_login_disabled, simple_db):
+        ca = simple_db['ca'][0]
+        channels = ca.role.config.channels
+        chan = channels[0]
+
+        url = '/api/inventory/cas/{}/channels/{}'.format(
+                ca.id, chan.name)
+        res = testapp_login_disabled.get(url)
+        json_data = json.loads(res.body)
+        assert isinstance(json_data, dict)
+        assert json_data['name'] == chan.name
+        assert json_data['channel_id_in_device'] == chan.channel_id_in_device
+        assert json_data['audiochannels'] == chan.audiochannels
+        assert json_data['framesize'] == chan.framesize
+        assert json_data['vencpreset'] == chan.vencpreset
+
+    def test_update_channel(self, testapp_login_disabled, simple_db):
+        ca = simple_db['ca'][0]
+        chan = ca.role.config.channels[1]
+
+        url = '/api/inventory/cas/{}/channels/{}'.format(ca.id, chan.name)
+        params = dict(channel_id_in_device=6, audiobitrate=4567,
+                codec='some_codec', fpslimit=3)
+        res = testapp_login_disabled.put_json(url, params=params)
+        json_data = json.loads(res.body)
+        assert isinstance(json_data, dict)
+        assert json_data['channel_id_in_device'] == 6
+        assert json_data['audiobitrate'] == 4567
+        assert json_data['codec'] == 'some_codec'
+        assert json_data['fpslimit'] == 3
+
+    def test_get_channel_list(self, testapp_login_disabled, simple_db):
+        ca = simple_db['ca'][0]
+
+        url = '/api/inventory/cas/{}/channels/'.format(ca.id)
+        res = testapp_login_disabled.get(url)
+        json_data = json.loads(res.body)
+        assert isinstance(json_data, list)
+        assert len(json_data) == 2
+        assert json_data[0]['name'] == 'fake_channel'
+        assert json_data[1]['name'] == 'another_fake_channel'
+
+    def test_create_channel(self, testapp_login_disabled, simple_db):
+        ca = simple_db['ca'][0]
+
+        url = '/api/inventory/cas/{}/channels/'.format(ca.id)
+        params = dict(name='brand_new_channel')
+        res = testapp_login_disabled.post_json(url, params=params)
+        json_data = json.loads(res.body)
+        assert isinstance(json_data, dict)
+        assert json_data['name'] == 'brand_new_channel'
+        assert json_data['audio'] == True
+        assert json_data['channel_id_in_device'] == 99999
+        assert json_data['vprofile'] == '100'
+
+    def test_should_fail_when_create_without_name(
+            self, testapp_login_disabled, simple_db):
+        ca = simple_db['ca'][0]
+
+        url = '/api/inventory/cas/{}/channels/'.format(ca.id)
+        res = testapp_login_disabled.post_json(url, params={}, expect_errors=True)
+        assert res.status_int == 400
 
 
 
