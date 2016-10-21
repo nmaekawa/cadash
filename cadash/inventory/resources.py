@@ -38,6 +38,7 @@ from cadash.inventory.models import EpiphanChannel
 from cadash.inventory.models import EpiphanRecorder
 from cadash.inventory.models import Location
 from cadash.inventory.models import MhCluster
+from cadash.inventory.models import MhpearlConfig
 from cadash.inventory.models import Role
 from cadash.inventory.models import Vendor
 from cadash.inventory.models import UPDATEABLE_EPIPHAN_CHANNEL_FIELDS
@@ -182,6 +183,10 @@ UPDATEABLE_FIELDS = {
 def register_resources(api):
     """add resources to rest-api."""
 
+    api.add_resource(
+            MhpearlConfig_API,
+            '/api/inventory/cas/<int:r_id>/mhpearl',
+            endpoint='api_ca_mhpearl')
     api.add_resource(
             EpiphanChannel_API,
             '/api/inventory/cas/<int:r_id>/channels/<string:r_name>',
@@ -985,4 +990,54 @@ class EpiphanChannel_ListAPI(Resource_ListAPI):
         abort(404, 'Capture Agent({}) not found'.format(r_id))
 
 
+
+class MhpearlConfig_API(Resource_API):
+    """mhpearl configs in a ca."""
+
+    def __init__(self):
+        """create instance."""
+        super(MhpearlConfig_API, self).__init__()
+        self._parser_update.add_argument(
+                'comment', type=str,
+                location='json', store_missing=False)
+        self._parser_update.add_argument(
+                'mhpearl_version', type=str,
+                location='json', store_missing=False)
+        self._parser_update.add_argument(
+                'file_search_range_in_sec', type=int,
+                location='json', store_missing=False)
+        self._parser_update.add_argument(
+                'update_frequency_in_sec', type=int,
+                location='json', store_missing=False)
+
+
+    def get(self, r_id):
+        ca = Ca.get_by_id(r_id)
+        if ca is not None and ca.role is not None and ca.role.config is not None:
+            return marshal(
+                ca.role.config.mhpearl, RESOURCE_FIELDS['MhpearlConfig']), 200
+        abort(404, 'Mhpearl Config not found for ca({})'.format(r_id))
+
+
+    def put(self, r_id):
+        ca = Ca.get_by_id(r_id)
+        if ca is not None and ca.role is not None and ca.role.config is not None:
+            mhpearl = ca.role.config.mhpearl
+            args = self._parser_update.parse_args()
+            try:
+                mhpearl.update(**args)
+            except InvalidOperationError as e:
+                abort(400, message=e.message)
+            else:
+                return marshal(
+                        mhpearl, RESOURCE_FIELDS['MhpearlConfig']), 200
+        abort(404, 'Mhpearl Config not found for ca({})'.format(r_id))
+
+
+    def delete(self, r_id):
+        abort(405, message='not allowed to delete')
+
+
+    def post(self, r_id):  # is this needed?
+        abort(405, message='not allowed to create')
 

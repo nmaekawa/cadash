@@ -737,11 +737,6 @@ class EpiphanChannel(SurrogatePK, Model):
         channel_map_name = self.epiphan_config.map_channel_name_to_channel_id()
 
         for k, value in kwargs.items():
-            if k == 'datetime_timezone':
-                if kwargs['datetime_timezone'] not in pytz.all_timezones:
-                    raise InvalidTimezoneError('invalid timezone ({})'.format(
-                                value))
-                next
             if k == 'name':
                 if value in channel_map_name.keys():
                     raise DuplicateEpiphanChannelError(
@@ -827,30 +822,8 @@ class MhpearlConfig(SurrogatePK, Model):
     epiphan_config = relationship('RoleConfig', back_populates='mhpearl')
 
     # configs that cannot be derived from role relationships
-    # live stream follow schedule on/off or always on?
-    manage_live = Column(db.Boolean, nullable=False, default=False)
-
     # default is current production as of 05oct16
     mhpearl_version = Column(db.String(80), nullable=False, default='2.0.0')
-
-    # akamai stream_id
-    live_broadcast_key = Column(db.String(80), nullable=False, default='1')
-    lowbr_broadcast_key = Column(db.String(80), nullable=False, default='1')
-
-    # i think timeout to connect to matterhorn
-    connecttimeout_in_sec = Column(db.Integer, nullable=False, default=60)
-
-    # low transmission rate timeout
-    low_speed_time_in_sec = Column(db.Integer, nullable=False, default=300)
-
-    # max ingest before adding random delays
-    max_ingest = Column(db.Integer, nullable=False, default=1)
-
-    # max delay before ingest
-    ingest_delay_in_sec = Column(db.Integer, nullable=False, default=90)
-    # ingest retries
-    number_of_retries = Column(db.Integer, nullable=False, default=5)
-
     # seconds from scheduled start
     file_search_range_in_sec = Column(db.Integer, nullable=False, default=60)
     # schedule update frequency

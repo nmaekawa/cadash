@@ -579,6 +579,7 @@ class TestEpiphanRecorderResource(object):
         url = '/api/inventory/cas/{}/recorders/'.format(ca.id)
         res = testapp_login_disabled.post_json(url, params={}, expect_errors=True)
         assert res.status_int == 400
+        assert '`name` cannot be blank' in res.body
 
 
 @pytest.mark.usefixtures('db', 'simple_db', 'testapp_login_disabled')
@@ -647,6 +648,46 @@ class TestEpiphanChannelResource(object):
         url = '/api/inventory/cas/{}/channels/'.format(ca.id)
         res = testapp_login_disabled.post_json(url, params={}, expect_errors=True)
         assert res.status_int == 400
+        assert '`name` cannot be blank' in res.body
 
 
+@pytest.mark.usefixtures('db', 'simple_db', 'testapp_login_disabled')
+class TestMhpearlConfigResource(object):
+    """mhpearl config for a capture agent."""
 
+    def test_get_mhpearl(self, testapp_login_disabled, simple_db):
+        ca = simple_db['ca'][0]
+        mhpearl = ca.role.config.mhpearl
+
+        url = '/api/inventory/cas/{}/mhpearl'.format(ca.id)
+        res = testapp_login_disabled.get(url)
+        json_data = json.loads(res.body)
+        assert isinstance(json_data, dict)
+        assert json_data['mhpearl_version'] == mhpearl.mhpearl_version
+        assert json_data['comment'] == mhpearl.comment
+        assert json_data['file_search_range_in_sec'] == mhpearl.file_search_range_in_sec
+        assert json_data['update_frequency_in_sec'] == mhpearl.update_frequency_in_sec
+
+    def test_update_mhpearl(self, testapp_login_disabled, simple_db):
+        ca = simple_db['ca'][0]
+        mhpearl = ca.role.config.mhpearl
+
+        url = '/api/inventory/cas/{}/mhpearl'.format(ca.id)
+        params = dict(comment='this is a comment', mhpearl_version='45.3.12',
+                file_search_range_in_sec=45, update_frequency_in_sec=300)
+        res = testapp_login_disabled.put_json(url, params=params)
+        json_data = json.loads(res.body)
+        assert isinstance(json_data, dict)
+        assert json_data['mhpearl_version'] == '45.3.12'
+        assert json_data['comment'] == 'this is a comment'
+        assert json_data['file_search_range_in_sec'] == 45
+        assert json_data['update_frequency_in_sec'] == 300
+
+    def test_should_fail_when_create_mhpearl(
+            self, testapp_login_disabled, simple_db):
+        ca = simple_db['ca'][0]
+
+        url = '/api/inventory/cas/{}/mhpearl'.format(ca.id)
+        res = testapp_login_disabled.post(url, expect_errors=True)
+        assert res.status_int == 405
+        assert 'not allowed to create' in res.body
