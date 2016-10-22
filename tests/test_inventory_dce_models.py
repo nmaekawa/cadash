@@ -80,7 +80,14 @@ class TestDceCaConfigModel(object):
             i += 1
 
         full_config = dce_cfg.epiphan_dce_config
+        #print json.dumps(full_config, sort_keys=True,
+        #        indent=4, separators=(',', ': '))
+
         with open(json_base_config_filename, 'r') as f:
             base_config = json.load(f)
+
+        assert isinstance(full_config, dict)
+        assert full_config['channels']['dce_live'] == base_config['channels']['dce_live']
+
         assert full_config == base_config
 

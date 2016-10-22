@@ -727,3 +727,32 @@ class TestMhpearlConfigModel(object):
             mh_cfg.update(epiphan_config=epi_config)
         assert 'cannot update epiphan_config associated to mhpearl_config({})'.format(
                 mh_cfg.id) in e.value
+
+
+@pytest.mark.usefixtures('db', 'simple_db')
+class TestRecorderChannelRelationship(object):
+    """test for recorder-channels association."""
+
+    def test_recorder_channel_defaults(self, simple_db):
+        ca = simple_db['ca'][0]
+        epi_config = ca.role.config
+        rec = epi_config.recorders[0]
+        assert len(rec.channels) == 0
+
+        rec.update(channels=[epi_config.channels[0], epi_config.channels[1]])
+        assert len(rec.channels) == 2
+        assert rec.channels[0].name in ['fake_channel', 'another_fake_channel']
+        assert rec.channels[1].name in ['fake_channel', 'another_fake_channel']
+
+        # replace channels in recorder
+        chan1 = EpiphanChannel.create(name='dce_pr', epiphan_config=epi_config)
+        chan2 = EpiphanChannel.create(name='dce_pn', epiphan_config=epi_config)
+        rec.update(channels=[chan1, chan2])
+        assert epi_config.channels[0] not in rec.channels
+        assert epi_config.channels[1] not in rec.channels
+        assert chan1 in rec.channels
+        assert chan2 in rec.channels
+
+
+
+

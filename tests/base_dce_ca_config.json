@@ -26,54 +26,54 @@
                 "codec": "h.264",
                 "fpslimit": 30,
                 "framesize": "1920x540",
-                "source_layout": {
-                    "audio": [
-                        {
-                            "settings": {
-                                "source": "111111111112.sdi-a-audio"
-                            },
-                            "type": "source"
-                        }
-                    ],
-                    "background": "#000000",
-                    "nosignal": {
-                        "id": "default"
-                    },
-                    "video": [
-                        {
-                            "crop": {},
-                            "position": {
-                                "height": "100%",
-                                "keep_aspect_ratio": true,
-                                "left": "0%",
-                                "top": "0%",
-                                "width": "50%"
-                            },
-                            "settings": {
-                                "source": "111111111112.sdi-a"
-                            },
-                            "type": "source"
-                        },
-                        {
-                            "crop": {},
-                            "position": {
-                                "height": "100%",
-                                "keep_aspect_ratio": true,
-                                "left": "50%",
-                                "top": "0%",
-                                "width": "50%"
-                            },
-                            "settings": {
-                                "source": "111111111112.sdi-b"
-                            },
-                            "type": "source"
-                        }
-                    ]
-                },
                 "vbitrate": 4000,
                 "vencpreset": "5",
                 "vkeyframeinterval": 1,
                 "vprofile": "100"
+            },
+            "source_layout": {
+                "audio": [
+                    {
+                        "settings": {
+                            "source": "111111111112.sdi-a-audio"
+                        },
+                        "type": "source"
+                    }
+                ],
+                "background": "#000000",
+                "nosignal": {
+                    "id": "default"
+                },
+                "video": [
+                    {
+                        "crop": {},
+                        "position": {
+                            "height": "100%",
+                            "keep_aspect_ratio": true,
+                            "left": "0%",
+                            "top": "0%",
+                            "width": "50%"
+                        },
+                        "settings": {
+                            "source": "111111111112.sdi-a"
+                        },
+                        "type": "source"
+                    },
+                    {
+                        "crop": {},
+                        "position": {
+                            "height": "100%",
+                            "keep_aspect_ratio": true,
+                            "left": "50%",
+                            "top": "0%",
+                            "width": "50%"
+                        },
+                        "settings": {
+                            "source": "111111111112.sdi-b"
+                        },
+                        "type": "source"
+                    }
+                ]
             }
         },
         "dce_live_lowbr": {
@@ -87,54 +87,54 @@
                 "codec": "h.264",
                 "fpslimit": 30,
                 "framesize": "960x270",
-                "source_layout": {
-                    "audio": [
-                        {
-                            "settings": {
-                                "source": "111111111112.sdi-a-audio"
-                            },
-                            "type": "source"
-                        }
-                    ],
-                    "background": "#000000",
-                    "nosignal": {
-                        "id": "default"
-                    },
-                    "video": [
-                        {
-                            "crop": {},
-                            "position": {
-                                "height": "100%",
-                                "keep_aspect_ratio": true,
-                                "left": "0%",
-                                "top": "0%",
-                                "width": "50%"
-                            },
-                            "settings": {
-                                "source": "111111111112.sdi-a"
-                            },
-                            "type": "source"
-                        },
-                        {
-                            "crop": {},
-                            "position": {
-                                "height": "100%",
-                                "keep_aspect_ratio": true,
-                                "left": "50%",
-                                "top": "0%",
-                                "width": "50%"
-                            },
-                            "settings": {
-                                "source": "111111111112.sdi-b"
-                            },
-                            "type": "source"
-                        }
-                    ]
-                },
                 "vbitrate": 250,
                 "vencpreset": "5",
                 "vkeyframeinterval": 1,
                 "vprofile": "100"
+            },
+            "source_layout": {
+                "audio": [
+                    {
+                        "settings": {
+                            "source": "111111111112.sdi-a-audio"
+                        },
+                        "type": "source"
+                    }
+                ],
+                "background": "#000000",
+                "nosignal": {
+                    "id": "default"
+                },
+                "video": [
+                    {
+                        "crop": {},
+                        "position": {
+                            "height": "100%",
+                            "keep_aspect_ratio": true,
+                            "left": "0%",
+                            "top": "0%",
+                            "width": "50%"
+                        },
+                        "settings": {
+                            "source": "111111111112.sdi-a"
+                        },
+                        "type": "source"
+                    },
+                    {
+                        "crop": {},
+                        "position": {
+                            "height": "100%",
+                            "keep_aspect_ratio": true,
+                            "left": "50%",
+                            "top": "0%",
+                            "width": "50%"
+                        },
+                        "settings": {
+                            "source": "111111111112.sdi-b"
+                        },
+                        "type": "source"
+                    }
+                ]
             }
         },
         "dce_pn": {
@@ -148,39 +148,39 @@
                 "codec": "h.264",
                 "fpslimit": 30,
                 "framesize": "1920x1080",
-                "source_layout": {
-                    "audio": [
-                        {
-                            "settings": {
-                                "source": "111111111112.sdi-a-audio"
-                            },
-                            "type": "source"
-                        }
-                    ],
-                    "background": "#000000",
-                    "nosignal": {
-                        "id": "default"
-                    },
-                    "video": [
-                        {
-                            "position": {
-                                "height": "100%",
-                                "keep_aspect_ratio": true,
-                                "left": "0%",
-                                "top": "0%",
-                                "width": "100%"
-                            },
-                            "settings": {
-                                "source": "111111111112.sdi-b"
-                            },
-                            "type": "source"
-                        }
-                    ]
-                },
                 "vbitrate": 9000,
                 "vencpreset": "5",
                 "vkeyframeinterval": 1,
                 "vprofile": "100"
+            },
+            "source_layout": {
+                "audio": [
+                    {
+                        "settings": {
+                            "source": "111111111112.sdi-a-audio"
+                        },
+                        "type": "source"
+                    }
+                ],
+                "background": "#000000",
+                "nosignal": {
+                    "id": "default"
+                },
+                "video": [
+                    {
+                        "position": {
+                            "height": "100%",
+                            "keep_aspect_ratio": true,
+                            "left": "0%",
+                            "top": "0%",
+                            "width": "100%"
+                        },
+                        "settings": {
+                            "source": "111111111112.sdi-b"
+                        },
+                        "type": "source"
+                    }
+                ]
             }
         },
         "dce_pr": {
@@ -194,39 +194,39 @@
                 "codec": "h.264",
                 "fpslimit": 30,
                 "framesize": "1280x720",
-                "source_layout": {
-                    "audio": [
-                        {
-                            "settings": {
-                                "source": "111111111112.sdi-a-audio"
-                            },
-                            "type": "source"
-                        }
-                    ],
-                    "background": "#000000",
-                    "nosignal": {
-                        "id": "default"
-                    },
-                    "video": [
-                        {
-                            "position": {
-                                "height": "100%",
-                                "keep_aspect_ratio": true,
-                                "left": "0%",
-                                "top": "0%",
-                                "width": "100%"
-                            },
-                            "settings": {
-                                "source": "111111111112.sdi-a"
-                            },
-                            "type": "source"
-                        }
-                    ]
-                },
                 "vbitrate": 9000,
                 "vencpreset": "5",
                 "vkeyframeinterval": 1,
                 "vprofile": "100"
+            },
+            "source_layout": {
+                "audio": [
+                    {
+                        "settings": {
+                            "source": "111111111112.sdi-a-audio"
+                        },
+                        "type": "source"
+                    }
+                ],
+                "background": "#000000",
+                "nosignal": {
+                    "id": "default"
+                },
+                "video": [
+                    {
+                        "position": {
+                            "height": "100%",
+                            "keep_aspect_ratio": true,
+                            "left": "0%",
+                            "top": "0%",
+                            "width": "100%"
+                        },
+                        "settings": {
+                            "source": "111111111112.sdi-a"
+                        },
+                        "type": "source"
+                    }
+                ]
             }
         }
     },
@@ -244,6 +244,10 @@
     "mhpearl_version": "2.0.0",
     "recorders": {
         "dce_room-5": {
+            "channels": [
+                "dce_pr",
+                "dce_pn"
+            ],
             "output_format": "avi",
             "recorder_id": 1,
             "sizelimit": 64000000,

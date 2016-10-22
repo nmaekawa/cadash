@@ -54,7 +54,8 @@ UPDATEABLE_LOCATION_CONFIG_FIELDS = frozenset([
         u'secondary_pn_vconnector', u'secondary_pn_vinput'])
 UPDATEABLE_EPIPHAN_RECORDER_FIELDS = frozenset([
         u'recorder_id_in_device', u'output_format',
-        u'size_limit_in_kbytes', u'time_limit_in_minutes'])
+        u'size_limit_in_kbytes', u'time_limit_in_minutes',
+        u'channels'])
 UPDATEABLE_EPIPHAN_CHANNEL_FIELDS = frozenset([
         u'stream_cfg', u'channel_id_in_device',
         u'audio', u'audiobitrate', u'audiochannels', u'audiopreset',
@@ -628,6 +629,15 @@ class RoleConfig(SurrogatePK, Model):
         return super(RoleConfig, self).delete()
 
 
+association_recorder_channel_table = db.Table(
+        'association_recorder_table',
+        db.Column(
+            'recorder_id', db.Integer,
+            db.ForeignKey('epiphan_recorder.id', primary_key=True)),
+        db.Column(
+            'channel_id', db.Integer,
+            db.ForeignKey('epiphan_channel.id', primary_key=True)))
+
 
 class EpiphanRecorder(SurrogatePK, Model):
     """recorder configuration for an epiphan-pearl CA."""
@@ -639,6 +649,10 @@ class EpiphanRecorder(SurrogatePK, Model):
     recorder_id_in_device = Column(db.Integer, nullable=False, default=99999)
     epiphan_config_id = Column(db.Integer, db.ForeignKey('epiphan_config.id'))
     epiphan_config = relationship('RoleConfig', back_populates='recorders')
+    channels = relationship(
+            'EpiphanChannel',
+            secondary=association_recorder_channel_table,
+            back_populates='recorders')
 
     # media recording configurations
     output_format = Column(db.String(16), nullable=False, default='avi')
@@ -695,6 +709,10 @@ class EpiphanChannel(SurrogatePK, Model):
     stream_cfg = relationship('AkamaiStreamingConfig', back_populates='channels')
     epiphan_config_id = Column(db.Integer, db.ForeignKey('epiphan_config.id'))
     epiphan_config = relationship('RoleConfig', back_populates='channels')
+    recorders = relationship(
+            'EpiphanRecorder',
+            secondary=association_recorder_channel_table,
+            back_populates='channels')
 
     # a/v encodings for a channel
     audio = Column(db.Boolean, nullable=False, default=True)

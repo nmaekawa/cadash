@@ -128,10 +128,10 @@ class DceConfigForEpiphanCa(object):
         self.config = ca_config
 
         # create recorders, channels, mhpearl if not there
-        if not self.config.recorders:
-            self.create_dce_recorder()
         if not self.config.channels:
             self.create_dce_channels()
+        if not self.config.recorders:
+            self.create_dce_recorder()
         if not self.config.mhpearl:
             self.create_dce_mhpearl()
 
@@ -236,12 +236,18 @@ class DceConfigForEpiphanCa(object):
                 },
             }
 
+
     def create_dce_recorder(self):
         """create and config channels for a dce ca."""
         rec = EpiphanRecorder.create(
                 name='dce_{}'.format(self.location.name),
                 epiphan_config=self.config)
-        # for now, defaults are enough!
+        ch_list = []
+        for chan in self.channels:
+            if chan.name in ['dce_pr', 'dce_pn']:
+                ch_list.append(chan)
+        if ch_list:
+            rec.update(channels=ch_list)
 
 
     def create_dce_channels(self):
@@ -355,8 +361,8 @@ class DceConfigForEpiphanCa(object):
                     'vencpreset': chan.vencpreset,
                     'vkeyframeinterval': chan.vkeyframeinterval,
                     'vprofile': chan.vprofile,
-                    'source_layout': json.loads(chan.source_layout),
                     }
+            cfg['source_layout'] = json.loads(chan.source_layout)
             if chan.stream_cfg is not None:
                 if self.role_name == 'primary':
                     str_tpl = Template(chan.stream_cfg.primary_url_jinja2_template)
@@ -401,6 +407,7 @@ class DceConfigForEpiphanCa(object):
             cfg['output_format'] = rec.output_format
             cfg['sizelimit'] = rec.size_limit_in_kbytes
             cfg['timelimit'] = rec.time_limit_in_minutes
+            cfg['channels'] = [ c.name for c in rec.channels ]
             recorders[rec.name] = cfg
         config['recorders'] = recorders
         config['touchscreen'] = {
