@@ -739,19 +739,19 @@ class TestRecorderChannelRelationship(object):
         rec = epi_config.recorders[0]
         assert len(rec.channels) == 0
 
-        rec.update(channels=[epi_config.channels[0], epi_config.channels[1]])
+        rec.update(channels=[epi_config.channels[0].name, epi_config.channels[1].name])
         assert len(rec.channels) == 2
-        assert rec.channels[0].name in ['fake_channel', 'another_fake_channel']
-        assert rec.channels[1].name in ['fake_channel', 'another_fake_channel']
+        assert rec.channels[0] in ['fake_channel', 'another_fake_channel']
+        assert rec.channels[1] in ['fake_channel', 'another_fake_channel']
 
         # replace channels in recorder
         chan1 = EpiphanChannel.create(name='dce_pr', epiphan_config=epi_config)
         chan2 = EpiphanChannel.create(name='dce_pn', epiphan_config=epi_config)
-        rec.update(channels=[chan1, chan2])
-        assert epi_config.channels[0] not in rec.channels
-        assert epi_config.channels[1] not in rec.channels
-        assert chan1 in rec.channels
-        assert chan2 in rec.channels
+        rec.update(channels=['dce_pr', 'dce_pn'])
+        assert epi_config.channels[0].name not in rec.channels
+        assert epi_config.channels[1].name not in rec.channels
+        assert chan1.name in rec.channels
+        assert chan2.name in rec.channels
 
 
 

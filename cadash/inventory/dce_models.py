@@ -242,12 +242,7 @@ class DceConfigForEpiphanCa(object):
         rec = EpiphanRecorder.create(
                 name='dce_{}'.format(self.location.name),
                 epiphan_config=self.config)
-        ch_list = []
-        for chan in self.channels:
-            if chan.name in ['dce_pr', 'dce_pn']:
-                ch_list.append(chan)
-        if ch_list:
-            rec.update(channels=ch_list)
+        rec.update(channels=['dce_pr', 'dce_pn'])
 
 
     def create_dce_channels(self):
@@ -407,7 +402,7 @@ class DceConfigForEpiphanCa(object):
             cfg['output_format'] = rec.output_format
             cfg['sizelimit'] = rec.size_limit_in_kbytes
             cfg['timelimit'] = rec.time_limit_in_minutes
-            cfg['channels'] = [ c.name for c in rec.channels ]
+            cfg['channels'] = rec.channels
             recorders[rec.name] = cfg
         config['recorders'] = recorders
         config['touchscreen'] = {

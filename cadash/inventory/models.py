@@ -25,6 +25,7 @@ from cadash.inventory.errors import DuplicateMhClusterAdminHostError
 from cadash.inventory.errors import DuplicateMhClusterNameError
 from cadash.inventory.errors import DuplicateVendorNameModelError
 from cadash.inventory.errors import InvalidCaRoleError
+from cadash.inventory.errors import InvalidChannelNameForRecorderSetupError
 from cadash.inventory.errors import InvalidEmptyValueError
 from cadash.inventory.errors import InvalidJsonValueError
 from cadash.inventory.errors import InvalidMhClusterEnvironmentError
@@ -649,7 +650,7 @@ class EpiphanRecorder(SurrogatePK, Model):
     recorder_id_in_device = Column(db.Integer, nullable=False, default=99999)
     epiphan_config_id = Column(db.Integer, db.ForeignKey('epiphan_config.id'))
     epiphan_config = relationship('RoleConfig', back_populates='recorders')
-    channels = relationship(
+    channels_setup = relationship(
             'EpiphanChannel',
             secondary=association_recorder_channel_table,
             back_populates='recorders')
@@ -667,6 +668,30 @@ class EpiphanRecorder(SurrogatePK, Model):
                     'recorder({}) already in ca({})'.format(
                         name, epiphan_config.ca.name))
         db.Model.__init__(self, name=name, epiphan_config=epiphan_config)
+
+    @property
+    def channels(self):
+        """list of channel.name in the channels_setup."""
+        return [c.name for c in self.channels_setup]
+    @channels.setter
+    def channels(self, channel_list):
+        """set channel instance per list of channel names."""
+        # integrity test: channel_list must contain names of channels that are
+        # configured in the same CA as this recorder
+        all_channels_in_ca = [c.name for c in self.epiphan_config.channels]
+        for c in channel_list:
+            if c not in all_channels_in_ca:
+                # bad attempt to keep a line under 79 chars...
+                msg = 'cannot setup channel({}) in recorder({}),'.format(
+                        c, self.name) + 'not a channel in ca({})'.format(
+                                self.epiphan_config.ca_name)
+                raise InvalidChannelNameForRecorderSetupError(msg)
+
+        c_list = []  # list of actual channel objects
+        for chan in self.epiphan_config.channels:
+            if chan.name in channel_list:
+                c_list.append(chan)
+        self.channels_setup = c_list
 
     def update(self, **kwargs):
         """override to check recorder constraints."""
@@ -712,7 +737,7 @@ class EpiphanChannel(SurrogatePK, Model):
     recorders = relationship(
             'EpiphanRecorder',
             secondary=association_recorder_channel_table,
-            back_populates='channels')
+            back_populates='channels_setup')
 
     # a/v encodings for a channel
     audio = Column(db.Boolean, nullable=False, default=True)

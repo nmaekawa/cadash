@@ -135,6 +135,7 @@ RESOURCE_FIELDS = {
             'output_format': fields.String,
             'size_limit_in_kbytes': fields.Integer,
             'time_limit_in_minutes': fields.Integer,
+            'channels': fields.List(fields.String),
         },
         'EpiphanChannel': {
             'id': fields.Integer,
@@ -768,6 +769,9 @@ class EpiphanRecorder_API(Resource_API):
                 location='json', store_missing=False)
         self._parser_update.add_argument(
                 'time_limit_in_minutes', type=int,
+                location='json', store_missing=False)
+        self._parser_update.add_argument(
+                'channels', type=list,
                 location='json', store_missing=False)
 
 

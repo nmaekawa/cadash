@@ -12,6 +12,10 @@ class InvalidCaRoleError(Error):
     """role must be in cadash.inventory.models.CA_ROLES."""
 
 
+class InvalidChannelNameForRecorderSetupError(Error):
+    """channel_name must be part of CA list of channels."""
+
+
 class InvalidEmptyValueError(Error):
     """value must be not_empty."""
 

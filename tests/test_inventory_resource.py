@@ -525,11 +525,15 @@ class TestEpiphanRecorderResource(object):
     def test_get_recorder(self, testapp_login_disabled, simple_db):
         ca = simple_db['ca'][0]
         recorders = ca.role.config.recorders
+        rec = recorders[0]
+        rec.update(channels=[
+            ca.role.config.channels[0].name, ca.role.config.channels[1].name])
 
         url = '/api/inventory/cas/{}/recorders/{}'.format(
                 ca.id, recorders[0].name)
         res = testapp_login_disabled.get(url)
         json_data = json.loads(res.body)
+
         assert isinstance(json_data, dict)
         for key in json_data:
             assert json_data[key] == recorders[0].__getattribute__(key)
@@ -540,14 +544,17 @@ class TestEpiphanRecorderResource(object):
 
         url = '/api/inventory/cas/{}/recorders/{}'.format(ca.id, rec.name)
         params = dict(recorder_id_in_device=6, output_format='mp4',
-                time_limit_in_minutes=120)
+                time_limit_in_minutes=120, channels=[ca.role.config.channels[0].name])
         res = testapp_login_disabled.put_json(url, params=params)
         json_data = json.loads(res.body)
+
         assert isinstance(json_data, dict)
         assert json_data['recorder_id_in_device'] == 6
         assert json_data['output_format'] == 'mp4'
         assert json_data['time_limit_in_minutes'] == 120
         assert json_data['size_limit_in_kbytes'] == 64000000
+        assert len(json_data['channels']) == 1
+        assert json_data['channels'][0] == ca.role.config.channels[0].name
 
     def test_get_recorder_list(self, testapp_login_disabled, simple_db):
         ca = simple_db['ca'][0]
@@ -571,6 +578,7 @@ class TestEpiphanRecorderResource(object):
         assert json_data['name'] == 'brand_new_recorder'
         assert json_data['output_format'] == 'avi'
         assert json_data['recorder_id_in_device'] == 99999
+        assert len(json_data['channels']) == 0
 
     def test_should_fail_when_create_without_name(
             self, testapp_login_disabled, simple_db):
