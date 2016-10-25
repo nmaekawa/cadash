@@ -62,6 +62,10 @@ class TestDceCaConfigModel(object):
         assert len(dce_cfg.recorders) == 1
         assert len(dce_cfg.channels) == 4
         assert dce_cfg.recorders[0].name == 'dce_{}'.format(dce_cfg.location.name)
+        for chan in dce_cfg.channels:
+            if 'live' in chan.name:
+                print "chan.name={}".format(chan.name)
+                assert chan.stream_cfg is not None
 
 
     def test_get_ca_config(self, simple_db):
@@ -80,14 +84,10 @@ class TestDceCaConfigModel(object):
             i += 1
 
         full_config = dce_cfg.epiphan_dce_config
-        #print json.dumps(full_config, sort_keys=True,
-        #        indent=4, separators=(',', ': '))
 
         with open(json_base_config_filename, 'r') as f:
             base_config = json.load(f)
 
         assert isinstance(full_config, dict)
         assert full_config['channels']['dce_live'] == base_config['channels']['dce_live']
-
         assert full_config == base_config
-

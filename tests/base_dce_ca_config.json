@@ -31,6 +31,7 @@
                 "vkeyframeinterval": 1,
                 "vprofile": "100"
             },
+            "rtmp_url": "rtmp://p.epstream_id123.i.akamaientrypoint.net/EntryPoint",
             "source_layout": {
                 "audio": [
                     {
@@ -74,7 +75,8 @@
                         "type": "source"
                     }
                 ]
-            }
+            },
+            "stream_name": "room-5-presenter-delivery.stream-1920x540_1_200@stream_id123"
         },
         "dce_live_lowbr": {
             "channel_id": 3,
@@ -92,6 +94,7 @@
                 "vkeyframeinterval": 1,
                 "vprofile": "100"
             },
+            "rtmp_url": "rtmp://p.epstream_id123.i.akamaientrypoint.net/EntryPoint",
             "source_layout": {
                 "audio": [
                     {
@@ -135,7 +138,8 @@
                         "type": "source"
                     }
                 ]
-            }
+            },
+            "stream_name": "room-5-presenter-delivery.stream-960x270_1_200@stream_id123"
         },
         "dce_pn": {
             "channel_id": 4,
@@ -232,6 +236,10 @@
     },
     "cluster_env": "dev",
     "cluster_name_id": "cluster_3",
+    "date_and_time": {
+        "ntp_server": "0.pool.ntp.org",
+        "timezone": "US/Eastern"
+    },
     "firmware_version": "3.15.3f",
     "location_name_id": "room-5",
     "maintenance": {
@@ -257,6 +265,7 @@
     "role": "primary",
     "source_deinterlacing": "on",
     "touchscreen": {
+        "allow_recording": "",
         "episcreen_timeout": 600
     }
 }

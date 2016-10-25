@@ -47,6 +47,7 @@ from cadash.inventory.models import UPDATEABLE_VENDOR_FIELDS
 from cadash.inventory.models import UPDATEABLE_VENDOR_CONFIG_FIELDS
 from cadash.inventory.models import UPDATEABLE_LOCATION_FIELDS
 from cadash.inventory.models import UPDATEABLE_LOCATION_CONFIG_FIELDS
+from cadash.utils import basic_auth_required
 
 
 # dicts to define output json objects
@@ -265,8 +266,7 @@ class Resource_API(Resource):
         # arg parser for updates - must be init'd by child class
         self._parser_update = reqparse.RequestParser()
         # decorators for authenticated rest-endpoints
-        # naomi naomi naomi remove this!
-        #self.method_decorators = [login_required]
+        self.method_decorators = [basic_auth_required]
 
 
     def get(self, r_id):
@@ -415,8 +415,7 @@ class Resource_ListAPI(Resource):
         # arg parser for creates - must be init'd by child class
         self._parser_create = reqparse.RequestParser()
         # decorators for authenticated rest-endpoints
-        # naomi naomi naomi remove this!
-        #self.method_decorators = [login_required]
+        self.method_decorators = [basic_auth_required]
 
 
     def get(self):
@@ -628,8 +627,9 @@ class Role_API(Resource):
     def __init__(self):
         """create instance."""
         super(Role_API, self).__init__()
-
         self._parser_update = reqparse.RequestParser()
+        # decorators for authenticated rest-endpoints
+        self.method_decorators = [basic_auth_required]
 
 
     def get(self, r_id):
@@ -655,6 +655,8 @@ class Role_ListAPI(Resource):
     def __init__(self):
         """create instance."""
         super(Role_ListAPI, self).__init__()
+        # decorators for authenticated rest-endpoints
+        self.method_decorators = [basic_auth_required]
 
         self._parser_create = reqparse.RequestParser()
         self._parser_create.add_argument(
@@ -733,6 +735,12 @@ class AkamaiStreamingConfig_ListAPI(Resource_ListAPI):
 
 class DceCaConfig_API(Resource):
     """configuration for a dce capture agent."""
+
+    def __init__(self):
+        """create instance."""
+        super(DceCaConfig_API, self).__init__()
+        # decorators for authenticated rest-endpoints
+        self.method_decorators = [basic_auth_required]
 
     def get(self, r_id):
         """override to pull dce config."""

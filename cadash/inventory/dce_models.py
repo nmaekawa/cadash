@@ -248,22 +248,26 @@ class DceConfigForEpiphanCa(object):
     def create_dce_channels(self):
         """create and config channels for a dce ca."""
         # populate channel_cfg with stream config for live channels
-        self.find_default_stream_cfg()
+        default_cfg = self.channel_default_cfg
+        stream_cfg = self.find_default_stream_cfg()
+        default_cfg['dce_live']['stream_cfg'] = stream_cfg
+        default_cfg['dce_live_lowbr']['stream_cfg'] = stream_cfg
+
         if self.role_name == 'experimental':
             role_name = 'secondary'
         else:
             role_name = self.role_name
 
-        for channel_name in self.channel_default_cfg.keys():
+        for channel_name in default_cfg:
             # create channel in model
             chan = EpiphanChannel.create(
                     name=channel_name,
                     epiphan_config=self.config,
-                    stream_cfg=self.channel_default_cfg[channel_name]['stream_cfg'])
+                    stream_cfg=default_cfg[channel_name]['stream_cfg'])
 
             params = {}
             # config layout for input sources
-            flavor = self.channel_default_cfg[channel_name]['flavor']
+            flavor = default_cfg[channel_name]['flavor']
             if flavor == 'live':
                 connector = self.connectors[role_name]
                 l = COMBINED_CHANNELS_LAYOUT_TEMPLATE.render(
@@ -285,20 +289,18 @@ class DceConfigForEpiphanCa(object):
                         ainput=self.connectors[role_name]['pr']['vinput'])
 
             params['source_layout'] = l.replace(' ', '').replace('\n', '')
-            params.update(self.channel_default_cfg[channel_name]['encodings'])
+            params.update(default_cfg[channel_name]['encodings'])
             chan.update(**params)
 
 
     def find_default_stream_cfg(self):
         """define some criteria to pick stream config for live channels."""
         scfg_list = AkamaiStreamingConfig.query.all()
-        stream_cfg = None
         for s in scfg_list:
             if 'default' in s.name:
                 stream_cfg = s
                 break
-        self.channel_default_cfg['dce_live']['stream_cfg'] = stream_cfg
-        self.channel_default_cfg['dce_live_lowbr']['stream_cfg'] = stream_cfg
+        return s
 
 
     def create_dce_mhpearl(self):

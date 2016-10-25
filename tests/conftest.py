@@ -102,7 +102,7 @@ def simple_db(db):
 
     # create streaming config
     stream_cfg = AkamaiStreamingConfig.create(
-            name='fake_prod', stream_id='stream_id123',
+            name='default_stream', stream_id='stream_id123',
             stream_user='stream_user123', stream_password='stream_pwd123')
     mini_db['stream_config'] = stream_cfg
 
@@ -134,5 +134,7 @@ def simple_db(db):
     rec1 = EpiphanRecorder.create(name='recorder_fake', epiphan_config=epi_config)
     rec2 = EpiphanRecorder.create(name='recorder_fake_2', epiphan_config=epi_config)
     mh_cfg = MhpearlConfig.create(epiphan_config=epi_config)
+
+    db.session.commit()
 
     return mini_db

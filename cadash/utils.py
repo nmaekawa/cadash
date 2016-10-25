@@ -12,6 +12,7 @@ from flask import current_app
 from flask import flash
 from flask import redirect
 from flask import request
+from flask import Response
 from flask import url_for
 from flask_login import current_user
 from functools import wraps
@@ -152,3 +153,32 @@ def requires_roles(*roles):
             return f(*args, **kwargs)
         return wrapped
     return wrapper
+
+#
+# basic auth for rest api
+# from http://flask.pocoo.org/snippets/8/
+#
+def check_auth(username, password):
+    """called to check if username/password combo is valid."""
+    return username == current_app.config.get('CADASH_REST_API_USER') \
+            and password == current_app.config.get('CADASH_REST_API_PASSWD')
+
+
+def authenticate():
+    """sends 401 response that enables basic auth."""
+    return Response(
+            '{"message": "You have to login with proper credentials({}:{})."}\n', 401,
+            {'WWW-Authenticate': 'Basic realm="Login Required"'})
+
+
+def basic_auth_required(f):
+    @wraps(f)
+    def decorated(*args, **kwargs):
+        auth = request.authorization
+        if not current_app.config.get('LOGIN_DISABLED'):
+            if not auth or not check_auth(auth.username, auth.password):
+                return authenticate()
+
+        return f(*args, **kwargs)
+    return decorated
+
