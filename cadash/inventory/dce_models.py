@@ -411,7 +411,8 @@ class DceConfigForEpiphanCa(object):
         config['recorders'] = recorders
         config['touchscreen'] = {
                 'episcreen_timeout': self.vendor.config.touchscreen_timeout_secs,
-                'allow_recording': self.vendor.config.touchscreen_allow_recording}
+                'allow_recording': \
+                        'on' if self.vendor.config.touchscreen_allow_recording else ''}
         return config
 
 
