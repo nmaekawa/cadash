@@ -9,8 +9,6 @@ from cadash.inventory.models import AkamaiStreamingConfig
 from cadash.inventory.models import Ca
 from cadash.inventory.models import EpiphanChannel
 from cadash.inventory.models import EpiphanRecorder
-from cadash.inventory.models import Location
-from cadash.inventory.models import LocationConfig
 from cadash.inventory.models import MhCluster
 from cadash.inventory.models import MhpearlConfig
 from cadash.inventory.models import Role
@@ -216,22 +214,22 @@ class DceConfigForEpiphanCa(object):
         return {
             'primary': {
                 'pr': {
-                    'vconnector': self.location.config.primary_pr_vconnector,
-                    'vinput': self.location.config.primary_pr_vinput,
+                    'vconnector': self.location.primary_pr_vconnector,
+                    'vinput': self.location.primary_pr_vinput,
                     },
                 'pn': {
-                    'vconnector': self.location.config.primary_pn_vconnector,
-                    'vinput': self.location.config.primary_pn_vinput,
+                    'vconnector': self.location.primary_pn_vconnector,
+                    'vinput': self.location.primary_pn_vinput,
                     },
                 },
             'secondary': {
                 'pr': {
-                    'vconnector': self.location.config.secondary_pr_vconnector,
-                    'vinput': self.location.config.secondary_pr_vinput,
+                    'vconnector': self.location.secondary_pr_vconnector,
+                    'vinput': self.location.secondary_pr_vinput,
                     },
                 'pn': {
-                    'vconnector': self.location.config.secondary_pn_vconnector,
-                    'vinput': self.location.config.secondary_pn_vinput,
+                    'vconnector': self.location.secondary_pn_vconnector,
+                    'vinput': self.location.secondary_pn_vinput,
                     },
                 },
             }

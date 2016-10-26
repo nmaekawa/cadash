@@ -48,8 +48,6 @@ from cadash.inventory.models import UPDATEABLE_EPIPHAN_CHANNEL_FIELDS
 from cadash.inventory.models import UPDATEABLE_EPIPHAN_RECORDER_FIELDS
 from cadash.inventory.models import UPDATEABLE_VENDOR_FIELDS
 from cadash.inventory.models import UPDATEABLE_VENDOR_CONFIG_FIELDS
-from cadash.inventory.models import UPDATEABLE_LOCATION_FIELDS
-from cadash.inventory.models import UPDATEABLE_LOCATION_CONFIG_FIELDS
 
 
 # dicts to define output json objects
@@ -88,23 +86,14 @@ RESOURCE_FIELDS = {
             'id': fields.Integer,
             'name_id': fields.String,
             'name': fields.String,
-            'config_id': fields.Integer,
-            'primary_pr_vconnector': fields.String(
-                attribute='config.primary_pr_vconnector'),
-            'primary_pr_vinput': fields.String(
-                attribute='config.primary_pr_vinput'),
-            'primary_pn_vconnector': fields.String(
-                attribute='config.primary_pn_vconnector'),
-            'primary_pn_vinput': fields.String(
-                attribute='config.primary_pn_vinput'),
-            'secondary_pr_vconnector': fields.String(
-                attribute='config.secondary_pr_vconnector'),
-            'secondary_pr_vinput': fields.String(
-                attribute='config.secondary_pr_vinput'),
-            'secondary_pn_vconnector': fields.String(
-                attribute='config.secondary_pn_vconnector'),
-            'secondary_pn_vinput': fields.String(
-                attribute='config.secondary_pn_vinput'),
+            'primary_pr_vconnector': fields.String,
+            'primary_pr_vinput': fields.String,
+            'primary_pn_vconnector': fields.String,
+            'primary_pn_vinput': fields.String,
+            'secondary_pr_vconnector': fields.String,
+            'secondary_pr_vinput': fields.String,
+            'secondary_pn_vconnector': fields.String,
+            'secondary_pn_vinput': fields.String,
         },
         'MhCluster': {
             'id': fields.Integer,
@@ -179,8 +168,7 @@ UPDATEABLE_FIELDS = {
         'EpiphanRecorder': UPDATEABLE_EPIPHAN_RECORDER_FIELDS,
         'Vendor': UPDATEABLE_VENDOR_FIELDS,
         'VendorConfig': UPDATEABLE_VENDOR_CONFIG_FIELDS,
-        'Location': UPDATEABLE_LOCATION_FIELDS,
-        'LocationConfig': UPDATEABLE_LOCATION_CONFIG_FIELDS,
+        'Location': Location.updateable_fields,
 }
 
 
@@ -490,7 +478,7 @@ class Ca_ListAPI(Resource_ListAPI):
                 location='json', store_missing=False)
 
 
-class Location_API(ResourceConfig_API):
+class Location_API(Resource_API):
     """location resource for rest endpoints."""
 
     def __init__(self):

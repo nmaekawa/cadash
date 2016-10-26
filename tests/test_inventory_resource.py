@@ -147,7 +147,7 @@ class TestLocationResource(object):
         assert len(json_data) == 5
         assert json_data[3]['name'] == simple_db['room'][3].name
 
-    def test_get_lecation(self, testapp_login_disabled, simple_db):
+    def test_get_location(self, testapp_login_disabled, simple_db):
         """get location by id."""
         url = '/api/inventory/locations/%i' % simple_db['room'][1].id
         res = testapp_login_disabled.get(url)
@@ -202,7 +202,6 @@ class TestLocationResource(object):
         assert loc.name == simple_db['room'][2].name
 
         l = dict(
-                name='special_new_name',
                 primary_pr_vconnector='hdmi',
                 primary_pr_vinput='k',
                 )
@@ -210,9 +209,8 @@ class TestLocationResource(object):
         res = testapp_login_disabled.put_json(url, params=l)
 
         loc = Location.get_by_id(simple_db['room'][2].id)
-        assert loc.name == 'special_new_name'
-        assert loc.config.primary_pr_vconnector == 'hdmi'
-        assert loc.config.primary_pr_vinput == 'k'
+        assert loc.primary_pr_vconnector == 'hdmi'
+        assert loc.primary_pr_vinput == 'k'
 
 
     def test_should_fail_when_update_blank_name(
@@ -222,7 +220,7 @@ class TestLocationResource(object):
         url = '/api/inventory/locations/%i' % simple_db['room'][2].id
         res = testapp_login_disabled.put_json(url, params=l, expect_errors=True)
         assert res.status_int == 400
-        assert 'not allowed empty value for `name`' in res.body
+        assert 'not allowed to update Location fields: name' in res.body
 
 
 @pytest.mark.usefixtures('db', 'simple_db', 'testapp_login_disabled')

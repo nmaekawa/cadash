@@ -11,7 +11,6 @@ from cadash.inventory.models import Ca
 from cadash.inventory.models import EpiphanChannel
 from cadash.inventory.models import EpiphanRecorder
 from cadash.inventory.models import Location
-from cadash.inventory.models import LocationConfig
 from cadash.inventory.models import MhCluster
 from cadash.inventory.models import MhpearlConfig
 from cadash.inventory.models import Role
@@ -55,7 +54,6 @@ class TestDceCaConfigModel(object):
         assert dce_cfg is not None
         assert dce_cfg.role_name == ca.role.name
         assert dce_cfg.location == ca.role.location
-        assert dce_cfg.location.config == ca.role.location.config
         assert dce_cfg.vendor.config == ca.vendor.config
         assert dce_cfg.vendor == ca.vendor
         assert dce_cfg.cluster == ca.role.cluster

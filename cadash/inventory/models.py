@@ -5,12 +5,13 @@ import datetime as dt
 import json
 import pytz
 
+from cadash.database import db
 from cadash.database import Column
+from cadash.database import CRUDMixin
 from cadash.database import Model
 from cadash.database import NameIdMixin
-from cadash.database import SurrogatePK
-from cadash.database import db
 from cadash.database import relationship
+from cadash.database import SurrogatePK
 from cadash.inventory.errors import AssociationError
 from cadash.inventory.errors import DuplicateAkamaiStreamIdError
 from cadash.inventory.errors import DuplicateCaptureAgentNameError
@@ -42,17 +43,11 @@ UPDATEABLE_CA_FIELDS = frozenset([
 UPDATEABLE_CLUSTER_FIELDS = frozenset([
         u'name', u'admin_host', u'env',
         u'username', u'password'])
-UPDATEABLE_LOCATION_FIELDS = frozenset([u'name'])
 UPDATEABLE_VENDOR_FIELDS = frozenset([u'name', u'model'])
 UPDATEABLE_VENDOR_CONFIG_FIELDS = frozenset([
         u'touchscreen_timeout_secs', u'touchscreen_allow_recording',
         u'maintenance_permanent_logs', u'firmware_version',
         u'source_deinterlacing', u'datetime_timezone', u'datetime_ntpserver'])
-UPDATEABLE_LOCATION_CONFIG_FIELDS = frozenset([
-        u'primary_pr_vconnector', u'primary_pr_vinput',
-        u'primary_pn_vconnector', u'primary_pn_vinput',
-        u'secondary_pr_vconnector', u'secondary_pr_vinput',
-        u'secondary_pn_vconnector', u'secondary_pn_vinput'])
 UPDATEABLE_EPIPHAN_RECORDER_FIELDS = frozenset([
         u'recorder_id_in_device', u'output_format',
         u'size_limit_in_kbytes', u'time_limit_in_minutes',
@@ -65,23 +60,59 @@ UPDATEABLE_EPIPHAN_CHANNEL_FIELDS = frozenset([
         u'vprofile', u'source_layout'])
 
 
+class InventoryModel(CRUDMixin, db.Model):
+    """base model class for cadash inventory."""
+
+    __abstract__ = True
+    __updateable_fields__ = frozenset([])
+
+    @classmethod
+    def updateable_fields(cls):
+        return cls.__updateable_fields__
+
+    def _check_constraints(self, **kwargs):
+        """raise an error if args violate location constraints."""
+        return True
+
+    def update(self, **kwargs):
+        """override to check model constraints."""
+        x = set(kwargs.keys()).difference(self.__class__.updateable_fields())
+        if len(x) > 0:
+            raise InvalidOperationError(
+                'not allowed to update {} fields: {}'.format(
+                        type(self).__name__,
+                        ', '.join(list(x)) ) )
+        if self._check_constraints(**kwargs):
+            return super(InventoryModel, self).update(**kwargs)
 
 
-class Location(SurrogatePK, NameIdMixin, Model):
+class Location(SurrogatePK, NameIdMixin, InventoryModel):
     """a room where a capture agent is installed."""
 
     __tablename__ = 'location'
+    __updateable_fields__ = frozenset([
+        u'primary_pr_vconnector', u'primary_pr_vinput',
+        u'primary_pn_vconnector', u'primary_pn_vinput',
+        u'secondary_pr_vconnector', u'secondary_pr_vinput',
+        u'secondary_pn_vconnector',
+        u'secondary_pn_vinput'])
     created_at = Column(db.DateTime, nullable=False, default=dt.datetime.utcnow)
     name = Column(db.String(80), unique=True, nullable=False)
+    primary_pr_vconnector = Column(db.String(16), nullable=False, default='sdi')
+    primary_pr_vinput = Column(db.String(16), nullable=False, default='a')
+    primary_pn_vconnector = Column(db.String(16), nullable=False, default='sdi')
+    primary_pn_vinput = Column(db.String(16), nullable=False, default='b')
+    secondary_pr_vconnector = Column(db.String(16), nullable=False, default='sdi')
+    secondary_pr_vinput = Column(db.String(16), nullable=False, default='a')
+    secondary_pn_vconnector = Column(db.String(16), nullable=False, default='sdi')
+    secondary_pn_vinput = Column(db.String(16), nullable=False, default='b')
+
     capture_agents = relationship('Role', back_populates='location')
-    config = relationship('LocationConfig', back_populates='location', uselist=False)
 
     def __init__(self, name):
         """create instance."""
         if self._check_constraints(name=name):
             db.Model.__init__(self, name=name)
-            cfg = LocationConfig.create(location=self)
-            self.config = cfg
 
     def get_ca(self):
         """return all capture agents installed in location."""
@@ -96,19 +127,8 @@ class Location(SurrogatePK, NameIdMixin, Model):
     def delete(self, commit=True):
         """override to undo all relationships involving this location."""
         for c in self.capture_agents:
-            c.delete()
-        self.config.delete(commit)  # delete associated config
+            c.delete()  # delete roles associated with location
         return super(Location, self).delete(commit)
-
-    def update(self, **kwargs):
-        """override to check location constraints."""
-        x = set(kwargs.keys()).difference(UPDATEABLE_LOCATION_FIELDS)
-        if len(x):
-            raise InvalidOperationError(
-                    'not allowed to update location fields: %s' %
-                    ', '.join(list(x)))
-        if self._check_constraints(**kwargs):
-            return super(Location, self).update(**kwargs)
 
     def _check_constraints(self, **kwargs):
         """raise an error if args violate location constraints."""
@@ -122,57 +142,11 @@ class Location(SurrogatePK, NameIdMixin, Model):
                     if l is not None:
                         raise DuplicateLocationNameError(
                                 'duplicate location name(%s)' % value)
-        return True
-
-
-class LocationConfig(SurrogatePK, Model):
-    """configuration settings for location."""
-
-    __tablename__ = 'location_config'
-    created_at = Column(db.DateTime, nullable=False, default=dt.datetime.utcnow)
-    primary_pr_vconnector = Column(db.String(16), nullable=False, default='sdi')
-    primary_pr_vinput = Column(db.String(16), nullable=False, default='a')
-    primary_pn_vconnector = Column(db.String(16), nullable=False, default='sdi')
-    primary_pn_vinput = Column(db.String(16), nullable=False, default='b')
-    secondary_pr_vconnector = Column(db.String(16), nullable=False, default='sdi')
-    secondary_pr_vinput = Column(db.String(16), nullable=False, default='a')
-    secondary_pn_vconnector = Column(db.String(16), nullable=False, default='sdi')
-    secondary_pn_vinput = Column(db.String(16), nullable=False, default='b')
-    location_id = Column(db.Integer, db.ForeignKey('location.id'))
-    location = relationship('Location', back_populates='config')
-
-    def __repr__(self):
-        return "{}_config".format(self.location.name)
-
-    def __init__(self, location):
-        """validate constraints and create instance."""
-        # location already has configs?
-        if bool(location.config):
-            raise AssociationError(
-                    'cannot associate location({}): already has configs({})'.format(
-                    (location.name, location.config.id)))
-        else:
-            db.Model.__init__(self, location=location)
-
-    def update(self, **kwargs):
-        """override to check config constraints."""
-        x = set(kwargs.keys()).difference(UPDATEABLE_LOCATION_CONFIG_FIELDS)
-        if len(x) > 0:
-            raise InvalidOperationError(
-                'not allowed to update location config fields: {}'.format(
-                        ', '.join(list(x)) ) )
-
-        if self._check_constraints(**kwargs):
-            return super(LocationConfig, self).update(**kwargs)
-
-    def _check_constraints(self, **kwargs):
-        """raise an error if args violate config constraints."""
-        for k, value in kwargs.items():
             if not value or not value.strip():
                 raise InvalidEmptyValueError(
-                        'not allowed empty value for location config `{}`'.format(k))
-        # TODO: changes in connectors cascade into changes in epiphan channel
-        # source layout. just give a warning?
+                    'not allowed empty value for location config `{}`'.format(k))
+            # TODO: changes in connectors cascade into changes in epiphan
+            # channelsource layout. just give a warning?
         return True
 
 

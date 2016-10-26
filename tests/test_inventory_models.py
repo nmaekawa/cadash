@@ -11,7 +11,6 @@ from cadash.inventory.models import Ca
 from cadash.inventory.models import EpiphanChannel
 from cadash.inventory.models import EpiphanRecorder
 from cadash.inventory.models import Location
-from cadash.inventory.models import LocationConfig
 from cadash.inventory.models import MhCluster
 from cadash.inventory.models import MhpearlConfig
 from cadash.inventory.models import Role
@@ -142,14 +141,22 @@ class TestLocationModel(object):
         loc = Location.create(name='room A')
         retrieved = Location.get_by_id(loc.id)
         assert retrieved == loc
-        assert retrieved.config is not None
-        assert retrieved.config.primary_pr_vconnector == 'sdi'
+        assert retrieved.primary_pr_vconnector == 'sdi'
 
-    def test_created_at_defaults_to_datetime(self):
+    def test_created_with_defaults(self):
         """test creation date."""
         loc = Location.create(name='room A')
         assert bool(loc.created_at)
         assert isinstance(loc.created_at, dt.datetime)
+        assert loc.name_id == 'room_a'
+        assert loc.primary_pr_vconnector == 'sdi'
+        assert loc.primary_pr_vinput == 'a'
+        assert loc.primary_pn_vconnector == 'sdi'
+        assert loc.primary_pn_vinput == 'b'
+        assert loc.secondary_pr_vconnector == 'sdi'
+        assert loc.secondary_pr_vinput == 'a'
+        assert loc.secondary_pn_vconnector == 'sdi'
+        assert loc.secondary_pn_vinput == 'b'
 
     def test_name_id(self):
         """test name_id is populated."""
@@ -164,49 +171,7 @@ class TestLocationModel(object):
     def test_update(self, simple_db):
         """update happy path."""
         l = Location.get_by_id(simple_db['room'][0].id)
-        l.update(name='new_name_for_room')
-        l2 = Location.get_by_id(simple_db['room'][0].id)
-        assert l2.name == 'new_name_for_room'
-
-    def test_should_fail_when_update_location_duplicate_name(self, simple_db):
-        """name is unique."""
-        l = Location.get_by_id(simple_db['room'][0].id)
-        with pytest.raises(DuplicateLocationNameError):
-            l.update(name=simple_db['room'][1].name)
-
-    def test_should_fail_when_update_not_updateable_field(self, simple_db):
-        """capture_agents is not updateable."""
-        l = Location.get_by_id(simple_db['room'][0].id)
-        with pytest.raises(InvalidOperationError):
-            l.update(capture_agents=[simple_db['ca'][3]])
-
-    def test_create_location_config(self):
-        loc = Location.create(name='room with a view')
-        retrieved = Location.get_by_id(loc.id)
-        assert retrieved == loc
-        assert loc.config is not None
-        assert loc.config.primary_pr_vconnector == 'sdi'
-        assert loc.config.primary_pr_vinput == 'a'
-        assert loc.config.primary_pn_vconnector == 'sdi'
-        assert loc.config.primary_pn_vinput == 'b'
-        assert loc.config.secondary_pr_vconnector == 'sdi'
-        assert loc.config.secondary_pr_vinput == 'a'
-        assert loc.config.secondary_pn_vconnector == 'sdi'
-        assert loc.config.secondary_pn_vinput == 'b'
-
-    def test_update_location_config(self):
-        loc = Location.create(name='room with a view')
-        assert loc.config is not None
-        assert loc.config.primary_pr_vconnector == 'sdi'
-        assert loc.config.primary_pr_vinput == 'a'
-        assert loc.config.primary_pn_vconnector == 'sdi'
-        assert loc.config.primary_pn_vinput == 'b'
-        assert loc.config.secondary_pr_vconnector == 'sdi'
-        assert loc.config.secondary_pr_vinput == 'a'
-        assert loc.config.secondary_pn_vconnector == 'sdi'
-        assert loc.config.secondary_pn_vinput == 'b'
-
-        loc.config.update(
+        l.update(
                 primary_pr_vconnector='hdmi',
                 primary_pr_vinput='b',
                 primary_pn_vconnector='vga',
@@ -216,25 +181,58 @@ class TestLocationModel(object):
                 secondary_pn_vconnector='vga',
                 secondary_pn_vinput='a'
                 )
-        assert loc.config.primary_pr_vconnector == 'hdmi'
-        assert loc.config.primary_pr_vinput == 'b'
-        assert loc.config.primary_pn_vconnector == 'vga'
-        assert loc.config.primary_pn_vinput == 'a'
-        assert loc.config.secondary_pr_vconnector == 'vga'
-        assert loc.config.secondary_pr_vinput == 'b'
-        assert loc.config.secondary_pn_vconnector == 'vga'
-        assert loc.config.secondary_pn_vinput == 'a'
+        l2 = Location.get_by_id(simple_db['room'][0].id)
+        assert l2.primary_pr_vconnector == 'hdmi'
+        assert l2.primary_pr_vinput == 'b'
+        assert l2.primary_pn_vconnector == 'vga'
+        assert l2.primary_pn_vinput == 'a'
+        assert l2.secondary_pr_vconnector == 'vga'
+        assert l2.secondary_pr_vinput == 'b'
+        assert l2.secondary_pn_vconnector == 'vga'
+        assert l2.secondary_pn_vinput == 'a'
+        assert l2.name == 'new_name_for_room'
 
-    def test_should_fail_when_update_config_not_updateable_field(self):
+    def test_should_fail_when_update_not_updateable_field(self, simple_db):
+        """capture_agents is not updateable."""
+        l = Location.get_by_id(simple_db['room'][0].id)
+        with pytest.raises(InvalidOperationError):
+            l.update(name='something else')
+
+    def test_update(self):
         loc = Location.create(name='room with a view')
-        with pytest.raises(InvalidOperationError) as e:
-            loc.config.update(location=None)
-        assert 'not allowed to update location config fields: location' in str(e.value)
+        assert loc is not None
+        assert loc.primary_pr_vconnector == 'sdi'
+        assert loc.primary_pr_vinput == 'a'
+        assert loc.primary_pn_vconnector == 'sdi'
+        assert loc.primary_pn_vinput == 'b'
+        assert loc.secondary_pr_vconnector == 'sdi'
+        assert loc.secondary_pr_vinput == 'a'
+        assert loc.secondary_pn_vconnector == 'sdi'
+        assert loc.secondary_pn_vinput == 'b'
+
+        loc.update(
+                primary_pr_vconnector='hdmi',
+                primary_pr_vinput='b',
+                primary_pn_vconnector='vga',
+                primary_pn_vinput='a',
+                secondary_pr_vconnector='vga',
+                secondary_pr_vinput='b',
+                secondary_pn_vconnector='vga',
+                secondary_pn_vinput='a'
+                )
+        assert loc.primary_pr_vconnector == 'hdmi'
+        assert loc.primary_pr_vinput == 'b'
+        assert loc.primary_pn_vconnector == 'vga'
+        assert loc.primary_pn_vinput == 'a'
+        assert loc.secondary_pr_vconnector == 'vga'
+        assert loc.secondary_pr_vinput == 'b'
+        assert loc.secondary_pn_vconnector == 'vga'
+        assert loc.secondary_pn_vinput == 'a'
 
     def test_should_fail_when_update_config_field_to_None(self):
         loc = Location.create(name='room with a view')
         with pytest.raises(InvalidEmptyValueError) as e:
-            loc.config.update(secondary_pn_vinput=None)
+            loc.update(secondary_pn_vinput=None)
         assert 'not allowed empty value for location config' in str(e.value)
 
 
@@ -533,17 +531,6 @@ class TestDelete(object):
         with pytest.raises(InvalidOperationError):
             simple_db['vendor'].config.delete()
 
-    def test_delete_location_config(self):
-        loc = Location.create(name='room with a view')
-        assert loc.config is not None
-        c = LocationConfig.get_by_id(loc.config.id)
-        assert c is not None
-        assert c == loc.config
-
-        loc.delete()
-        cfg = LocationConfig.get_by_id(c.id)
-        assert cfg is None
-
     def test_delete_role_and_assoc(self, simple_db):
         """delete role just undo associations."""
         assert len(simple_db['room'][0].get_ca_by_role('experimental')) == 2
@@ -649,8 +636,8 @@ class TestEpiphanChannelModel(object):
                     {
                         'settings': '{}.{}-{}-audio'.format(
                             epi_config.ca.capture_card_id,
-                            epi_config.ca.role.location.config.primary_pr_vconnector,
-                            epi_config.ca.role.location.config.primary_pr_vinput
+                            epi_config.ca.role.location.primary_pr_vconnector,
+                            epi_config.ca.role.location.primary_pr_vinput
                             ),
                         'type': 'source'
                         }
@@ -671,8 +658,8 @@ class TestEpiphanChannelModel(object):
                         'settings': {
                             'source': '{}.{}-{}'.format(
                                 epi_config.ca.capture_card_id,
-                                epi_config.ca.role.location.config.primary_pr_vconnector,
-                                epi_config.ca.role.location.config.primary_pr_vinput
+                                epi_config.ca.role.location.primary_pr_vconnector,
+                                epi_config.ca.role.location.primary_pr_vinput
                                 )
                             },
                         'type': 'source'
