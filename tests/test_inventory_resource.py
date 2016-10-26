@@ -24,13 +24,6 @@ from cadash.inventory.models import Role
 from cadash.inventory.models import Vendor
 
 
-@pytest.mark.usefixtures('db', 'simple_db', 'testapp')
-class TestCaResourceAuthenticated(object):
-    def test_should_fail_when_not_auth(simple_db, testapp):
-        res = testapp.get('/api/inventory/cas', expect_errors=True)
-        assert res.status_int == 401
-
-
 @pytest.mark.usefixtures('db', 'simple_db', 'testapp_login_disabled')
 class TestCaResource(object):
     """capture agent rest resource."""

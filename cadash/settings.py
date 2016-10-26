@@ -65,22 +65,12 @@ class Config(object):
             self.LDAP_BIND_DN = os.environ.get('LDAP_BIND_DN', 'dn=user3,dc=ho,dc=com')
             self.LDAP_BIND_PASSWD = os.environ.get('LDAP_BIND_PASSWD', 'pwd3')
 
-            # rest-api credentials
-            self.CADASH_REST_API_USER = os.environ.get(
-                    'CADASH_REST_API_USER', 'admin')
-            self.CADASH_REST_API_PASSWD = os.environ.get(
-                    'CADASH_REST_API_PASSWD', 'secret')
-
         elif env == 'test':
             self.ENV = 'test'
             self.TESTING = True
             self.SQLALCHEMY_DATABASE_URI = 'sqlite://'
             self.CACHE_TYPE = 'simple'  # Can be "memcached", "redis", etc.
             self.WTF_CSRF_ENABLED = False  # Allows form testing
-
-            # rest-api credentials
-            self.CADASH_REST_API_USER = 'admin'
-            self.CADASH_REST_API_PASSWD = 'secret'
 
             if login_disabled:
                 # disabled login_required for unit tests
@@ -128,12 +118,5 @@ class Config(object):
             self.LDAP_BIND_DN = os.environ['LDAP_BIND_DN']
             self.LDAP_BIND_PASSWD = os.environ['LDAP_BIND_PASSWD']
 
-            # rest-api credentials
-            assert 'CADASH_REST_API_USER' in os.environ.keys(), \
-                    'missing env var "CADASH_REST_API_USER"'
-            assert 'CADASH_REST_API_PASSWD' in os.environ.keys(), \
-                    'missing env var "CADASH_REST_API_PASSWD"'
-            self.CADASH_REST_API_USER = os.environ['CADASH_REST_API_USER']
-            self.CADASH_REST_API_PASSWD = on.environ['CADASH_REST_API_PASSWD']
         else:
             raise ValueError('unknown environment: %s' % env)
