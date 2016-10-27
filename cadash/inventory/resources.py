@@ -46,8 +46,6 @@ from cadash.inventory.models import Role
 from cadash.inventory.models import Vendor
 from cadash.inventory.models import UPDATEABLE_EPIPHAN_CHANNEL_FIELDS
 from cadash.inventory.models import UPDATEABLE_EPIPHAN_RECORDER_FIELDS
-from cadash.inventory.models import UPDATEABLE_VENDOR_FIELDS
-from cadash.inventory.models import UPDATEABLE_VENDOR_CONFIG_FIELDS
 
 
 # dicts to define output json objects
@@ -58,20 +56,13 @@ RESOURCE_FIELDS = {
             'name_id': fields.String,
             'name': fields.String,
             'model': fields.String,
-            'datetime_ntpserver': fields.String(
-                attribute='config.datetime_ntpserver'),
-            'datetime_timezone': fields.String(
-                attribute='config.datetime_timezone'),
-            'firmware_version': fields.String(
-                attribute='config.firmware_version'),
-            'maintenance_permanent_logs': fields.Boolean(
-                attribute='config.maintenance_permanent_logs'),
-            'source_deinterlacing': fields.Boolean(
-                attribute='config.source_deinterlacing'),
-            'touchscreen_allow_recording': fields.Boolean(
-                attribute='config.touchscreen_allow_recording'),
-            'touchscreen_timeout_secs': fields.Integer(
-                attribute='config.touchscreen_timeout_secs'),
+            'datetime_ntpserver': fields.String,
+            'datetime_timezone': fields.String,
+            'firmware_version': fields.String,
+            'maintenance_permanent_logs': fields.Boolean,
+            'source_deinterlacing': fields.Boolean,
+            'touchscreen_allow_recording': fields.Boolean,
+            'touchscreen_timeout_secs': fields.Integer,
         },
         'Ca': {
             'id': fields.Integer,
@@ -166,8 +157,7 @@ RESOURCE_FIELDS = {
 UPDATEABLE_FIELDS = {
         'EpiphanChannel': UPDATEABLE_EPIPHAN_CHANNEL_FIELDS,
         'EpiphanRecorder': UPDATEABLE_EPIPHAN_RECORDER_FIELDS,
-        'Vendor': UPDATEABLE_VENDOR_FIELDS,
-        'VendorConfig': UPDATEABLE_VENDOR_CONFIG_FIELDS,
+        'Vendor': Vendor.updateable_fields,
         'Location': Location.updateable_fields,
 }
 
@@ -524,7 +514,7 @@ class Location_ListAPI(Resource_ListAPI):
                 help='`name` cannot be blank', required=True)
 
 
-class Vendor_API(ResourceConfig_API):
+class Vendor_API(Resource_API):
     """vendor resource for rest endpoints."""
 
     def __init__(self):

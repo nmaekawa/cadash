@@ -37,14 +37,6 @@ import cadash.utils as utils
 
 CA_ROLES = frozenset([u'primary', u'secondary', u'experimental'])
 MH_ENVS = frozenset([u'prod', u'dev', u'stage'])
-UPDATEABLE_CLUSTER_FIELDS = frozenset([
-        u'name', u'admin_host', u'env',
-        u'username', u'password'])
-UPDATEABLE_VENDOR_FIELDS = frozenset([u'name', u'model'])
-UPDATEABLE_VENDOR_CONFIG_FIELDS = frozenset([
-        u'touchscreen_timeout_secs', u'touchscreen_allow_recording',
-        u'maintenance_permanent_logs', u'firmware_version',
-        u'source_deinterlacing', u'datetime_timezone', u'datetime_ntpserver'])
 UPDATEABLE_EPIPHAN_RECORDER_FIELDS = frozenset([
         u'recorder_id_in_device', u'output_format',
         u'size_limit_in_kbytes', u'time_limit_in_minutes',
@@ -71,7 +63,7 @@ class InventoryModel(CRUDMixin, db.Model):
         """raise an error if args violate location constraints."""
         return True
 
-    def update(self, **kwargs):
+    def update(self, commit=True, **kwargs):
         """override to check model constraints."""
         x = set(kwargs.keys()).difference(self.__class__.updateable_fields())
         if len(x) > 0:
@@ -80,7 +72,7 @@ class InventoryModel(CRUDMixin, db.Model):
                         type(self).__name__,
                         ', '.join(list(x)) ) )
         if self._check_constraints(**kwargs):
-            return super(InventoryModel, self).update(**kwargs)
+            return super(InventoryModel, self).update(commit, **kwargs)
 
 
 class Location(SurrogatePK, NameIdMixin, InventoryModel):
@@ -147,7 +139,7 @@ class Location(SurrogatePK, NameIdMixin, InventoryModel):
         return True
 
 
-class Role(Model):
+class Role(InventoryModel):
     """role for a ca in a room."""
 
     __tablename__ = 'role'
@@ -185,8 +177,8 @@ class Role(Model):
                     'cannot associate location(%s): already has ca with role(%s)'
                     % (location.name_id, role_name))
 
-        db.Model.__init__(
-                self, ca=ca, location=location,
+        super(Role, self).__init__(
+                ca=ca, location=location,
                 cluster=cluster, name=role_name, config=None)
 
 
@@ -310,16 +302,27 @@ class Ca(SurrogatePK, NameIdMixin, InventoryModel):
         return True
 
 
-class Vendor(SurrogatePK, Model):
+class Vendor(SurrogatePK, InventoryModel):
     """a capture agent vendor."""
 
     __tablename__ = 'vendor'
+    __updateable_fields__ = frozenset([
+        u'touchscreen_timeout_secs', u'touchscreen_allow_recording',
+        u'maintenance_permanent_logs', u'firmware_version',
+        u'source_deinterlacing', u'datetime_timezone', u'datetime_ntpserver'])
     created_at = Column(db.DateTime, nullable=False, default=dt.datetime.utcnow)
     name = Column(db.String(80), unique=False, nullable=False)
     model = Column(db.String(80), unique=False, nullable=False)
     name_id = Column(db.String(128), unique=True, nullable=False)
+    touchscreen_timeout_secs = Column(db.Integer, nullable=False, default=600)
+    touchscreen_allow_recording = Column(db.Boolean, nullable=False, default=False)
+    maintenance_permanent_logs = Column(db.Boolean, nullable=False, default=True)
+    datetime_timezone = Column(db.String(80), nullable=False, default='US/Eastern')
+    datetime_ntpserver = Column(db.String(128), nullable=False, default='0.pool.ntp.org')
+    firmware_version = Column(db.String(80), nullable=False, default='3.15.3f')
+    source_deinterlacing = Column(db.Boolean, nullable=False, default=True)
+
     capture_agents = relationship('Ca', back_populates='vendor')
-    config = relationship('VendorConfig', back_populates='vendor', uselist=False)
 
     def __init__(self, name, model):
         """create instance."""
@@ -327,8 +330,6 @@ class Vendor(SurrogatePK, Model):
             db.Model.__init__(
                     self, name=name, model=model,
                     name_id=Vendor.computed_name_id(name, model))
-            cfg = VendorConfig.create(vendor=self)
-            self.config = cfg
 
     def __repr__(self):
         return self.name_id
@@ -336,21 +337,6 @@ class Vendor(SurrogatePK, Model):
     def delete(self, commit=True):
         """override to disable deletion of vendors."""
         raise InvalidOperationError('not allowed to delete `vendor`')
-
-    def update(self, **kwargs):
-        """override to check vendor constraints."""
-        x = set(kwargs.keys()).difference(UPDATEABLE_VENDOR_FIELDS)
-        if len(x) > 0:
-            raise InvalidOperationError(
-                    'not allowed to update vendor fields: %s' %
-                    ', '.join(list(x)))
-
-        if self._check_constraints(**kwargs):
-            # update name,model in vendor model
-            super(Vendor, self).update(commit=False, **kwargs)
-            # persist name,model,name_id
-            return super(Vendor, self).update(
-                    name_id=self.computed_name_id(self.name, self.model))
 
     def _check_constraints(self, **kwargs):
         """raise an error if args violate vendor constraints."""
@@ -362,6 +348,12 @@ class Vendor(SurrogatePK, Model):
             if v is not None:
                 raise DuplicateVendorNameModelError(
                         'duplicate vendor name_model(%s)' % nm)
+
+        if 'datetime_timezone' in kwargs.keys():
+            if kwargs['datetime_timezone'] not in pytz.all_timezones:
+                raise InvalidTimezoneError(
+                        'invalid timezone ({})'.format(
+                            kwargs['datetime_timezone']))
         return True
 
     @classmethod
@@ -369,63 +361,12 @@ class Vendor(SurrogatePK, Model):
         return '%s_%s' % (utils.clean_name(name), utils.clean_name(model))
 
 
-class VendorConfig(SurrogatePK, Model):
-    """configuration settings for vendors."""
-
-    __tablename__ = 'vendor_config'
-    created_at = Column(db.DateTime, nullable=False, default=dt.datetime.utcnow)
-    touchscreen_timeout_secs = Column(db.Integer, nullable=False, default=600)
-    touchscreen_allow_recording = Column(db.Boolean, nullable=False, default=False)
-    maintenance_permanent_logs = Column(db.Boolean, nullable=False, default=True)
-    datetime_timezone = Column(db.String(80), nullable=False, default='US/Eastern')
-    datetime_ntpserver = Column(db.String(128), nullable=False, default='0.pool.ntp.org')
-    firmware_version = Column(db.String(80), nullable=False, default='3.15.3f')
-    source_deinterlacing = Column(db.Boolean, nullable=False, default=True)
-    vendor_id = Column(db.Integer, db.ForeignKey('vendor.id'))
-    vendor = relationship('Vendor', back_populates='config')
-
-    def __repr__(self):
-        return "{}_config".format(self.vendor.name_id)
-
-    def __init__(self, vendor):
-        """validate constraints and create instance."""
-        # vendor already has configs?
-        if bool(vendor.config):
-            raise AssociationError(
-                    'cannot associate vendor({}): already has configs({})'.format(
-                    (vendor.name_id, vendor.config.id)))
-        else:
-            db.Model.__init__(self, vendor=vendor)
-
-    def delete(self, commit=True):
-        """override to disable deletion of vendor configuration."""
-        raise InvalidOperationError('not allowed to delete `vendor_config`')
-
-    def update(self, **kwargs):
-        """override to check config constraints."""
-        x = set(kwargs.keys()).difference(UPDATEABLE_VENDOR_CONFIG_FIELDS)
-        if len(x) > 0:
-            raise InvalidOperationError(
-                'not allowed to update vendor config fields: {}'.format(
-                        ', '.join(list(x)) ) )
-
-        if self._check_constraints(**kwargs):
-            return super(VendorConfig, self).update(**kwargs)
-
-    def _check_constraints(self, **kwargs):
-        """raise an error if args violate config constraints."""
-        if 'datetime_timezone' in kwargs.keys():
-            if kwargs['datetime_timezone'] not in pytz.all_timezones:
-                raise InvalidTimezoneError(
-                        'invalid timezone ({})'.format(
-                            kwargs['datetime_timezone']))
-        return True  # no constraints to check
-
-
-class MhCluster(SurrogatePK, NameIdMixin, Model):
+class MhCluster(SurrogatePK, NameIdMixin, InventoryModel):
     """a mh cluster that a capture agent pull schedule from."""
 
     __tablename__ = 'mhcluster'
+    __updateable_fields__ = frozenset([
+        u'admin_host', u'env', u'username', u'password'])
     created_at = Column(db.DateTime, nullable=False, default=dt.datetime.utcnow)
     name = Column(db.String(80), unique=True, nullable=False)
     admin_host = Column(db.String(128), unique=True, nullable=False)
@@ -459,19 +400,12 @@ class MhCluster(SurrogatePK, NameIdMixin, Model):
         return super(MhCluster, self).delete(commit)
 
     def update(self, **kwargs):
-        """override to check mh cluster constraints."""
-        x = set(kwargs.keys()).difference(UPDATEABLE_CLUSTER_FIELDS)
-        if len(x) > 0:
-            raise InvalidOperationError(
-                    'not allowed to update mh_cluster fields: %s' %
-                    ', '.join(list(x)))
-
-        if self._check_constraints(**kwargs):
-            r = super(MhCluster, self).update(commit=False, **kwargs)
-            # ensure persisted `env` value is valid
-            if 'env' in kwargs.keys():
-                self.env = self._get_valid_env(kwargs['env'])
-            return self.save()
+        """override to normalize env field."""
+        super(MhCluster, self).update(commit=False, **kwargs)
+        # ensure persisted `env` value is valid
+        if 'env' in kwargs:
+            self.env = self._get_valid_env(kwargs['env'])
+        return self.save()
 
     def _check_constraints(self, **kwargs):
         """raise an error if args violate mh cluster constraints."""
@@ -496,6 +430,7 @@ class MhCluster(SurrogatePK, NameIdMixin, Model):
                     if c is not None:
                         raise DuplicateMhClusterAdminHostError(
                                 'duplicate mh_cluster admin host(%s)' % value)
+                next
         return True
 
     def _get_valid_env(self, env=None):

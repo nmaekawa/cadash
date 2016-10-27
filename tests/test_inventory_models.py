@@ -249,6 +249,13 @@ class TestVendorModel(object):
         vendor = Vendor.create(name='epipoing', model='drumpf')
         assert bool(vendor.created_at)
         assert isinstance(vendor.created_at, dt.datetime)
+        assert vendor.touchscreen_timeout_secs == 600
+        assert not vendor.touchscreen_allow_recording
+        assert vendor.maintenance_permanent_logs
+        assert vendor.datetime_timezone == 'US/Eastern'
+        assert vendor.datetime_ntpserver == '0.pool.ntp.org'
+        assert vendor.firmware_version == '3.15.3f'
+        assert vendor.source_deinterlacing
 
     def test_name_id(self):
         vendor = Vendor.create(name='epiPoinG for', model='drumPf!')
@@ -260,78 +267,34 @@ class TestVendorModel(object):
             vendor = Vendor.create(name=simple_db['vendor'].name,
                     model=simple_db['vendor'].model)
 
-    def test_update_vendor(self, simple_db):
-        """test update happy path."""
-        vendor = Vendor.get_by_id(simple_db['vendor'].id)
-        vendor.update(name='fake')
-        assert vendor.name_id == 'fake_%s' % utils.clean_name(vendor.model)
-
-    def test_should_fail_when_update_duplicate_name_id(self, simple_db):
-        """name_id unique."""
-        vendor = Vendor.create(name=simple_db['vendor'].name, model='bloft')
-        with pytest.raises(DuplicateVendorNameModelError):
-            vendor.update(model=simple_db['vendor'].model)
-
     def test_should_fail_when_update_not_updateable_fields(self, simple_db):
         """name_id not updateable in vendor."""
         vendor = Vendor.get_by_id(simple_db['vendor'].id)
         with pytest.raises(InvalidOperationError) as e:
-            vendor.update(name_id='fake-vendor')
-        assert 'not allowed to update vendor fields: name_id' in str(e.value)
-
-    def test_create_config(self):
-        vendor = Vendor.create(name='epipoing', model='drumpf')
-        retrieved = Vendor.get_by_id(vendor.id)
-        assert retrieved == vendor
-        assert vendor.config is not None
-        assert vendor.config.touchscreen_timeout_secs == 600
-        assert not vendor.config.touchscreen_allow_recording
-        assert vendor.config.maintenance_permanent_logs
-        assert vendor.config.datetime_timezone == 'US/Eastern'
-        assert vendor.config.datetime_ntpserver == '0.pool.ntp.org'
-        assert vendor.config.firmware_version == '3.15.3f'
-        assert vendor.config.source_deinterlacing
-
-    def test_should_fail_when_update_config_not_updateable_field(self):
-        vendor = Vendor.create(name='epipoing', model='drumpf')
-        retrieved = Vendor.get_by_id(vendor.id)
-        assert retrieved == vendor
-        with pytest.raises(InvalidOperationError) as e:
-            vendor.config.update(vendor=None)
-        assert 'not allowed to update vendor config fields: vendor' in str(e.value)
+            vendor.update(name='fake-vendor')
+        assert 'not allowed to update Vendor fields: name' in str(e.value)
 
     def test_update_vendor_config(self):
         vendor = Vendor.create(name='epipoing', model='drumpf')
-        retrieved = Vendor.get_by_id(vendor.id)
-        assert retrieved == vendor
-        assert vendor.config is not None
-        assert vendor.config.touchscreen_timeout_secs == 600
-        assert not vendor.config.touchscreen_allow_recording
-        assert vendor.config.maintenance_permanent_logs
-        assert vendor.config.datetime_timezone == 'US/Eastern'
-        assert vendor.config.datetime_ntpserver == '0.pool.ntp.org'
-        assert vendor.config.firmware_version == '3.15.3f'
-        assert vendor.config.source_deinterlacing
-
-        vendor.config.update(
+        vendor.update(
                 touchscreen_timeout_secs=345,
                 maintenance_permanent_logs=False,
                 datetime_timezone='US/Alaska',
                 firmware_version='fake123',
                 source_deinterlacing=False)
-        assert vendor.config.touchscreen_timeout_secs == 345
-        assert not vendor.config.touchscreen_allow_recording
-        assert not vendor.config.maintenance_permanent_logs
-        assert vendor.config.datetime_timezone == 'US/Alaska'
-        assert vendor.config.datetime_ntpserver == '0.pool.ntp.org'
-        assert vendor.config.firmware_version == 'fake123'
-        assert not vendor.config.source_deinterlacing
+        assert vendor.touchscreen_timeout_secs == 345
+        assert not vendor.touchscreen_allow_recording
+        assert not vendor.maintenance_permanent_logs
+        assert vendor.datetime_timezone == 'US/Alaska'
+        assert vendor.datetime_ntpserver == '0.pool.ntp.org'
+        assert vendor.firmware_version == 'fake123'
+        assert not vendor.source_deinterlacing
 
     def test_should_fail_when_config_timezone_invalid(self):
         vendor = Vendor.create(name='epipoing', model='drumpf')
-        assert vendor.config.datetime_timezone == 'US/Eastern'
+        assert vendor.datetime_timezone == 'US/Eastern'
         with pytest.raises(InvalidTimezoneError) as e:
-            vendor.config.update(datetime_timezone='MiddleEarth/Gondor')
+            vendor.update(datetime_timezone='MiddleEarth/Gondor')
         assert 'invalid timezone (MiddleEarth/Gondor)' in str(e.value)
 
 
@@ -372,20 +335,12 @@ class TestMhClusterModel(object):
         c.update(env='PrOd')
         assert simple_db['cluster'][1].env == 'prod'
 
-    def test_should_fail_when_update_duplicate_name(self, simple_db):
-        """name is unique."""
-        c = MhCluster.get_by_id(simple_db['cluster'][0].id)
-        with pytest.raises(DuplicateMhClusterNameError) as e:
-            c.update(name=simple_db['cluster'][1].name)
-        assert 'duplicate mh_cluster name(%s)' % \
-                simple_db['cluster'][1].name in str(e.value)
-
     def test_should_fail_when_update_not_updateable_fields(self, simple_db):
         """capture_agents is not updateable."""
         c = MhCluster.get_by_id(simple_db['cluster'][0].id)
         with pytest.raises(InvalidOperationError) as e:
-            c.update(capture_agents=[simple_db['ca'][1]])
-        assert 'not allowed to update mh_cluster fields: capture_agents' \
+            c.update(name='blurb')
+        assert 'not allowed to update MhCluster fields: name' \
                 in str(e.value)
 
     def test_should_fail_when_update_invalid_env(self, simple_db):
@@ -525,11 +480,6 @@ class TestDelete(object):
         ca_id = simple_db['ca'][0].id
         simple_db['ca'][0].delete()
         assert Ca.get_by_id(ca_id) is None
-
-    def test_delete_vendor_config(self, simple_db):
-        """delete config not allowed."""
-        with pytest.raises(InvalidOperationError):
-            simple_db['vendor'].config.delete()
 
     def test_delete_role_and_assoc(self, simple_db):
         """delete role just undo associations."""

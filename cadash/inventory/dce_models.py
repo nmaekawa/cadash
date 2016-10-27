@@ -13,8 +13,6 @@ from cadash.inventory.models import MhCluster
 from cadash.inventory.models import MhpearlConfig
 from cadash.inventory.models import Role
 from cadash.inventory.models import RoleConfig
-from cadash.inventory.models import Vendor
-from cadash.inventory.models import VendorConfig
 
 
 # default dce source layout for channel
@@ -375,13 +373,13 @@ class DceConfigForEpiphanCa(object):
         config['cluster_env'] = self.cluster.env
         config['cluster_name_id'] = self.cluster.name_id
         config['date_and_time'] = {}
-        config['date_and_time']['ntp_server'] = self.vendor.config.datetime_ntpserver
-        config['date_and_time']['timezone'] = self.vendor.config.datetime_timezone
-        config['firmware_version'] = self.vendor.config.firmware_version
+        config['date_and_time']['ntp_server'] = self.vendor.datetime_ntpserver
+        config['date_and_time']['timezone'] = self.vendor.datetime_timezone
+        config['firmware_version'] = self.vendor.firmware_version
         config['location_name_id'] = self.location.name
         config['maintenance'] = {}
         config['maintenance']['permanent_logs'] = \
-                'on' if self.vendor.config.maintenance_permanent_logs else ''
+                'on' if self.vendor.maintenance_permanent_logs else ''
         config['mh_admin_url'] = self.cluster.admin_host
         config['mh_ca_name'] = self.location.name
         config['mhpearl_file_search_range'] = self.mhpearl.file_search_range_in_sec
@@ -389,8 +387,8 @@ class DceConfigForEpiphanCa(object):
         config['mhpearl_version'] = self.mhpearl.mhpearl_version
         config['role'] = self.role_name
         config['source_deinterlacing'] = \
-                'on' if self.vendor.config.source_deinterlacing else ''
-        if self.vendor.config.maintenance_permanent_logs:
+                'on' if self.vendor.source_deinterlacing else ''
+        if self.vendor.maintenance_permanent_logs:
             config['maintenance'] = {'permanent_logs': 'on'}
         else:
             config['maintenance'] = {'permanent_logs': ''}
@@ -410,12 +408,7 @@ class DceConfigForEpiphanCa(object):
             recorders[rec.name] = cfg
         config['recorders'] = recorders
         config['touchscreen'] = {
-                'episcreen_timeout': self.vendor.config.touchscreen_timeout_secs,
+                'episcreen_timeout': self.vendor.touchscreen_timeout_secs,
                 'allow_recording': \
-                        'on' if self.vendor.config.touchscreen_allow_recording else ''}
+                        'on' if self.vendor.touchscreen_allow_recording else ''}
         return config
-
-
-
-
-

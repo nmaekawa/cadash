@@ -260,9 +260,9 @@ class TestVendorResource(object):
 
         vendor = Vendor.get_by_id(json_data['id'])
         assert vendor.name == v['name']
-        assert vendor.config.datetime_ntpserver == '0.pool.ntp.org'
-        assert vendor.config.touchscreen_allow_recording == False
-        assert vendor.config.touchscreen_timeout_secs == 600
+        assert vendor.datetime_ntpserver == '0.pool.ntp.org'
+        assert vendor.touchscreen_allow_recording == False
+        assert vendor.touchscreen_timeout_secs == 600
 
 
     def test_should_fail_when_create_duplicate_name(
@@ -284,7 +284,6 @@ class TestVendorResource(object):
         assert vendor.name_id == simple_db['vendor'].name_id
 
         v = dict(
-                model='tralala',
                 datetime_ntpserver='ntp.harvard.edu',
                 source_deinterlacing=False,
                 touchscreen_timeout_secs=123)
@@ -292,25 +291,9 @@ class TestVendorResource(object):
         res = testapp_login_disabled.put_json(url, params=v)
 
         vendor = Vendor.get_by_id(simple_db['vendor'].id)
-        assert vendor.name_id == Vendor.computed_name_id(
-                name=simple_db['vendor'].name, model='tralala')
-        assert vendor.config.datetime_ntpserver == 'ntp.harvard.edu'
-        assert vendor.config.source_deinterlacing == False
-        assert vendor.config.touchscreen_timeout_secs == 123
-
-
-    def test_update_blank_name(
-            self, testapp_login_disabled, simple_db):
-        """name is unique."""
-        v = dict(name='   ',)
-        model = utils.clean_name(simple_db['vendor'].model)
-        url = '/api/inventory/vendors/%i' % simple_db['vendor'].id
-        res = testapp_login_disabled.put_json(url, params=v)
-        assert res.status_int == 200
-
-        json_data = json.loads(res.body)
-        assert json_data['id'] == simple_db['vendor'].id
-        assert json_data['name_id'] == '_%s' % model
+        assert vendor.datetime_ntpserver == 'ntp.harvard.edu'
+        assert vendor.source_deinterlacing == False
+        assert vendor.touchscreen_timeout_secs == 123
 
 
 @pytest.mark.usefixtures('db', 'simple_db', 'testapp_login_disabled')

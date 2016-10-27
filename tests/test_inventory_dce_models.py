@@ -54,7 +54,6 @@ class TestDceCaConfigModel(object):
         assert dce_cfg is not None
         assert dce_cfg.role_name == ca.role.name
         assert dce_cfg.location == ca.role.location
-        assert dce_cfg.vendor.config == ca.vendor.config
         assert dce_cfg.vendor == ca.vendor
         assert dce_cfg.cluster == ca.role.cluster
         assert len(dce_cfg.recorders) == 1
