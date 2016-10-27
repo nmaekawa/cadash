@@ -662,8 +662,8 @@ class TestMhpearlConfigModel(object):
         mh_cfg = epi_config.mhpearl
         with pytest.raises(InvalidOperationError) as e:
             mh_cfg.update(epiphan_config=epi_config)
-        assert 'cannot update epiphan_config associated to mhpearl_config({})'.format(
-                mh_cfg.id) in e.value
+        assert 'not allowed to update MhpearlConfig fields: epiphan_config' \
+                in e.value
 
 
 @pytest.mark.usefixtures('db', 'simple_db')

@@ -37,17 +37,6 @@ import cadash.utils as utils
 
 CA_ROLES = frozenset([u'primary', u'secondary', u'experimental'])
 MH_ENVS = frozenset([u'prod', u'dev', u'stage'])
-UPDATEABLE_EPIPHAN_RECORDER_FIELDS = frozenset([
-        u'recorder_id_in_device', u'output_format',
-        u'size_limit_in_kbytes', u'time_limit_in_minutes',
-        u'channels'])
-UPDATEABLE_EPIPHAN_CHANNEL_FIELDS = frozenset([
-        u'stream_cfg', u'channel_id_in_device',
-        u'audio', u'audiobitrate', u'audiochannels', u'audiopreset',
-        u'autoframesize', u'codec', u'fpslimit', u'framesize',
-        u'vbitrate', u'vencpreset', u'vkeyframeinterval',
-        u'vprofile', u'source_layout'])
-
 
 class InventoryModel(CRUDMixin, db.Model):
     """base model class for cadash inventory."""
@@ -445,8 +434,7 @@ class MhCluster(SurrogatePK, NameIdMixin, InventoryModel):
                 'mh cluster env value not in [{}]: {}'.format(
                     ','.join(list(MH_ENVS)), env))
 
-
-class RoleConfig(SurrogatePK, Model):
+class RoleConfig(SurrogatePK, InventoryModel):
     """config specific for epiphan-pearl."""
 
     __tablename__ = 'epiphan_config'
@@ -537,10 +525,14 @@ association_recorder_channel_table = db.Table(
             db.ForeignKey('epiphan_channel.id', primary_key=True)))
 
 
-class EpiphanRecorder(SurrogatePK, Model):
+class EpiphanRecorder(SurrogatePK, InventoryModel):
     """recorder configuration for an epiphan-pearl CA."""
 
     __tablename__ = 'epiphan_recorder'
+    __updateable_fields__ = frozenset([
+        u'recorder_id_in_device', u'output_format',
+        u'size_limit_in_kbytes', u'time_limit_in_minutes',
+        u'channels'])
     created_at = Column(db.DateTime, nullable=False, default=dt.datetime.utcnow)
     name = Column(db.String(80), nullable=False)
     # assuming we'll never have more than 99998 recorders in a CA
@@ -590,17 +582,6 @@ class EpiphanRecorder(SurrogatePK, Model):
                 c_list.append(chan)
         self.channels_setup = c_list
 
-    def update(self, **kwargs):
-        """override to check recorder constraints."""
-        x = set(kwargs.keys()).difference(UPDATEABLE_EPIPHAN_RECORDER_FIELDS)
-        if len(x) > 0:
-            raise InvalidOperationError(
-                    'not allowed to update epiphan_recorder fields: %s' %
-                    ', '.join(list(x)))
-
-        if self._check_constraints(**kwargs):
-            return super(EpiphanRecorder, self).update(commit=False, **kwargs)
-
     def _check_constraints(self, **kwargs):
         """raise an error if args violate epiphan recorder constraints."""
         recorder_map_id = self.epiphan_config.map_recorder_id_to_recorder_name()
@@ -619,10 +600,17 @@ class EpiphanRecorder(SurrogatePK, Model):
                                 self.epiphan_config.ca.name))
         return True  # no constraint to check
 
-class EpiphanChannel(SurrogatePK, Model):
+
+class EpiphanChannel(SurrogatePK, InventoryModel):
     """channel configuration for an epiphan-pearl CA."""
 
     __tablename__ = 'epiphan_channel'
+    __updateable_fields__ = frozenset([
+        u'stream_cfg', u'channel_id_in_device',
+        u'audio', u'audiobitrate', u'audiochannels', u'audiopreset',
+        u'autoframesize', u'codec', u'fpslimit', u'framesize',
+        u'vbitrate', u'vencpreset', u'vkeyframeinterval',
+        u'vprofile', u'source_layout'])
     created_at = Column(db.DateTime, nullable=False, default=dt.datetime.utcnow)
     name = Column(db.String(80), nullable=False)
     # assuming we'll never have more than 99998 channels in a CA
@@ -661,16 +649,6 @@ class EpiphanChannel(SurrogatePK, Model):
         return db.Model.__init__(
                 self, name=name, epiphan_config=epiphan_config, stream_cfg=stream_cfg)
 
-    def update(self, **kwargs):
-        """override to check channel constraints."""
-        x = set(kwargs.keys()).difference(UPDATEABLE_EPIPHAN_CHANNEL_FIELDS)
-        if len(x) > 0:
-            raise InvalidOperationError(
-                'not allowed to update epiphan-channel fields: {}'.format(
-                        ', '.join(list(x)) ) )
-        if self._check_constraints(**kwargs):
-            return super(EpiphanChannel, self).update(**kwargs)
-
     def _check_constraints(self, **kwargs):
         """raise an error if args violate config constraints."""
         channel_map_id = self.epiphan_config.map_channel_id_to_channel_name()
@@ -704,7 +682,7 @@ class EpiphanChannel(SurrogatePK, Model):
                 next
         return True  # no constraints to check
 
-class AkamaiStreamingConfig(SurrogatePK, Model):
+class AkamaiStreamingConfig(SurrogatePK, InventoryModel):
     """configuration for streaming via akamai services."""
 
     __tablename__ = 'akamai_config'
@@ -752,10 +730,14 @@ class AkamaiStreamingConfig(SurrogatePK, Model):
         raise InvalidOperationError('not allowed update `akamai streaming config`')
 
 
-class MhpearlConfig(SurrogatePK, Model):
+class MhpearlConfig(SurrogatePK, InventoryModel):
     """configuration for dce custom mhpearl module that runs in epiphan-pearls."""
 
     __tablename__ = 'mhpearl_config'
+    __updateable_fields__ = frozenset([
+        u'comment', u'mhpearl_version',
+        u'file_search_range_in_sec', u'update_frequency_in_sec',
+        ])
     created_at = Column(db.DateTime, nullable=False, default=dt.datetime.utcnow)
     comment = Column(db.String(256), nullable=True)
     epiphan_config_id = Column(db.Integer, db.ForeignKey('epiphan_config.id'))
@@ -777,11 +759,3 @@ class MhpearlConfig(SurrogatePK, Model):
                         epiphan_config.ca.name, epiphan_config.mhpearl.id))
         else:
             db.Model.__init__(self, epiphan_config=epiphan_config)
-
-    def update(self, **kwargs):
-        """override to check constraints."""
-        if 'epiphan_config' in kwargs.keys():
-            raise InvalidOperationError(
-                    'cannot update epiphan_config associated to mhpearl_config({})'.format(
-                        self.id))
-        return super(MhpearlConfig, self).update(**kwargs)

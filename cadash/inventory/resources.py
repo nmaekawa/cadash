@@ -44,8 +44,6 @@ from cadash.inventory.models import MhCluster
 from cadash.inventory.models import MhpearlConfig
 from cadash.inventory.models import Role
 from cadash.inventory.models import Vendor
-from cadash.inventory.models import UPDATEABLE_EPIPHAN_CHANNEL_FIELDS
-from cadash.inventory.models import UPDATEABLE_EPIPHAN_RECORDER_FIELDS
 
 
 # dicts to define output json objects
@@ -155,8 +153,8 @@ RESOURCE_FIELDS = {
         },
 }
 UPDATEABLE_FIELDS = {
-        'EpiphanChannel': UPDATEABLE_EPIPHAN_CHANNEL_FIELDS,
-        'EpiphanRecorder': UPDATEABLE_EPIPHAN_RECORDER_FIELDS,
+        'EpiphanChannel': EpiphanChannel.updateable_fields,
+        'EpiphanRecorder': EpiphanRecorder.updateable_fields,
         'Vendor': Vendor.updateable_fields,
         'Location': Location.updateable_fields,
 }
