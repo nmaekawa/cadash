@@ -519,10 +519,10 @@ association_recorder_channel_table = db.Table(
         'association_recorder_table',
         db.Column(
             'recorder_id', db.Integer,
-            db.ForeignKey('epiphan_recorder.id', primary_key=True)),
+            db.ForeignKey('epiphan_recorder.id')),
         db.Column(
             'channel_id', db.Integer,
-            db.ForeignKey('epiphan_channel.id', primary_key=True)))
+            db.ForeignKey('epiphan_channel.id')))
 
 
 class EpiphanRecorder(SurrogatePK, InventoryModel):
