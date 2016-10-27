@@ -37,9 +37,6 @@ import cadash.utils as utils
 
 CA_ROLES = frozenset([u'primary', u'secondary', u'experimental'])
 MH_ENVS = frozenset([u'prod', u'dev', u'stage'])
-UPDATEABLE_CA_FIELDS = frozenset([
-        u'name', u'address', u'serial_number', u'capture_card_id',
-        u'username', u'password'])
 UPDATEABLE_CLUSTER_FIELDS = frozenset([
         u'name', u'admin_host', u'env',
         u'username', u'password'])
@@ -214,10 +211,13 @@ class Role(Model):
         return super(Role, self).delete(commit)
 
 
-class Ca(SurrogatePK, NameIdMixin, Model):
+class Ca(SurrogatePK, NameIdMixin, InventoryModel):
     """a capture agent."""
 
     __tablename__ = 'ca'
+    __updateable_fields__ = frozenset([
+        u'name', u'address', u'serial_number', u'capture_card_id',
+        u'username', u'password'])
     created_at = Column(db.DateTime, nullable=False, default=dt.datetime.utcnow)
     name = Column(db.String(80), unique=True, nullable=False)
     address = Column(db.String(128), unique=True, nullable=False)
@@ -256,18 +256,6 @@ class Ca(SurrogatePK, NameIdMixin, Model):
         if bool(self.role):
             return self.role.cluster
         return None
-
-
-    def update(self, **kwargs):
-        """override to check ca constraints."""
-        x = set(kwargs.keys()).difference(UPDATEABLE_CA_FIELDS)
-        if len(x) > 0:
-            raise InvalidOperationError(
-                    'not allowed to update ca fields: %s' % ', '.join(list(x)))
-
-        if self._check_constraints(**kwargs):
-            return super(Ca, self).update(**kwargs)
-
 
     def delete(self, commit=True):
         """override to undo all role relationships involving this ca."""

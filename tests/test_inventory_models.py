@@ -123,7 +123,7 @@ class TestCaptureAgentModel(object):
         ca = Ca.get_by_id(simple_db['ca'][1].id)
         with pytest.raises(InvalidOperationError) as e:
             ca.update(vendor_id=simple_db['vendor'].id)
-        assert 'not allowed to update ca fields: vendor_id' in str(e.value)
+        assert 'not allowed to update Ca fields: vendor_id' in str(e.value)
 
     def test_update_ca_capture_card_id(self, simple_db):
         ca = Ca.get_by_id(simple_db['ca'][0].id)
