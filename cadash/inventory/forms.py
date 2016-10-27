@@ -1,9 +1,13 @@
 # -*- coding: utf-8 -*-
 """inventory forms."""
 from flask_wtf import Form
+import pytz
+from wtforms import BooleanField
 from wtforms import IntegerField
+from wtforms import PasswordField
 from wtforms import SelectField
 from wtforms import StringField
+from wtforms import TextAreaField
 from wtforms.validators import DataRequired
 from wtforms.validators import URL
 
@@ -19,6 +23,7 @@ class CaForm(Form):
     address = StringField(
             'address', validators=[DataRequired(), URL(require_tld=False)])
     serial_number = StringField('serial_number')
+    capture_card_id = StringField('capture_card_id')
 
 
 class MhClusterForm(Form):
@@ -36,14 +41,58 @@ class MhClusterForm(Form):
 class VendorForm(Form):
     """form for vendor."""
 
+    __tz_choices__ = [(x, x) for x in pytz.all_timezones]
+
     name = StringField('name', validators=[DataRequired()])
     model = StringField('model', validators=[DataRequired()])
+    touchscreen_timeout = IntegerField(
+            'touchscreen_timout', validators=[DataRequired()])
+    touchscreen_allow_recording = BooleanField(
+            'touchscreen_allow_recording', validators=[DataRequired()])
+    maintenance_permanent_logs = BooleanField(
+            'maintenance_permanent_logs', validators=[DataRequired()])
+    datetime_timezone = SelectField(
+            'datetime_timezone', choices=__tz_choices__,
+            validators=[DataRequired()])
+    datetime_ntpserver = StringField(
+            'datetime_ntpserver', validators=[DataRequired()])
+    firmware_version = StringField(
+            'firmware_version', validators=[DataRequired()])
+    source_deinterlacing = BooleanField(
+            'source_deinterlacing', validators=[DataRequired()])
 
 
 class LocationForm(Form):
     """form for location."""
 
+    __vconnector_choices__ = [('hdmi', 'HDMI'), ('sdi', 'SDI'), ('vga', 'VGA')]
+    __vinput_choices__ = [('a', 'A'), ('b', 'B')]
+
     name = StringField('name', validators=[DataRequired()])
+    primary_pr_vconnector = SelectField(
+            'primary_pr_vconnector',
+            choices=__vconnector_choices__, validators=[DataRequired()])
+    primary_pn_vconnector = SelectField(
+            'primary_pn_vconnector',
+            choices=__vconnector_choices__, validators=[DataRequired()])
+    secondary_pr_vconnector = SelectField(
+            'secondary_pr_vconnector',
+            choices=__vconnector_choices__, validators=[DataRequired()])
+    secondary_pn_vconnector = SelectField(
+            'secondary_pn_vconnector',
+            choices=__vconnector_choices__, validators=[DataRequired()])
+    primary_pr_vinput = SelectField(
+            'primary_pr_vinput',
+            choices=__vinput_choices__, validators=[DataRequired()])
+    primary_pn_vinput = SelectField(
+            'primary_pn_vinput',
+            choices=__vinput_choices__, validators=[DataRequired()])
+    secondary_pr_vinput = SelectField(
+            'primary_pr_vinput',
+            choices=__vinput_choices__, validators=[DataRequired()])
+    secondary_pn_vinput = SelectField(
+            'primary_pn_vinput',
+            choices=__vinput_choices__, validators=[DataRequired()])
 
 
 class RoleForm(Form):
@@ -65,3 +114,20 @@ class RoleDeleteForm(Form):
     """form for deleting role."""
 
     r_id = IntegerField('r_id', validators=[DataRequired()])
+
+
+class AkamaiStreamingConfigForm(Form):
+    """form for streaming configs."""
+
+    name = StringField('name', validators=[DataRequired()])
+    comment = TextAreaField('comment')
+    stream_id = StringField('stream_id', validators=[DataRequired()])
+    stream_user = StringField('stream_user', validators=[DataRequired()])
+    stream_password = PasswordField(
+            'stream_password', validators=[DataRequired()])
+    #primary_url_jinja2_template = StringField(
+    #        'primary_url_jinja2_template', validators=[DataRequired()])
+    #secondary_url_jinja2_template = StringField(
+    #        'secondary_url_jinja2_template', validators=[DataRequired()])
+    #stream_name_jinja2_template = StringField(
+    #        'stream_name_jinja2_template', validators=[DataRequired()])

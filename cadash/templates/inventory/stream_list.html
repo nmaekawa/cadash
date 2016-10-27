@@ -1,0 +1,45 @@
+{% extends "inventory/stream.html" %}
+
+{% block stream_content %}
+    <div class="row">
+        <ul class="nav nav-tabs">
+            <li class="active">
+            <a href="#">
+                list
+            <span class="sr-only">(current)</span></a></li>
+            <li><a href="{{ url_for('inventory.stream_create') }}">
+                create</a></li>
+        </ul>
+    </div>
+
+    <div class="row">
+    <div class="table-responsive">
+    <table class="table table-hover table-striped">
+        <thead>
+        <tr>
+            <th>&nbsp;</th>
+            <th>name</th>
+            <th>stream id</th>
+            <th>stream name</th>
+        <tr>
+        </thead>
+        <tbody>
+        {% for r in record_list %}
+        <tr>
+            <td>
+                <a class="icon" title="edit record"
+                    href="{{ url_for('inventory.stream_edit', r_id=r.id) }}">
+                    <span class="fa fa-pencil glyphicon glyphicon-pencil"></span>
+                </a>
+            </td>
+
+            <td>{{ r.name }}</td>
+            <td>{{ r.stream_id }}</td>
+            <td>{{ r.stream_user }}</td>
+        </tr>
+        {% endfor %}
+        </tbody>
+    </table>
+    </div>
+    </div>
+{% endblock %}

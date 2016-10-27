@@ -727,6 +727,7 @@ class AkamaiStreamingConfig(SurrogatePK, InventoryModel):
 
     def update(self, commit=True, **kwargs):
         """override to disable updates in streaming config."""
+        # TODO: implement update for usr/pwd and jinja2 templates
         raise InvalidOperationError('not allowed update `akamai streaming config`')
 
 

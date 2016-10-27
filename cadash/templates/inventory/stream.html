@@ -8,23 +8,25 @@
     </div>
     <div class="row">
         <ul class="nav nav-tabs">
-            <li class="active"><a href="#">
-                capture agent
-            <span class="sr-only">(current)</span></a></li>
+            <li><a href="{{ url_for('inventory.ca_list') }}">
+                capture agent </a></li>
             <li><a href="{{ url_for('inventory.vendor_list') }}">
-                vendor</a></li>
+                vendor </a></li>
             <li><a href="{{ url_for('inventory.location_list') }}">
-                location</a></li>
+                location </a></li>
             <li><a href="{{ url_for('inventory.cluster_list') }}">
                 mh cluster</a></li>
             <li><a href="{{ url_for('inventory.role_list') }}">
                 role</a></li>
-            <li><a href="{{ url_for('inventory.stream_list') }}">
-                stream</a></li>
+            <li class="active"><a href="#">
+                stream
+            <span class="sr-only">(current)</span></a></li>
         </ul>
     </div>
 
-    {% block ca_content %}{% endblock %}
+
+    {% block stream_content %}{% endblock %}
+
 
 </div>
 {% endblock %}

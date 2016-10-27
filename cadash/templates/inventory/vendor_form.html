@@ -22,16 +22,58 @@
     </div>
 
     <div class="row">
-    <h3>create new vendor record</h3>
-
 
     {% if mode == 'edit' %}
+    <h3>edit vendor [{{ form.name.data }}-{{ form.model.data }}]</h3>
     <form action="{{ url_for('inventory.vendor_edit', r_id=r_id) }}"
         method="POST" role="form">
+        {{ form.csrf_token }}
+        <div class="form-group">
+            <label for="touchscreen_timeout">Touchscreen Timeout (secs)</label>
+            <input type="text" class="form-control"
+            name="touchscreen_timeout" id="touchscreen_timeout"
+            placeholder="timeout in secs" value="{{ form.touchscreen_timeout.data }}" />
+        </div>
+        <div class="form-group">
+            <label for="touchscreen_allow_recording">Allow Recording via
+                Touchstreen</label>
+            <input type="checkbox" class="form-control"
+            name="touchscreen_allow_recording" id="touchscreen_allow_recording"
+            value="{{ form.touchscreen_allow_recording.data }}" />
+        </div>
+        <div class="form-group">
+            <label for="maintenance_permanent_logs">Allow Permanent Logs
+                Download</label>
+            <input type="checkbox" class="form-control"
+            name="maintenance_permanent_logs" id="maintenance_permanent_logs"
+            value="{{ form.maintenance_permanent_logs.data }}" />
+        </div>
+        <div class="form-group">
+            <label for="datetime_timezone">Timezone</label>
+            {{ form.datetime_timezone(class='form-control') }}
+        </div>
+        <div class="form-group">
+            <label for="datetime_ntpserver">NTP Server</label>
+            <input type="text" class="form-control"
+            name="datetime_ntpserver" id="datetime_ntpserver"
+            placeholder="ntp server" value="{{ form.datetime_ntpserver.data }}" />
+        </div>
+        <div class="form-group">
+            <label for="firmware_version">Epiphan Firmware Version</label>
+            <input type="text" class="form-control"
+            name="firmware_version" id="firmware_version"
+            placeholder="firmware version" value="{{ form.firmware_version.data }}" />
+        </div>
+        <div class="form-group">
+            <label for="source_deinterlacing">Set source for deinterlacing</label>
+            <input type="checkbox" class="form-control"
+            name="source_deinterlacing" id="source_deinterlacing"
+            value="{{ form.source_deinterlacing.data }}" />
+        </div>
     {% else %}
+    <h3>create new vendor entry</h3>
     <form action="{{ url_for('inventory.vendor_create') }}"
         method="POST" role="form">
-    {% endif %}
         {{ form.csrf_token }}
         <div class="form-group">
             <label for="name">name</label>
@@ -51,6 +93,7 @@
             {% endif %}
             />
         </div>
+    {% endif %}
         <div class="form-group">
             <div class="submit-row">
                 <input type="submit" class="btn btn-primary" value="save" />

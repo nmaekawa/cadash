@@ -19,12 +19,14 @@ from cadash.inventory.errors import InvalidCaRoleError
 from cadash.inventory.errors import InvalidEmptyValueError
 from cadash.inventory.errors import InvalidOperationError
 from cadash.inventory.errors import MissingVendorError
+from cadash.inventory.forms import AkamaiStreamingConfigForm
 from cadash.inventory.forms import CaForm
 from cadash.inventory.forms import LocationForm
 from cadash.inventory.forms import MhClusterForm
 from cadash.inventory.forms import RoleDeleteForm
 from cadash.inventory.forms import RoleForm
 from cadash.inventory.forms import VendorForm
+from cadash.inventory.models import AkamaiStreamingConfig
 from cadash.inventory.models import Ca
 from cadash.inventory.models import Location
 from cadash.inventory.models import MhCluster
@@ -70,8 +72,8 @@ def ca_create():
     if form.validate_on_submit():
         try:
             Ca.create(
-                    name=form.name.data, address=form.address.data,
-                    serial_number=form.serial_number.data,
+                    name=form.name.data,
+                    address=form.address.data,
                     vendor_id=form.vendor_id.data)
         except (InvalidEmptyValueError,
                 MissingVendorError,
@@ -109,8 +111,9 @@ def ca_edit(r_id):
     if form.validate_on_submit():
         try:
             ca.update(
-                    name=form.name.data, address=form.address.data,
-                    serial_number=form.serial_number.data)
+                    address=form.address.data,
+                    serial_number=form.serial_number.data,
+                    capture_card_id=form.capture_card_id.data)
         except (InvalidEmptyValueError,
                 MissingVendorError,
                 DuplicateCaptureAgentNameError,
@@ -170,7 +173,16 @@ def vendor_edit(r_id):
     form = VendorForm(obj=vendor)
     if form.validate_on_submit():
         try:
-            vendor.update(name=form.name.data, model=form.model.data)
+            vendor.update(
+                    name=form.name.data, model=form.model.data,
+                    touchscreen_timeout_secs=form.touchscreen_timeout.data,
+                    touchscreen_allow_recording=form.touchscreen_allow_recording.data,
+                    maintenance_permanent_logs=form.maintenance_permalogs.data,
+                    datetime_timezone=form.datetime_timezone.data,
+                    datetime_ntpserver=form.datetime_ntpserver.data,
+                    firmware_version=form.firmware_version.data,
+                    source_deinterlacing=form.source_deinterlacing.data
+                    )
         except (InvalidOperationError,
                 DuplicateVendorNameModelError) as e:
             flash('Error: %s' % e.message, 'danger')
@@ -295,7 +307,16 @@ def location_edit(r_id):
     form = LocationForm(obj=loc)
     if form.validate_on_submit():
         try:
-            loc.update(name=form.name.data)
+            loc.update(
+                    primary_pr_vconnector=form.primary_pr_vconnector.data,
+                    primary_pn_vconnector=form.primary_pn_vconnector.data,
+                    secondary_pr_vconnector=form.secondary_pr_vconnector.data,
+                    secondary_pn_vconnector=form.secondary_pn_vconnector.data,
+                    primary_pr_vinput=form.primary_pr_input.data,
+                    primary_pn_vinput=form.primary_pn_input.data,
+                    secondary_pr_vinput=form.secondary_pr_input.data,
+                    secondary_pn_vinput=form.secondary_pn_input.data,
+                    )
         except (InvalidOperationError,
                 InvalidEmptyValueError,
                 DuplicateLocationNameError) as e:
@@ -393,3 +414,56 @@ def role_delete(r_id):
     return render_template(
             'inventory/role_list.html',
             version=app_version, form=form, record_list=r_list)
+
+
+@blueprint.route('/stream/list', methods=['GET'])
+@login_required
+@requires_roles(AUTHORIZED_GROUPS)
+def stream_list():
+    """stream_config list."""
+    s_list = AkamaiStreamingConfig.query.order_by(AkamaiStreamingConfig.name).all()
+    return render_template(
+            'inventory/stream_list.html',
+            version=app_version, record_list=s_list)
+
+
+@blueprint.route('/stream', methods=['GET', 'POST'])
+@login_required
+@requires_roles(AUTHORIZED_GROUPS)
+def stream_create():
+    form = AkamaiStreamingConfigForm()
+    if form.validate_on_submit():
+        try:
+            AkamaiStreamingConfig.create(
+                    name=form.name.data,
+                    stream_id=form.stream_id.data,
+                    stream_user=form.stream_user.data,
+                    stream_password=form.stream_password.data)
+        except (InvalidOperationError,
+                DuplicateAkamaiStreamIdError) as e:
+            flash('Error: %s' % e.message, 'danger')
+        else:
+            flash('streaming config created.', 'success')
+    else:
+        flash_errors(form)
+
+    return render_template(
+            'inventory/stream_form.html',
+            version=app_version, form=form, mode='create')
+
+
+@blueprint.route('/stream/<int:r_id>', methods=['GET', 'POST'])
+@login_required
+@requires_roles(AUTHORIZED_GROUPS)
+def stream_edit(r_id):
+    """stream_config edit."""
+    stream = AkamaiStreamingConfig.get_by_id(r_id)
+    if not stream:
+        return render_template('404.html')
+
+    form = AkamaiStreamingConfigForm(obj=stream)
+
+    return render_template(
+            'inventory/stream_form.html',
+            version=app_version, form=form, mode='edit', r_id=stream.id)
+
