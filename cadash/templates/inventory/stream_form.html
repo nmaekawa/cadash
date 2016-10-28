@@ -25,7 +25,7 @@
 
 
     {% if mode == 'edit' %}
-    <h3>edit stream config</h3>
+    <h3>edit stream [{{ form.name.data }}] - NOT IMPLEMENTED YET!</h3>
     <form action="{{ url_for('inventory.stream_edit', r_id=r_id) }}"
         method="POST" role="form">
     {% else %}

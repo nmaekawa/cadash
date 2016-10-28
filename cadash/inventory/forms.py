@@ -45,8 +45,8 @@ class VendorForm(Form):
 
     name = StringField('name', validators=[DataRequired()])
     model = StringField('model', validators=[DataRequired()])
-    touchscreen_timeout = IntegerField(
-            'touchscreen_timout', validators=[DataRequired()])
+    touchscreen_timeout_secs = IntegerField(
+            'touchscreen_timout_secs', validators=[DataRequired()])
     touchscreen_allow_recording = BooleanField(
             'touchscreen_allow_recording', validators=[DataRequired()])
     maintenance_permanent_logs = BooleanField(

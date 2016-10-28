@@ -22,26 +22,23 @@
     </div>
 
     <div class="row">
-    <h3>create new vendor record</h3>
-
 
     {% if mode == 'edit' %}
+    <h3>edit cluster [{{ form.name.data }}]</h3>
     <form action="{{ url_for('inventory.cluster_edit', r_id=r_id) }}"
         method="POST" role="form">
+        {{ form.csrf_token }}
     {% else %}
+    <h3>create new cluster entry</h3>
     <form action="{{ url_for('inventory.cluster_create') }}"
         method="POST" role="form">
-    {% endif %}
         {{ form.csrf_token }}
         <div class="form-group">
             <label for="name">name</label>
             <input type="text" class="form-control" name="name" id="name"
-            placeholder="cluster name"
-            {% if mode == 'edit' %}
-            value="{{ form.name.data }}"
-            {% endif %}
-            />
+            placeholder="cluster name" />
         </div>
+    {% endif %}
         <div class="form-group">
             <label for="admin_host">admin host</label>
             <input type="text" class="form-control" name="admin_host"
