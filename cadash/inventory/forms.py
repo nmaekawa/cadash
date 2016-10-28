@@ -47,10 +47,8 @@ class VendorForm(Form):
     model = StringField('model', validators=[DataRequired()])
     touchscreen_timeout_secs = IntegerField(
             'touchscreen_timout_secs', validators=[DataRequired()])
-    touchscreen_allow_recording = BooleanField(
-            'touchscreen_allow_recording', validators=[DataRequired()])
-    maintenance_permanent_logs = BooleanField(
-            'maintenance_permanent_logs', validators=[DataRequired()])
+    touchscreen_allow_recording = BooleanField('touchscreen_allow_recording')
+    maintenance_permanent_logs = BooleanField('maintenance_permanent_logs')
     datetime_timezone = SelectField(
             'datetime_timezone', choices=__tz_choices__,
             validators=[DataRequired()])
@@ -58,8 +56,11 @@ class VendorForm(Form):
             'datetime_ntpserver', validators=[DataRequired()])
     firmware_version = StringField(
             'firmware_version', validators=[DataRequired()])
-    source_deinterlacing = BooleanField(
-            'source_deinterlacing', validators=[DataRequired()])
+    source_deinterlacing = BooleanField('source_deinterlacing')
+    # beware of BooleanFields: the html form will not send a
+    # boolean_var_name=False, it will just omit the var when it's set to False.
+    # if you add a validator=[DataRequired()] to a BooleanField, it fails when
+    # you want to set the var to False! it's what happens in my unit tests...
 
 
 class LocationForm(Form):

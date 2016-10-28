@@ -36,6 +36,7 @@ from cadash.inventory.errors import MissingVendorError
 import cadash.utils as utils
 
 CA_ROLES = frozenset([u'primary', u'secondary', u'experimental'])
+CA_STATES = frozenset([u'setup', u'active', u'inactive'])
 MH_ENVS = frozenset([u'prod', u'dev', u'stage'])
 
 class InventoryModel(CRUDMixin, db.Model):
@@ -198,9 +199,10 @@ class Ca(SurrogatePK, NameIdMixin, InventoryModel):
     __tablename__ = 'ca'
     __updateable_fields__ = frozenset([
         u'name', u'address', u'serial_number', u'capture_card_id',
-        u'username', u'password'])
+        u'username', u'password', u'state'])
     created_at = Column(db.DateTime, nullable=False, default=dt.datetime.utcnow)
     name = Column(db.String(80), unique=True, nullable=False)
+    state = Column(db.String(16), nullable=False, default=u'setup')
     address = Column(db.String(128), unique=True, nullable=False)
     serial_number = Column(db.String(80), unique=True, nullable=True)
     capture_card_id = Column(db.String(80), nullable=True)
@@ -243,9 +245,33 @@ class Ca(SurrogatePK, NameIdMixin, InventoryModel):
         self.role.delete()
         return super(Ca, self).delete(commit)
 
+    def _valid_state(self, state):
+        """check if ca state is a valid value."""
+        return state in CA_STATES
+
+    def update(self, commit=True, **kwargs):
+        """override to check if state allows updates."""
+        if self.state == u'inactive':
+            if 'state' in kwargs and self._valid_state(kwargs['state']):
+                return super(Ca, self).update(
+                        commit=commit, state=kwargs['state'])
+            else:
+                raise InvalidOperationError(
+                'not allowed to update CA({}) - state is "INACTIVE"'.format(
+                    self.name))
+        return super(Ca, self).update(commit=commit, **kwargs)
+
     def _check_constraints(self, **kwargs):
         """raise an error if args violate ca constraints."""
         for key, value in kwargs.items():
+            # fail if state is invalid
+            if key == 'state':
+                if not self._valid_state(kwargs['state']):
+                    raise InvalidCaStateError(
+                            'invalid state({}) for ca({})'.format(
+                                value, self.name))
+                next
+
             # fail if unknown vendor
             if key == 'vendor_id':
                 if not value:
@@ -288,6 +314,8 @@ class Ca(SurrogatePK, NameIdMixin, InventoryModel):
                 if c is not None:
                     raise DuplicateCaptureAgentSerialNumberError(
                             'duplicate ca serial_number(%s)' % value)
+                next
+
         return True
 
 

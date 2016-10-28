@@ -17,7 +17,17 @@ class TestLocationForm(object):
 
     def test_room_form(self, simple_db):
         """test room happy path."""
-        form = LocationForm(name='dark_room')
+        form = LocationForm(
+                name='dark_room',
+                primary_pr_vconnector='sdi',
+                primary_pr_vinput='a',
+                primary_pn_vconnector='hdmi',
+                primary_pn_vinput='b',
+                secondary_pr_vconnector='hdmi',
+                secondary_pr_vinput='a',
+                secondary_pn_vconnector='hdmi',
+                secondary_pn_vinput='b'
+                )
         validate = form.validate()
         assert validate is True
 
@@ -52,11 +62,19 @@ class TestMhClusterForm(object):
 
 
 @pytest.mark.usefixtures('db', 'simple_db')
-class TestVendorClusterForm(object):
+class TestVendorForm(object):
     """vendor form."""
 
     def test_vendor_form(self, simple_db):
         """test vendor happy path."""
-        form = VendorForm(name='fake-vendor', model='shiny-model')
+        form = VendorForm(
+                name='fake-vendor', model='shiny-model',
+                touchscreen_timeout_secs=90,
+                touchscreen_allow_recording=True,
+                maintenance_permanent_logs=False,
+                datetime_timezone='Pacific/Fiji',
+                datetime_ntpserver='8.8.8.8',
+                firmware_version='some-crazy-number',
+                source_deinterlacing=True)
         validate = form.validate()
         assert validate is True

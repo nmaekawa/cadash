@@ -27,7 +27,9 @@ from cadash.inventory.errors import DuplicateLocationNameError
 from cadash.inventory.errors import DuplicateMhClusterAdminHostError
 from cadash.inventory.errors import DuplicateMhClusterNameError
 from cadash.inventory.errors import DuplicateVendorNameModelError
+from cadash.inventory.errors import InvalidActionForCaStateError
 from cadash.inventory.errors import InvalidCaRoleError
+from cadash.inventory.errors import InvalidCaStateError
 from cadash.inventory.errors import InvalidEmptyValueError
 from cadash.inventory.errors import InvalidJsonValueError
 from cadash.inventory.errors import InvalidMhClusterEnvironmentError
@@ -277,7 +279,9 @@ class Resource_API(Resource):
                 DuplicateMhClusterAdminHostError,
                 DuplicateMhClusterNameError,
                 DuplicateVendorNameModelError,
+                InvalidActionForCaStateError,
                 InvalidCaRoleError,
+                InvalidCaStateError,
                 InvalidEmptyValueError,
                 InvalidJsonValueError,
                 InvalidMhClusterEnvironmentError,
@@ -334,7 +338,9 @@ class ResourceConfig_API(Resource_API):
                 DuplicateMhClusterAdminHostError,
                 DuplicateMhClusterNameError,
                 DuplicateVendorNameModelError,
+                InvalidActionForCaStateError,
                 InvalidCaRoleError,
+                InvalidCaStateError,
                 InvalidEmptyValueError,
                 InvalidJsonValueError,
                 InvalidMhClusterEnvironmentError,

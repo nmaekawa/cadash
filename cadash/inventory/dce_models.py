@@ -4,6 +4,7 @@
 from jinja2 import Template
 import json
 
+from cadash.inventory.errors import InvalidActionForCaStateError
 from cadash.inventory.errors import MissingConfigSettingError
 from cadash.inventory.models import AkamaiStreamingConfig
 from cadash.inventory.models import Ca
@@ -309,6 +310,10 @@ class DceConfigForEpiphanCa(object):
         """return a dce_config for an epiphan-pearl ca as dict."""
 
         # validation
+        if self.ca.state != u'active':
+            raise InvalidActionForCaStateError(
+                    'ca({}) in state({}) - must be "ACTIVE"'.format(
+                        self.ca.name, self.ca.state.upper()))
         if self.ca.capture_card_id is None:
             raise MissingConfigSettingError(
                     'config failed - ca({}), missing capture_card_id'.format(

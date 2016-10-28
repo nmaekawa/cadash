@@ -8,8 +8,16 @@ class InvalidMhClusterEnvironmentError(Error):
     """mh cluster environment value is invalid."""
 
 
+class InvalidActionForCaStateError(Error):
+    """action not allowed to be performed with ca in current state."""
+
+
 class InvalidCaRoleError(Error):
     """role must be in cadash.inventory.models.CA_ROLES."""
+
+
+class InvalidCaStateError(Error):
+    """state must be in cadash.inventory.models.CA_STATES."""
 
 
 class InvalidChannelNameForRecorderSetupError(Error):

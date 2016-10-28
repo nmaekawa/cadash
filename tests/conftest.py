@@ -89,6 +89,10 @@ def simple_db(db):
     for i in range(5):
         mini_db['ca'].append(CaFactory(vendor_id=mini_db['vendor'].id))
         mini_db['ca'][i].capture_card_id = '11111111111{}'.format(i)
+        mini_db['ca'][i].state = u'active'
+
+    mini_db['ca'][4].state = u'setup'
+
 
     # create a bunch of rooms
     mini_db['room'] = []

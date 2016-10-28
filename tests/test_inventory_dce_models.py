@@ -28,6 +28,7 @@ from cadash.inventory.errors import DuplicateLocationNameError
 from cadash.inventory.errors import DuplicateMhClusterAdminHostError
 from cadash.inventory.errors import DuplicateMhClusterNameError
 from cadash.inventory.errors import DuplicateVendorNameModelError
+from cadash.inventory.errors import InvalidActionForCaStateError
 from cadash.inventory.errors import InvalidCaRoleError
 from cadash.inventory.errors import InvalidEmptyValueError
 from cadash.inventory.errors import InvalidJsonValueError
@@ -88,3 +89,12 @@ class TestDceCaConfigModel(object):
         assert isinstance(full_config, dict)
         assert full_config['channels']['dce_live'] == base_config['channels']['dce_live']
         assert full_config == base_config
+
+    def test_should_fail_when_ca_in_state_inactive(self, simple_db):
+        ca = simple_db['ca'][2]
+        ca.update(state=u'setup')
+        dce_cfg = DceConfigForEpiphanCaFactory.retrieve(ca_id=ca.id)
+        with pytest.raises(InvalidActionForCaStateError) as e:
+            full_config = dce_cfg.epiphan_dce_config
+        assert 'ca({}) in state(SETUP) - must be "ACTIVE"'.format(ca.name)
+

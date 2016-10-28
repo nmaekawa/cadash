@@ -60,6 +60,7 @@ class TestCaptureAgentModel(object):
                 address='fake-epiphan.blah.bloh.net')
         assert bool(ca.created_at)
         assert isinstance(ca.created_at, dt.datetime)
+        assert ca.state == u'setup'
 
     def test_name_id(self, simple_db):
         """test name_id is populated."""
@@ -96,6 +97,20 @@ class TestCaptureAgentModel(object):
                     vendor_id=simple_db['vendor'].id,
                     address='fake-epiphan.blah.bloh.net',
                     serial_number=simple_db['ca'][0].serial_number)
+
+    def test_should_fail_when_update_and_state_inactive(self, simple_db):
+        ca = Ca.get_by_id(simple_db['ca'][4].id)
+        assert ca.state == u'setup'
+        ca.update(state=u'inactive')
+        assert ca.state == u'inactive'
+        with pytest.raises(InvalidOperationError) as e:
+            ca.update(address='buttered.scones.for.tea')
+        assert 'not allowed to update CA({}) - state is "INACTIVE"'.format(
+                ca.name) in e.value
+        current_address = ca.address
+        ca.update(state=u'active', address='cut.down.trees')
+        assert ca.state == u'active'
+        assert ca.address == current_address
 
     def test_update_ca_name(self, simple_db):
         """test update ca - happy path."""
