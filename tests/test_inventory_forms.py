@@ -41,7 +41,8 @@ class TestCaForm(object):
         form = CaForm(name='fake-capture-agent',
                 address='http://fake.dce.harvard.edu',
                 vendor_id=simple_db['ca'][0].vendor.id,
-                serial_number='ABC')
+                serial_number='ABC',
+                state=u'active')
         form.vendor_id.choices = \
                 [(simple_db['vendor'].id, simple_db['vendor'].name_id)]
         validate = form.validate()

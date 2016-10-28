@@ -113,7 +113,8 @@ def ca_edit(r_id):
             ca.update(
                     address=form.address.data,
                     serial_number=form.serial_number.data,
-                    capture_card_id=form.capture_card_id.data)
+                    capture_card_id=form.capture_card_id.data,
+                    state=form.state.data)
         except (InvalidEmptyValueError,
                 MissingVendorError,
                 DuplicateCaptureAgentNameError,
@@ -121,7 +122,7 @@ def ca_edit(r_id):
                 DuplicateCaptureAgentSerialNumberError) as e:
             flash('Error: %s' % e.message, 'danger')
         else:
-            flash('capture agent created.', 'success')
+            flash('capture agent updated.', 'success')
     else:
         flash_errors(form)
 

@@ -20,7 +20,7 @@
             <th>&nbsp;</th>
             <th>name</th>
             <th>address</th>
-            <th>serial number</th>
+            <th>state</th>
             <th>vendor</th>
         </tr>
         </thead>
@@ -35,7 +35,7 @@
             </td>
             <td>{{ r.name }}</td>
             <td>{{ r.address }}</td>
-            <td>{{ r.serial_number }}</td>
+            <td>{{ r.state.upper() }}</td>
             <td>{{ r.vendor.name_id }}</td>
         </tr>
         {% endfor %}

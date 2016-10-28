@@ -12,6 +12,7 @@ from wtforms.validators import DataRequired
 from wtforms.validators import URL
 
 from cadash.inventory.models import CA_ROLES
+from cadash.inventory.models import CA_STATES
 from cadash.inventory.models import MH_ENVS
 
 
@@ -24,6 +25,10 @@ class CaForm(Form):
             'address', validators=[DataRequired(), URL(require_tld=False)])
     serial_number = StringField('serial_number')
     capture_card_id = StringField('capture_card_id')
+    state = SelectField(
+            'state',
+            choices=[(s, s.upper()) for s in CA_STATES],
+            validators=[DataRequired()])
 
 
 class MhClusterForm(Form):
