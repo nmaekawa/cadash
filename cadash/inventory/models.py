@@ -204,7 +204,7 @@ class Ca(SurrogatePK, NameIdMixin, InventoryModel):
     name = Column(db.String(80), unique=True, nullable=False)
     state = Column(db.String(16), nullable=False, default=u'setup')
     address = Column(db.String(128), unique=True, nullable=False)
-    serial_number = Column(db.String(80), unique=True, nullable=True)
+    serial_number = Column(db.String(80), nullable=True)
     capture_card_id = Column(db.String(80), nullable=True)
     username = Column(db.String(80), nullable=True)
     password = Column(db.String(80), nullable=True)

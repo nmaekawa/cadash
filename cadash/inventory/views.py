@@ -5,6 +5,7 @@ from flask import Blueprint
 from flask import flash
 from flask import render_template
 from flask_login import login_required
+import logging
 
 from cadash import __version__ as app_version
 from cadash.inventory.errors import AssociationError
@@ -21,8 +22,9 @@ from cadash.inventory.errors import InvalidOperationError
 from cadash.inventory.errors import MissingVendorError
 from cadash.inventory.forms import AkamaiStreamingConfigForm
 from cadash.inventory.forms import CaForm
-from cadash.inventory.forms import LocationForm
+from cadash.inventory.forms import LocationUpdateForm
 from cadash.inventory.forms import MhClusterForm
+from cadash.inventory.forms import NameRequiredForm
 from cadash.inventory.forms import RoleDeleteForm
 from cadash.inventory.forms import RoleForm
 from cadash.inventory.forms import VendorForm
@@ -175,10 +177,9 @@ def vendor_edit(r_id):
     if form.validate_on_submit():
         try:
             vendor.update(
-                    name=form.name.data, model=form.model.data,
-                    touchscreen_timeout_secs=form.touchscreen_timeout.data,
+                    touchscreen_timeout_secs=form.touchscreen_timeout_secs.data,
                     touchscreen_allow_recording=form.touchscreen_allow_recording.data,
-                    maintenance_permanent_logs=form.maintenance_permalogs.data,
+                    maintenance_permanent_logs=form.maintenance_permanent_logs.data,
                     datetime_timezone=form.datetime_timezone.data,
                     datetime_ntpserver=form.datetime_ntpserver.data,
                     firmware_version=form.firmware_version.data,
@@ -246,13 +247,13 @@ def cluster_edit(r_id):
     if form.validate_on_submit():
         try:
             cluster.update(
-                    name=form.name.data,
                     admin_host=form.admin_host.data,
-                    env=form.env.data)
+                    env=form.env.data,
+                    username=form.username.data,
+                    password=form.password.data)
         except (InvalidOperationError,
                 InvalidEmptyValueError,
-                DuplicateMhClusterAdminHostError,
-                DuplicateMhClusterNameError) as e:
+                DuplicateMhClusterAdminHostError) as e:
             flash('Error: %s' % e.message, 'failure')
         else:
             flash('cluster updated.', 'success')
@@ -279,7 +280,7 @@ def location_list():
 @login_required
 @requires_roles(AUTHORIZED_GROUPS)
 def location_create():
-    form = LocationForm()
+    form = NameRequiredForm()
     if form.validate_on_submit():
         try:
             Location.create(name=form.name.data)
@@ -297,7 +298,7 @@ def location_create():
             version=app_version, form=form, mode='create')
 
 
-@blueprint.route('/location/<int:r_id>', methods=['GET', 'POST'])
+@blueprint.route('/location/<int:r_id>', methods=['GET'])
 @login_required
 @requires_roles(AUTHORIZED_GROUPS)
 def location_edit(r_id):
@@ -305,18 +306,51 @@ def location_edit(r_id):
     if not loc:
         return render_template('404.html')
 
-    form = LocationForm(obj=loc)
+    connectors = dict([
+        ('name', loc.name),
+        ('primary_pr', '{}-{}'.format(
+            loc.primary_pr_vconnector, loc.primary_pr_vinput)),
+        ('primary_pn', '{}-{}'.format(
+            loc.primary_pn_vconnector, loc.primary_pn_vinput)),
+        ('secondary_pr', '{}-{}'.format(
+            loc.secondary_pr_vconnector, loc.secondary_pr_vinput)),
+        ('secondary_pn', '{}-{}'.format(
+            loc.secondary_pn_vconnector, loc.secondary_pn_vinput)),
+        ])
+    form = LocationUpdateForm(**connectors)
+    return render_template(
+            'inventory/location_form.html',
+            version=app_version, form=form, mode='edit', r_id=loc.id)
+
+
+@blueprint.route('/location/<int:r_id>', methods=['POST'])
+@login_required
+@requires_roles(AUTHORIZED_GROUPS)
+def location_update(r_id):
+    loc = Location.get_by_id(r_id)
+
+    form = LocationUpdateForm()
     if form.validate_on_submit():
+        p_pr_conn, p_pr_input = form.primary_pr.data.strip().split('-')
+        s_pr_conn, s_pr_input = form.secondary_pr.data.strip().split('-')
+        p_pn_conn, p_pn_input = form.primary_pn.data.strip().split('-')
+        s_pn_conn, s_pn_input = form.secondary_pn.data.strip().split('-')
+
+        logging.getLogger(__name__).warn('**** {}-{}, {}-{}, {}-{}, {}-{}'.format(
+            p_pr_conn, p_pr_input,
+            p_pn_conn, p_pn_input,
+            s_pr_conn, s_pr_input,
+            s_pn_conn, s_pn_input))
         try:
             loc.update(
-                    primary_pr_vconnector=form.primary_pr_vconnector.data,
-                    primary_pn_vconnector=form.primary_pn_vconnector.data,
-                    secondary_pr_vconnector=form.secondary_pr_vconnector.data,
-                    secondary_pn_vconnector=form.secondary_pn_vconnector.data,
-                    primary_pr_vinput=form.primary_pr_input.data,
-                    primary_pn_vinput=form.primary_pn_input.data,
-                    secondary_pr_vinput=form.secondary_pr_input.data,
-                    secondary_pn_vinput=form.secondary_pn_input.data,
+                    primary_pr_vconnector=p_pr_conn,
+                    primary_pn_vconnector=p_pn_conn,
+                    secondary_pr_vconnector=s_pr_conn,
+                    secondary_pn_vconnector=s_pn_conn,
+                    primary_pr_vinput=p_pr_input,
+                    primary_pn_vinput=p_pn_input,
+                    secondary_pr_vinput=s_pr_input,
+                    secondary_pn_vinput=s_pn_input,
                     )
         except (InvalidOperationError,
                 InvalidEmptyValueError,
@@ -395,6 +429,32 @@ def get_select_list_for_clusters():
 @login_required
 @requires_roles(AUTHORIZED_GROUPS)
 def role_delete(r_id):
+    form = RoleDeleteForm()
+    role = Role.query.filter_by(ca_id=r_id).first()
+    if not role:
+        return render_template('404.html')
+
+    if form.validate_on_submit():
+        try:
+            role.delete()
+        except (InvalidCaRoleError,
+                AssociationError) as e:
+            flash('Error: %s' % e.message, 'danger')
+        else:
+            flash('role deleted.', 'success')
+    else:
+        flash_errors(form)
+
+    r_list = Role.query.all()
+    return render_template(
+            'inventory/role_list.html',
+            version=app_version, form=form, record_list=r_list)
+
+
+@blueprint.route('/role/<int:r_id>', methods=['POST'])
+@login_required
+@requires_roles(AUTHORIZED_GROUPS)
+def role_edit(r_id):
     form = RoleDeleteForm()
     role = Role.query.filter_by(ca_id=r_id).first()
     if not role:

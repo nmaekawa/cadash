@@ -3,7 +3,7 @@
 import pytest
 
 from cadash.inventory.forms import CaForm
-from cadash.inventory.forms import LocationForm
+from cadash.inventory.forms import LocationUpdateForm
 from cadash.inventory.forms import MhClusterForm
 from cadash.inventory.forms import VendorForm
 
@@ -17,16 +17,12 @@ class TestLocationForm(object):
 
     def test_room_form(self, simple_db):
         """test room happy path."""
-        form = LocationForm(
+        form = LocationUpdateForm(
                 name='dark_room',
-                primary_pr_vconnector='sdi',
-                primary_pr_vinput='a',
-                primary_pn_vconnector='hdmi',
-                primary_pn_vinput='b',
-                secondary_pr_vconnector='hdmi',
-                secondary_pr_vinput='a',
-                secondary_pn_vconnector='hdmi',
-                secondary_pn_vinput='b'
+                primary_pr='sdi-a',
+                primary_pn='hdmi-b',
+                secondary_pr='hdmi-a',
+                secondary_pn='hdmi-b',
                 )
         validate = form.validate()
         assert validate is True
