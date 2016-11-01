@@ -1,0 +1,15 @@
+{% extends "inventory/dce_ca.html" %}
+
+{% block page_title %}Conflict{% endblock %}
+
+{% block dce_ca_content %}
+<div class="jumbotron">
+    <div class="text-center">
+        <h1>409</h1>
+        <p>Current state({{ dce_ca.ca.state }}) of
+        capture-agent({{ dce_ca.ca.name }}) does not allow updates.
+        </p>
+    </div>
+</div>
+{% endblock %}
+

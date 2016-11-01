@@ -204,10 +204,10 @@ class Ca(SurrogatePK, NameIdMixin, InventoryModel):
     name = Column(db.String(80), unique=True, nullable=False)
     state = Column(db.String(16), nullable=False, default=u'setup')
     address = Column(db.String(128), unique=True, nullable=False)
-    serial_number = Column(db.String(80), nullable=True)
-    capture_card_id = Column(db.String(80), nullable=True)
-    username = Column(db.String(80), nullable=True)
-    password = Column(db.String(80), nullable=True)
+    serial_number = Column(db.String(80), nullable=True, default='')
+    capture_card_id = Column(db.String(80), nullable=True, default='')
+    username = Column(db.String(80), nullable=True, default='')
+    password = Column(db.String(80), nullable=True, default='')
     vendor_id = Column(db.Integer, db.ForeignKey('vendor.id'), nullable=False)
     vendor = relationship('Vendor')
     role = relationship('Role', back_populates='ca', uselist=False)
@@ -309,11 +309,11 @@ class Ca(SurrogatePK, NameIdMixin, InventoryModel):
                 next
 
             # fail if duplicate serial_number
-            if key == 'serial_number' and not value == self.serial_number:
+            if key == 'serial_number' and value != self.serial_number:
                 c = Ca.query.filter_by(serial_number=value).first()
                 if c is not None:
                     raise DuplicateCaptureAgentSerialNumberError(
-                            'duplicate ca serial_number(%s)' % value)
+                                    'duplicate ca serial_number(%s)' % value)
                 next
 
         return True
@@ -387,8 +387,8 @@ class MhCluster(SurrogatePK, NameIdMixin, InventoryModel):
     created_at = Column(db.DateTime, nullable=False, default=dt.datetime.utcnow)
     name = Column(db.String(80), unique=True, nullable=False)
     admin_host = Column(db.String(128), unique=True, nullable=False)
-    username = Column(db.String(80), nullable=True)
-    password = Column(db.String(80), nullable=True)
+    username = Column(db.String(80), nullable=True, default='')
+    password = Column(db.String(80), nullable=True, default='')
     env = Column(db.String(80), unique=False, nullable=False)
     capture_agents = relationship('Role', back_populates='cluster')
 
@@ -716,7 +716,7 @@ class AkamaiStreamingConfig(SurrogatePK, InventoryModel):
     __tablename__ = 'akamai_config'
     created_at = Column(db.DateTime, nullable=False, default=dt.datetime.utcnow)
     name = Column(db.String(80), nullable=False)
-    comment = Column(db.String(256), nullable=True)
+    comment = Column(db.String(256), nullable=True, default='')
     channels = relationship('EpiphanChannel', back_populates='stream_cfg')
 
     stream_id = Column(db.String(80), nullable=False, unique=True)
@@ -768,7 +768,7 @@ class MhpearlConfig(SurrogatePK, InventoryModel):
         u'file_search_range_in_sec', u'update_frequency_in_sec',
         ])
     created_at = Column(db.DateTime, nullable=False, default=dt.datetime.utcnow)
-    comment = Column(db.String(256), nullable=True)
+    comment = Column(db.String(256), nullable=True, default='')
     epiphan_config_id = Column(db.Integer, db.ForeignKey('epiphan_config.id'))
     epiphan_config = relationship('RoleConfig', back_populates='mhpearl')
 

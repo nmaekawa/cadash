@@ -411,7 +411,7 @@ def role_create():
 
 def get_select_list_for_cas():
     """return a list of ca tuples (id, name_id)."""
-    ca_list = Ca.query.filter(Ca.role == None).all()
+    ca_list = Ca.query.filter(Ca.role == None, Ca.state != u'inactive').all()
     return [(c.id, c.name_id) for c in ca_list]
 
 
@@ -461,9 +461,13 @@ def dce_ca(r_id):
     if not dce_ca:
         return render_template('404.html')
 
+    if dce_ca.ca.state == u'inactive':
+        return render_template(
+                'inventory/dce_ca_409.html', dce_ca=dce_ca)
+
     form = MhpearlConfigForm(obj=dce_ca.mhpearl)
     return render_template(
-            'inventory/dce_ca.html',
+            'inventory/dce_ca_edit.html',
             version=app_version, form=form, dce_ca=dce_ca)
 
 

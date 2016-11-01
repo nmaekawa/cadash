@@ -1,0 +1,116 @@
+{% extends "inventory/dce_ca.html" %}
+
+{% block dce_ca_content %}
+
+        <hr/>
+        <h4>recorders</h4>
+            <div class="table-responsive">
+            <table class="table table-hover table-striped">
+                <thead>
+                <tr>
+                    <th>&nbsp;</th>
+                    <th>name</th>
+                    <th>id</th>
+                    <th>channels</th>
+                <tr>
+                </thead>
+                <tbody>
+                {% for r in dce_ca.recorders %}
+                <tr>
+                    <td>
+                        <a class="icon" title="edit record"
+                            href="{{ url_for('inventory.dce_ca', r_id=dce_ca.ca.id) }}">
+                            <span class="fa fa-pencil glyphicon glyphicon-pencil"></span>
+                        </a>
+                    </td>
+
+                    <td>{{ r.name }}</td>
+                    <td>{{ r.recorder_id_in_device }}</td>
+                    <td>{{ r.channels }}</td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            </div>
+
+        <hr/>
+        <h4>channels</h4>
+            <div class="table-responsive">
+            <table class="table table-hover table-striped">
+                <thead>
+                <tr>
+                    <th>&nbsp;</th>
+                    <th>name</th>
+                    <th>id</th>
+                    <th>stream</th>
+                <tr>
+                </thead>
+                <tbody>
+                {% for r in dce_ca.channels %}
+                <tr>
+                    <td>
+                        <a class="icon" title="edit record"
+                            href="{{ url_for('inventory.dce_ca', r_id=dce_ca.ca.id) }}">
+                            <span class="fa fa-pencil glyphicon glyphicon-pencil"></span>
+                        </a>
+                    </td>
+
+                    <td>{{ r.name }}</td>
+                    <td>{{ r.channel_id_in_device }}</td>
+                    <td>{{ r.stream_cfg.name }}</td>
+                </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            </div>
+
+        <hr/>
+        <h4>mhpearl</h4>
+            <form action="{{ url_for('inventory.mhpearl_edit', r_id=dce_ca.ca.id) }}"
+                method="POST" role="form">
+                {{ form.csrf_token }}
+                <div class="form-group">
+                    <label for="comment">comment</label>
+                    <input type="text" class="form-control" name="comment" id="comment"
+                    placeholder="comment for mhpearl config"
+                    value="{{ form.comment.data }}"
+                    />
+                </div>
+                <div class="form-group">
+                    <label for="mhpearl_version">version</label>
+                    <input type="text" class="form-control"
+                    name="mhpearl_version" id="mhpearl_version"
+                    placeholder="version of mhpearl"
+                    value="{{ form.mhpearl_version.data }}"
+                    />
+                </div>
+                <div class="form-group">
+                    <label for="file_search_range_in_sec">file search range
+                        (secs)</label>
+                    <input type="text" class="form-control"
+                    name="file_search_range_in_sec"
+                    id="file_search_range_in_sec"
+                    placeholder="file search range, ex: 60"
+                    value="{{ form.file_search_range_in_sec.data }}"
+                    />
+                </div>
+                <div class="form-group">
+                    <label for="update_frequency_in_sec">schedule update
+                        frequency (secs)</label>
+                    <input type="text" class="form-control"
+                    name="update_frequency_in_sec" id="update_frequency_in_sec"
+                    placeholder="update frequency, ex: 120, for every 2 min update"
+                    value="{{ form.update_frequency_in_sec.data }}"
+                    />
+                </div>
+                <div class="form-group">
+                    <div class="submit-row">
+                        <input type="submit" class="btn btn-primary" value="save" />
+                        <a href="{{ url_for('inventory.dce_ca', r_id=dce_ca.ca.id) }}"
+                            class="btn btn-danger" role="button">cancel</a>
+                    </div>
+                </div>
+            </form>
+
+{% endblock %}
+

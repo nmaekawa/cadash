@@ -56,7 +56,7 @@
             placeholder="http://capture-agent.some.url"
             {% if mode == 'edit' %}
             value="{{ form.address.data }}"
-                {% if form.state.data != 'active' %}
+                {% if form.state.data == 'inactive' %}
                 readonly="readonly"
                 {% endif %}
             {% endif %}
@@ -69,7 +69,7 @@
             id="serial_number"
             placeholder="capture agent serial_number"
             value="{{ form.serial_number.data }}"
-            {% if form.state.data != 'active' %}
+            {% if form.state.data == 'inactive' %}
             readonly="readonly"
             {% endif %}
             />
@@ -80,7 +80,7 @@
             name="capture_card_id" id="capture_card_id"
             placeholder="capture card id"
             value="{{ form.capture_card_id.data }}"
-            {% if form.state.data != 'active' %}
+            {% if form.state.data == 'inactive' %}
             readonly="readonly"
             {% endif %}
             />
@@ -94,7 +94,7 @@
         <div class="form-group">
             <div class="submit-row">
                 <input type="submit" class="btn btn-primary" value="save" />
-                <a href="{{ url_for('inventory.vendor_list') }}"
+                <a href="{{ url_for('inventory.ca_list') }}"
                     class="btn btn-danger" role="button">cancel</a>
             </div>
         </div>
