@@ -25,8 +25,8 @@ psycopg2>=2.6.1
 Flask-Migrate>=1.6.0
 
 # Forms
-Flask-WTF>=0.12
-WTForms>=2.0.2
+Flask-WTF>=0.13
+WTForms>=2.1
 
 # Deployment
 gunicorn>=19.1.1

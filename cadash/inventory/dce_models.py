@@ -303,6 +303,7 @@ class DceConfigForEpiphanCa(object):
     def create_dce_mhpearl(self):
         """configure mhpearl."""
         MhpearlConfig.create(epiphan_config=self.config)
+        self.mhpearl.update(comment='dce default mhpearl config')
 
 
     @property

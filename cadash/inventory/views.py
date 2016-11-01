@@ -8,6 +8,7 @@ from flask_login import login_required
 import logging
 
 from cadash import __version__ as app_version
+from cadash.inventory.dce_models import DceConfigForEpiphanCaFactory
 from cadash.inventory.errors import AssociationError
 from cadash.inventory.errors import DuplicateCaptureAgentNameError
 from cadash.inventory.errors import DuplicateCaptureAgentAddressError
@@ -24,6 +25,7 @@ from cadash.inventory.forms import AkamaiStreamingConfigForm
 from cadash.inventory.forms import CaForm
 from cadash.inventory.forms import LocationUpdateForm
 from cadash.inventory.forms import MhClusterForm
+from cadash.inventory.forms import MhpearlConfigForm
 from cadash.inventory.forms import NameRequiredForm
 from cadash.inventory.forms import RoleDeleteForm
 from cadash.inventory.forms import RoleForm
@@ -451,30 +453,44 @@ def role_delete(r_id):
             version=app_version, form=form, record_list=r_list)
 
 
-@blueprint.route('/role/<int:r_id>', methods=['POST'])
+@blueprint.route('/dce_ca/<int:r_id>', methods=['GET'])
 @login_required
 @requires_roles(AUTHORIZED_GROUPS)
-def role_edit(r_id):
-    form = RoleDeleteForm()
-    role = Role.query.filter_by(ca_id=r_id).first()
-    if not role:
+def dce_ca(r_id):
+    dce_ca = DceConfigForEpiphanCaFactory.retrieve(ca_id=r_id)
+    if not dce_ca:
         return render_template('404.html')
 
+    form = MhpearlConfigForm(obj=dce_ca.mhpearl)
+    return render_template(
+            'inventory/dce_ca.html',
+            version=app_version, form=form, dce_ca=dce_ca)
+
+
+@blueprint.route('/dce_ca/<int:r_id>/mhpearl', methods=['GET', 'POST'])
+@login_required
+@requires_roles(AUTHORIZED_GROUPS)
+def mhpearl_edit(r_id):
+    dce_ca = DceConfigForEpiphanCaFactory.retrieve(ca_id=r_id)
+    if not dce_ca:
+        return render_template('404.html')
+
+    form = MhpearlConfigForm(obj=dce_ca.mhpearl)
     if form.validate_on_submit():
         try:
-            role.delete()
-        except (InvalidCaRoleError,
-                AssociationError) as e:
-            flash('Error: %s' % e.message, 'danger')
+            dce_ca.mhpearl.update(
+                    comment=form.comment.data,
+                    mhpearl_version=form.mhpearl_version.data,
+                    file_search_range_in_sec=form.file_search_range_in_sec.data,
+                    update_frequency_in_sec=form.update_frequency_in_sec.data)
+        except InvalidOperationError as e:
+            flash('Error: {}'.format(e.message), 'failure')
         else:
-            flash('role deleted.', 'success')
-    else:
-        flash_errors(form)
+            flash('mhpearl config updated.', 'success')
 
-    r_list = Role.query.all()
     return render_template(
-            'inventory/role_list.html',
-            version=app_version, form=form, record_list=r_list)
+            'inventory/dce_ca.html',
+            version=app_version, form=form, dce_ca=dce_ca)
 
 
 @blueprint.route('/stream/list', methods=['GET'])

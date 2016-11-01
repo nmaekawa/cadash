@@ -1,13 +1,12 @@
 # -*- coding: utf-8 -*-
 """inventory forms."""
-from flask_wtf import Form
+from flask_wtf import FlaskForm
 import pytz
 from wtforms import BooleanField
 from wtforms import IntegerField
 from wtforms import PasswordField
 from wtforms import SelectField
 from wtforms import StringField
-from wtforms import TextAreaField
 from wtforms.validators import DataRequired
 from wtforms.validators import URL
 
@@ -16,7 +15,7 @@ from cadash.inventory.models import CA_STATES
 from cadash.inventory.models import MH_ENVS
 
 
-class CaForm(Form):
+class CaForm(FlaskForm):
     """form for capture agent."""
 
     vendor_id = SelectField('vendor', coerce=int, validators=[DataRequired()])
@@ -31,7 +30,7 @@ class CaForm(Form):
             validators=[DataRequired()], default=u'setup')
 
 
-class MhClusterForm(Form):
+class MhClusterForm(FlaskForm):
     """form for mh cluster."""
 
     name = StringField('name', validators=[DataRequired()])
@@ -45,7 +44,7 @@ class MhClusterForm(Form):
     password = PasswordField('password')
 
 
-class VendorForm(Form):
+class VendorForm(FlaskForm):
     """form for vendor."""
 
     __tz_choices__ = [(x, x) for x in pytz.all_timezones]
@@ -67,12 +66,12 @@ class VendorForm(Form):
     # you want to set the var to False! it's what happens in my unit tests...
 
 
-class NameRequiredForm(Form):
+class NameRequiredForm(FlaskForm):
     """form with string field `name` required."""
     name = StringField('name', validators=[DataRequired()])
 
 
-class LocationUpdateForm(Form):
+class LocationUpdateForm(FlaskForm):
     """form for location."""
 
     __connector_input_choices__ = [
@@ -95,7 +94,7 @@ class LocationUpdateForm(Form):
             validators=[DataRequired()])
 
 
-class RoleForm(Form):
+class RoleForm(FlaskForm):
     """form for role."""
 
     role_name = SelectField(
@@ -110,20 +109,32 @@ class RoleForm(Form):
             'cluster', coerce=int, validators=[DataRequired()])
 
 
-class RoleDeleteForm(Form):
+class RoleDeleteForm(FlaskForm):
     """form for deleting role."""
 
     r_id = IntegerField('r_id', validators=[DataRequired()])
 
 
-class AkamaiStreamingConfigForm(Form):
+class AkamaiStreamingConfigForm(FlaskForm):
     """form for streaming configs."""
 
     name = StringField('name', validators=[DataRequired()])
-    comment = TextAreaField('comment')
+    comment = StringField('comment')
     stream_id = StringField('stream_id', validators=[DataRequired()])
     stream_user = StringField('stream_user', validators=[DataRequired()])
     stream_password = PasswordField('stream_password')
     primary_url_jinja2_template = StringField('primary_url_jinja2_template')
     secondary_url_jinja2_template = StringField('secondary_url_jinja2_template')
     stream_name_jinja2_template = StringField('stream_name_jinja2_template')
+
+
+class MhpearlConfigForm(FlaskForm):
+    """form for mhpearl non-deduceable configs."""
+
+    comment = StringField('comment')
+    mhpearl_version = StringField('mhpearl_version')
+    file_search_range_in_sec = IntegerField('file_search_range_in_sec')
+    update_frequency_in_sec = IntegerField('update_frequency_in_sec')
+
+
+

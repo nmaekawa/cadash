@@ -18,9 +18,10 @@
         <thead>
         <tr>
             <th>&nbsp;</th>
-            <th>name</th>
+            <th>&nbsp;</th>
             <th>capture agent</th>
             <th>location</th>
+            <th>role</th>
             <th>mh cluster</th>
         <tr>
         </thead>
@@ -38,10 +39,16 @@
                     </button>
                 </form>
             </td>
+            <td>
+                <a class="icon" title="edit record"
+                    href="{{ url_for('inventory.dce_ca', r_id=r.ca_id) }}">
+                    <span class="fa fa-pencil glyphicon glyphicon-pencil"></span>
+                </a>
+            </td>
 
-            <td>{{ r.name }}</td>
             <td>{{ r.ca.name_id }}</td>
             <td>{{ r.location.name_id }}</td>
+            <td>{{ r.name }}</td>
             <td>{{ r.cluster.name_id }}</td>
         </tr>
         {% endfor %}
