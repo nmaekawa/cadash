@@ -497,6 +497,44 @@ def mhpearl_edit(r_id):
             version=app_version, form=form, dce_ca=dce_ca)
 
 
+def get_select_list_for_stream_cfg():
+    """return a list of stream tuples (id, name_id)."""
+    v_list = AkamaiStreamingConfig.query.order_by(
+            AkamaiStreamingConfig.name).all()
+    return [(v.id, v.name_id) for v in v_list]
+
+@blueprint.route(
+    '/dce_ca/<int:r_id>/channel/<str:c_name>', methods=['GET', 'POST'])
+@login_required
+@requires_roles(AUTHORIZED_GROUPS)
+def dce_ca_channel_edit(r_id, c_name):
+    dce_ca = DceConfigForEpiphanCaFactory.retrieve(ca_id=r_id)
+    if not dce_ca:
+        return render_template('404.html')
+
+    if dce_ca.ca.state == u'inactive':
+        return render_template(
+                'inventory/dce_ca_409.html', dce_ca=dce_ca)
+
+    chan = dce_ca.map_channels_by_name()[c_name]
+    form = EpiphanChannelForm(obj=chan)
+    if form.validate_on_submit():
+        try:
+            chan.update(
+                    channel_id_in_device=form.channel_id_in_device.data,
+                    stream_cfg_id=form.stream_cfg_id)
+        except (InvalidOperationError,
+                DuplicateEpiphanChannelIdError) as e:
+            flash('Error: {}'.format(e.message, 'danger'))
+
+
+            --- naomi naomi naomi naomi naomi ----
+    return render_template(
+            'inventory/dce_ca_edit.html',
+            version=app_version, form=form, dce_ca=dce_ca)
+
+
+
 @blueprint.route('/stream/list', methods=['GET'])
 @login_required
 @requires_roles(AUTHORIZED_GROUPS)

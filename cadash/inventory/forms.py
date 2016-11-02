@@ -133,8 +133,17 @@ class MhpearlConfigForm(FlaskForm):
 
     comment = StringField('comment')
     mhpearl_version = StringField('mhpearl_version')
-    file_search_range_in_sec = IntegerField('file_search_range_in_sec')
-    update_frequency_in_sec = IntegerField('update_frequency_in_sec')
+    file_search_range_in_sec = IntegerField(
+            'file_search_range_in_sec', validators=[DataRequired()])
+    update_frequency_in_sec = IntegerField(
+            'update_frequency_in_sec', validators=[DataRequired()])
 
 
+class EpiphanChannelForm(FlaskForm):
+    """form for epiphan channel config."""
 
+    name = StringField('name', validators=[DataRequired()])
+    channel_id_in_device = IntegerField(
+            'channel_id_in_device', validators=[DataRequired()])
+    stream_cfg_id = SelectField(
+            'stream_cfg_id', coerce=int, validators=[DataRequired()])

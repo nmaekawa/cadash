@@ -462,6 +462,7 @@ class MhCluster(SurrogatePK, NameIdMixin, InventoryModel):
                 'mh cluster env value not in [{}]: {}'.format(
                     ','.join(list(MH_ENVS)), env))
 
+
 class RoleConfig(SurrogatePK, InventoryModel):
     """config specific for epiphan-pearl."""
 

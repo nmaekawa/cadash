@@ -119,6 +119,44 @@ class DceConfigForEpiphanCa(object):
     on how to set a base configuration for an epiphan-pearl
     capture agent.
     """
+    _dce_default_channel_cfg = {
+            'dce_live': {
+                'flavor': 'live',
+                'stream_cfg': None,
+                'encodings': {
+                    'audiobitrate': 96,
+                    'framesize': '1920x540',
+                    'vbitrate': 4000,
+                    },
+                },
+            'dce_live_lowbr': {
+                'flavor': 'live',
+                'stream_cfg': None,
+                'encodings': {
+                    'audiobitrate': 64,
+                    'framesize': '960x270',
+                    'vbitrate': 250,
+                    },
+                },
+            'dce_pr': {
+                'flavor': 'pr',
+                'stream_cfg': None,
+                'encodings': {
+                    'audiobitrate': 160,
+                    'framesize': '1280x720',
+                    'vbitrate': 9000,
+                    },
+                },
+            'dce_pn': {
+                'flavor': 'pn',
+                'stream_cfg': None,
+                'encodings': {
+                    'audiobitrate': 160,
+                    'framesize': '1920x1080',
+                    'vbitrate': 9000,
+                    },
+                },
+            }
 
     def __init__(self, ca_config):
         """create instance, based on RoleConfig ca_config."""
@@ -168,44 +206,7 @@ class DceConfigForEpiphanCa(object):
     @property
     def channel_default_cfg(self):
         # default dce values for encoding
-        return {
-                'dce_live': {
-                    'flavor': 'live',
-                    'stream_cfg': None,
-                    'encodings': {
-                        'audiobitrate': 96,
-                        'framesize': '1920x540',
-                        'vbitrate': 4000,
-                        },
-                    },
-                'dce_live_lowbr': {
-                    'flavor': 'live',
-                    'stream_cfg': None,
-                    'encodings': {
-                        'audiobitrate': 64,
-                        'framesize': '960x270',
-                        'vbitrate': 250,
-                        },
-                    },
-                'dce_pr': {
-                    'flavor': 'pr',
-                    'stream_cfg': None,
-                    'encodings': {
-                        'audiobitrate': 160,
-                        'framesize': '1280x720',
-                        'vbitrate': 9000,
-                        },
-                    },
-                'dce_pn': {
-                    'flavor': 'pn',
-                    'stream_cfg': None,
-                    'encodings': {
-                        'audiobitrate': 160,
-                        'framesize': '1920x1080',
-                        'vbitrate': 9000,
-                        },
-                    },
-                }
+        return self._dce_default_channel_cfg
 
     @property
     def connectors(self):
@@ -306,6 +307,15 @@ class DceConfigForEpiphanCa(object):
         self.mhpearl.update(comment='dce default mhpearl config')
 
 
+    def map_channels_by_name(self):
+        """return dict with key,value as channel_name, channel_obj."""
+        c = {}
+        for chan in self.channels:
+            c[chan] = self.channels[chan]
+        return c
+
+
+    # TODO: why i made it a property if it's dynamic????
     @property
     def epiphan_dce_config(self):
         """return a dce_config for an epiphan-pearl ca as dict."""
