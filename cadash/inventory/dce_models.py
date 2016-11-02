@@ -311,7 +311,7 @@ class DceConfigForEpiphanCa(object):
         """return dict with key,value as channel_name, channel_obj."""
         c = {}
         for chan in self.channels:
-            c[chan] = self.channels[chan]
+            c[chan.name] = chan
         return c
 
 

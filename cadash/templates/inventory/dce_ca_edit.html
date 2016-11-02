@@ -50,7 +50,10 @@
                 <tr>
                     <td>
                         <a class="icon" title="edit record"
-                            href="{{ url_for('inventory.dce_ca', r_id=dce_ca.ca.id) }}">
+                            href="{{ url_for(
+                                'inventory.dce_ca_channel_edit',
+                                r_id=dce_ca.ca.id,
+                                c_name=r.name) }}">
                             <span class="fa fa-pencil glyphicon glyphicon-pencil"></span>
                         </a>
                     </td>

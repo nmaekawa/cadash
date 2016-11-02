@@ -23,6 +23,7 @@ from cadash.inventory.errors import InvalidOperationError
 from cadash.inventory.errors import MissingVendorError
 from cadash.inventory.forms import AkamaiStreamingConfigForm
 from cadash.inventory.forms import CaForm
+from cadash.inventory.forms import EpiphanChannelForm
 from cadash.inventory.forms import LocationUpdateForm
 from cadash.inventory.forms import MhClusterForm
 from cadash.inventory.forms import MhpearlConfigForm
@@ -504,7 +505,7 @@ def get_select_list_for_stream_cfg():
     return [(v.id, v.name_id) for v in v_list]
 
 @blueprint.route(
-    '/dce_ca/<int:r_id>/channel/<str:c_name>', methods=['GET', 'POST'])
+    '/dce_ca/<int:r_id>/channel/<string:c_name>', methods=['GET', 'POST'])
 @login_required
 @requires_roles(AUTHORIZED_GROUPS)
 def dce_ca_channel_edit(r_id, c_name):
@@ -526,11 +527,11 @@ def dce_ca_channel_edit(r_id, c_name):
         except (InvalidOperationError,
                 DuplicateEpiphanChannelIdError) as e:
             flash('Error: {}'.format(e.message, 'danger'))
+        else:
+            flash('channel({}) updated'.format(chan.name), 'success')
 
-
-            --- naomi naomi naomi naomi naomi ----
     return render_template(
-            'inventory/dce_ca_edit.html',
+            'inventory/dce_ca_channel_form.html',
             version=app_version, form=form, dce_ca=dce_ca)
 
 
