@@ -4,6 +4,7 @@ from flask_wtf import FlaskForm
 import pytz
 from wtforms import BooleanField
 from wtforms import IntegerField
+from wtforms import HiddenField
 from wtforms import PasswordField
 from wtforms import SelectField
 from wtforms import StringField
@@ -142,7 +143,7 @@ class MhpearlConfigForm(FlaskForm):
 class EpiphanChannelForm(FlaskForm):
     """form for epiphan channel config."""
 
-    name = StringField('name', validators=[DataRequired()])
+    name = HiddenField('name', validators=[DataRequired()])
     channel_id_in_device = IntegerField(
             'channel_id_in_device', validators=[DataRequired()])
     stream_cfg_id = SelectField(

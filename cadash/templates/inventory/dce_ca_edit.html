@@ -26,7 +26,10 @@
 
                     <td>{{ r.name }}</td>
                     <td>{{ r.recorder_id_in_device }}</td>
-                    <td>{{ r.channels }}</td>
+                    <td>|{% for c in r.channels %}
+                            {{ c }} |
+                        {% endfor %}
+                    </td>
                 </tr>
                 {% endfor %}
                 </tbody>

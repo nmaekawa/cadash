@@ -7,6 +7,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.exc import SQLAlchemyError
 
 from cadash import utils
+from cadash.inventory.models import AkamaiStreamingConfig
 from cadash.inventory.models import Ca
 from cadash.inventory.models import EpiphanChannel
 from cadash.inventory.models import EpiphanRecorder
@@ -650,6 +651,18 @@ class TestEpiphanChannelModel(object):
         with pytest.raises(InvalidJsonValueError) as e:
             chan.update(source_layout='{"some_key": "some value"}')
         assert 'not valid json as source_layout object' in e.value.message
+
+    def test_add_stream_cfg(self, simple_db):
+        epi_config = simple_db['ca'][0].role.config
+        chan = epi_config.channels[0]
+        assert chan.stream_cfg_id == simple_db['stream_config'].id
+        assert chan.stream_cfg == simple_db['stream_config']
+
+        cfg = AkamaiStreamingConfig.create(
+                name='naomi_naomi', stream_id='stream_idNNN',
+                stream_user='stream_user123', stream_password='stream_pwd123')
+        chan.update(stream_cfg=cfg)
+        assert chan.stream_cfg.name == 'naomi_naomi'
 
 
 @pytest.mark.usefixtures('db', 'simple_db')

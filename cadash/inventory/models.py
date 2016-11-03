@@ -621,10 +621,12 @@ class EpiphanRecorder(SurrogatePK, InventoryModel):
                     raise DuplicateEpiphanRecorderError(
                             'recorder({}) already in ca({}) - cannot update.'.format(
                                 value, self.epiphan_config.ca.name))
-            if k == 'recorder_id_in_device':
-                if value != 99999 and value in recorder_map_id.keys():
-                    raise DuplicateEpiphanRecorderIdError(
-                            'recorder_id_in_device({}) already config as ({}) in ca({}) - cannot update'.format(
+            if k == 'recorder_id_in_device' \
+                    and self.recorder_id_in_device != value \
+                    and value != 99999 and value in recorder_map_id.keys():
+                        raise DuplicateEpiphanRecorderIdError(
+                                'recorder_id_in_device({}) already config as '
+                                '({}) in ca({}) - cannot update'.format(
                                 value, recorder_map_id[value],
                                 self.epiphan_config.ca.name))
         return True  # no constraint to check
@@ -690,12 +692,14 @@ class EpiphanChannel(SurrogatePK, InventoryModel):
                             'channel({}) already in ca({}) - cannot update'.format(
                                 value, self.epiphan_config.ca.name))
                 next
-            if k == 'channel_id_in_device':
-                if value != 99999 and value in channel_map_id.keys():
-                    raise DuplicateEpiphanChannelIdError(
-                            'channel_id_in_device({}) already config as ({}) in ca({}) - cannot update'.format(
-                                value, channel_map_id[value],
-                                self.epiphan_config.ca.name))
+            if k == 'channel_id_in_device' \
+                    and self.channel_id_in_device != value \
+                    and value != 99999 and value in channel_map_id.keys():
+                        raise DuplicateEpiphanChannelIdError(
+                                'channel_id_in_device({}) already config as '
+                                '({}) in ca({}) - cannot update'.format(
+                                    value, channel_map_id[value],
+                                    self.epiphan_config.ca.name))
             if k == 'source_layout':
                 try:
                     x = json.loads(value)

@@ -13,6 +13,7 @@ from cadash.inventory.errors import AssociationError
 from cadash.inventory.errors import DuplicateCaptureAgentNameError
 from cadash.inventory.errors import DuplicateCaptureAgentAddressError
 from cadash.inventory.errors import DuplicateCaptureAgentSerialNumberError
+from cadash.inventory.errors import DuplicateEpiphanChannelIdError
 from cadash.inventory.errors import DuplicateLocationNameError
 from cadash.inventory.errors import DuplicateMhClusterAdminHostError
 from cadash.inventory.errors import DuplicateMhClusterNameError
@@ -85,7 +86,7 @@ def ca_create():
                 DuplicateCaptureAgentNameError,
                 DuplicateCaptureAgentAddressError,
                 DuplicateCaptureAgentSerialNumberError) as e:
-            flash('Error: %s' % e.message, 'danger')
+            flash('Error: %s' % e.message, 'failure')
         else:
             flash('capture agent created.', 'success')
     else:
@@ -125,7 +126,7 @@ def ca_edit(r_id):
                 DuplicateCaptureAgentNameError,
                 DuplicateCaptureAgentAddressError,
                 DuplicateCaptureAgentSerialNumberError) as e:
-            flash('Error: %s' % e.message, 'danger')
+            flash('Error: %s' % e.message, 'failure')
         else:
             flash('capture agent updated.', 'success')
     else:
@@ -157,7 +158,7 @@ def vendor_create():
             Vendor.create(name=form.name.data, model=form.model.data)
         except (InvalidOperationError,
                 DuplicateVendorNameModelError) as e:
-            flash('Error: %s' % e.message, 'danger')
+            flash('Error: %s' % e.message, 'failure')
         else:
             flash('vendor created.', 'success')
     else:
@@ -190,7 +191,7 @@ def vendor_edit(r_id):
                     )
         except (InvalidOperationError,
                 DuplicateVendorNameModelError) as e:
-            flash('Error: %s' % e.message, 'danger')
+            flash('Error: %s' % e.message, 'failure')
         else:
             flash('vendor updated.', 'success')
     else:
@@ -227,7 +228,7 @@ def cluster_create():
                 InvalidEmptyValueError,
                 DuplicateMhClusterAdminHostError,
                 DuplicateMhClusterNameError) as e:
-            flash('Error: %s' % e.message, 'danger')
+            flash('Error: %s' % e.message, 'failure')
         else:
             flash('cluster created.', 'success')
     else:
@@ -290,7 +291,7 @@ def location_create():
         except (InvalidOperationError,
                 InvalidEmptyValueError,
                 DuplicateLocationNameError) as e:
-            flash('Error: %s' % e.message, 'danger')
+            flash('Error: %s' % e.message, 'failure')
         else:
             flash('location created.', 'success')
     else:
@@ -339,11 +340,6 @@ def location_update(r_id):
         p_pn_conn, p_pn_input = form.primary_pn.data.strip().split('-')
         s_pn_conn, s_pn_input = form.secondary_pn.data.strip().split('-')
 
-        logging.getLogger(__name__).warn('**** {}-{}, {}-{}, {}-{}, {}-{}'.format(
-            p_pr_conn, p_pr_input,
-            p_pn_conn, p_pn_input,
-            s_pr_conn, s_pr_input,
-            s_pn_conn, s_pn_input))
         try:
             loc.update(
                     primary_pr_vconnector=p_pr_conn,
@@ -358,7 +354,7 @@ def location_update(r_id):
         except (InvalidOperationError,
                 InvalidEmptyValueError,
                 DuplicateLocationNameError) as e:
-            flash('Error: %s' % e.message, 'danger')
+            flash('Error: %s' % e.message, 'failure')
         else:
             flash('location updated.', 'success')
     else:
@@ -399,7 +395,7 @@ def role_create():
                     ca=ca, location=loc, cluster=cluster)
         except (InvalidCaRoleError,
                 AssociationError) as e:
-            flash('Error: %s' % e.message, 'danger')
+            flash('Error: %s' % e.message, 'failure')
         else:
             flash('role created.', 'success')
     else:
@@ -442,7 +438,7 @@ def role_delete(r_id):
             role.delete()
         except (InvalidCaRoleError,
                 AssociationError) as e:
-            flash('Error: %s' % e.message, 'danger')
+            flash('Error: %s' % e.message, 'failure')
         else:
             flash('role deleted.', 'success')
     else:
@@ -492,6 +488,8 @@ def mhpearl_edit(r_id):
             flash('Error: {}'.format(e.message), 'failure')
         else:
             flash('mhpearl config updated.', 'success')
+    else:
+        flash_errors(form)
 
     return render_template(
             'inventory/dce_ca.html',
@@ -500,9 +498,11 @@ def mhpearl_edit(r_id):
 
 def get_select_list_for_stream_cfg():
     """return a list of stream tuples (id, name_id)."""
-    v_list = AkamaiStreamingConfig.query.order_by(
+    s_list = AkamaiStreamingConfig.query.order_by(
             AkamaiStreamingConfig.name).all()
-    return [(v.id, v.name_id) for v in v_list]
+    select_list = [(s.id, s.name) for s in s_list]
+    select_list.append((-1, 'None'))
+    return select_list
 
 @blueprint.route(
     '/dce_ca/<int:r_id>/channel/<string:c_name>', methods=['GET', 'POST'])
@@ -518,22 +518,39 @@ def dce_ca_channel_edit(r_id, c_name):
                 'inventory/dce_ca_409.html', dce_ca=dce_ca)
 
     chan = dce_ca.map_channels_by_name()[c_name]
+    if chan.stream_cfg_id is None:  # to display select dropdown
+        chan.stream_cfg_id = -1
+
     form = EpiphanChannelForm(obj=chan)
+    form.stream_cfg_id.choices = get_select_list_for_stream_cfg()
+
     if form.validate_on_submit():
+        stream_cfg = None  # find the stream_cfg record
+        if form.stream_cfg_id.data != -1:
+            stream_cfg = AkamaiStreamingConfig.get_by_id(
+                    record_id=form.stream_cfg_id.data)
         try:
             chan.update(
                     channel_id_in_device=form.channel_id_in_device.data,
-                    stream_cfg_id=form.stream_cfg_id)
+                    stream_cfg=stream_cfg)
         except (InvalidOperationError,
                 DuplicateEpiphanChannelIdError) as e:
-            flash('Error: {}'.format(e.message, 'danger'))
+            flash('Error: {}'.format(e.message))
         else:
             flash('channel({}) updated'.format(chan.name), 'success')
 
+        # we go back to the dce ca config page
+        dce_form = MhpearlConfigForm(obj=dce_ca.mhpearl)
+        return render_template(
+                'inventory/dce_ca_edit.html',
+                version=app_version, form=dce_form, dce_ca=dce_ca)
+    else:
+        flash_errors(form)
+
     return render_template(
             'inventory/dce_ca_channel_form.html',
-            version=app_version, form=form, dce_ca=dce_ca)
-
+            version=app_version, form=form,
+            dce_ca=dce_ca, channel=chan, mode='edit')
 
 
 @blueprint.route('/stream/list', methods=['GET'])
@@ -561,7 +578,7 @@ def stream_create():
                     stream_password=form.stream_password.data)
         except (InvalidOperationError,
                 DuplicateAkamaiStreamIdError) as e:
-            flash('Error: %s' % e.message, 'danger')
+            flash('Error: %s' % e.message, 'failure')
         else:
             flash('streaming config created.', 'success')
     else:
