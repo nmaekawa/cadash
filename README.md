@@ -17,9 +17,9 @@ clone this project and create a virtualenv:
 then setup the environment variables:
 
     cd cadash
-    vi cadash.env
+    vi example.env
     ... set your env vars...
-    source cadash.env
+    source example.env
 
 to start a dev server:
 
@@ -43,7 +43,7 @@ running tests
 To run all tests, run :
 
     cd cadash
-    source cadash.env
+    source example.env
     python manage.py test
 
 
