@@ -84,9 +84,11 @@ class Config(object):
             self.ASSETS_DEBUG = False
             self.DEBUG_TB_ENABLED = False
 
-            # TODO: Put the db file in separate disk
-            self.DB_NAME = 'prod_cadash.db'
-            self.DB_PATH = os.path.join(Config.PROJECT_ROOT, self.DB_NAME)
+            # production db can be in different mount!
+            assert 'DB_NAME' in os.environ.keys(), 'missing env var "DB_NAME"'
+            assert 'DB_DIR' in os.environ.keys(), 'missing env var "DB_DIR"'
+            self.DB_NAME = os.environ['DB_NAME']
+            self.DB_PATH = os.path.join(os.environ['DB_DIR'], self.DB_NAME)
             self.SQLALCHEMY_DATABASE_URI = 'sqlite:///{0}'.format(self.DB_PATH)
 
             # redis cache
