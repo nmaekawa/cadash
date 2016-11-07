@@ -4,6 +4,7 @@
 from flask import Blueprint
 from flask import flash
 from flask import render_template
+from flask_login import current_user
 from flask_login import login_required
 import logging
 
@@ -42,6 +43,8 @@ from cadash.utils import flash_errors
 from cadash.utils import requires_roles
 
 AUTHORIZED_GROUPS = ['deadmin']
+
+logger = logging.getLogger(__name__)
 
 blueprint = Blueprint(
         'inventory', __name__,
@@ -87,7 +90,11 @@ def ca_create():
                 DuplicateCaptureAgentAddressError,
                 DuplicateCaptureAgentSerialNumberError) as e:
             flash('Error: %s' % e.message, 'failure')
+            logger.error('usr({}): {}'.format(current_user.username, e.message))
         else:
+            logger.info('usr({}): created ca {} ({})'.format(
+                        current_user.username,
+                        form.name.data, form.address.data))
             flash('capture agent created.', 'success')
     else:
         flash_errors(form)
@@ -127,8 +134,12 @@ def ca_edit(r_id):
                 DuplicateCaptureAgentAddressError,
                 DuplicateCaptureAgentSerialNumberError) as e:
             flash('Error: %s' % e.message, 'failure')
+            logger.error('usr({}): {}'.format(current_user.username, e.message))
         else:
             flash('capture agent updated.', 'success')
+            logger.info('usr({}): updated ca {} ({})'.format(
+                        current_user.username,
+                        ca.name, ca.address))
     else:
         flash_errors(form)
 
@@ -159,8 +170,12 @@ def vendor_create():
         except (InvalidOperationError,
                 DuplicateVendorNameModelError) as e:
             flash('Error: %s' % e.message, 'failure')
+            logger.error('usr({}): {}'.format(current_user.username, e.message))
         else:
             flash('vendor created.', 'success')
+            logger.info('usr({}): created vendor {}-{}'.format(
+                        current_user.username, form.name.data,
+                        form.model.data))
     else:
         flash_errors(form)
 
@@ -192,6 +207,9 @@ def vendor_edit(r_id):
         except (InvalidOperationError,
                 DuplicateVendorNameModelError) as e:
             flash('Error: %s' % e.message, 'failure')
+            logger.error('usr({}): {}'.format(current_user.username, e.message))
+            logger.info('usr({}): updated vendor {}'.format(
+                        current_user.username, vendor.name_id))
         else:
             flash('vendor updated.', 'success')
     else:
@@ -229,8 +247,12 @@ def cluster_create():
                 DuplicateMhClusterAdminHostError,
                 DuplicateMhClusterNameError) as e:
             flash('Error: %s' % e.message, 'failure')
+            logger.error('usr({}): {}'.format(current_user.username, e.message))
         else:
             flash('cluster created.', 'success')
+            logger.info('usr({}): created cluster {} ({})'.format(
+                        current_user.username, form.name.data,
+                        form.admin_host.data))
     else:
         flash_errors(form)
 
@@ -259,8 +281,12 @@ def cluster_edit(r_id):
                 InvalidEmptyValueError,
                 DuplicateMhClusterAdminHostError) as e:
             flash('Error: %s' % e.message, 'failure')
+            logger.error('usr({}): {}'.format(current_user.username, e.message))
         else:
             flash('cluster updated.', 'success')
+            logger.info('usr({}): updated cluster {} ({})'.format(
+                        current_user.username, cluster.name,
+                        cluster.admin_host))
     else:
         flash_errors(form)
 
@@ -292,8 +318,11 @@ def location_create():
                 InvalidEmptyValueError,
                 DuplicateLocationNameError) as e:
             flash('Error: %s' % e.message, 'failure')
+            logger.error('usr({}): {}'.format(current_user.username, e.message))
         else:
             flash('location created.', 'success')
+            logger.info('usr({}): created location {}'.format(
+                        current_user.username, form.name.data))
     else:
         flash_errors(form)
 
@@ -355,8 +384,11 @@ def location_update(r_id):
                 InvalidEmptyValueError,
                 DuplicateLocationNameError) as e:
             flash('Error: %s' % e.message, 'failure')
+            logger.error('usr({}): {}'.format(current_user.username, e.message))
         else:
             flash('location updated.', 'success')
+            logger.info('usr({}): updated location {}'.format(
+                        current_user.username, loc.name))
     else:
         flash_errors(form)
 
@@ -396,8 +428,12 @@ def role_create():
         except (InvalidCaRoleError,
                 AssociationError) as e:
             flash('Error: %s' % e.message, 'failure')
+            logger.error('usr({}): {}'.format(current_user.username, e.message))
         else:
             flash('role created.', 'success')
+            logger.info('usr({}): created role {} ({}|{}|{})'.format(
+                        current_user.username, form.role_name.data,
+                        ca.name, loc.name, cluster.name))
     else:
         flash_errors(form)
 
@@ -434,13 +470,19 @@ def role_delete(r_id):
         return render_template('404.html')
 
     if form.validate_on_submit():
+        msg = 'usr({}): deleted role {} ({}|{}|{})'.format(
+                current_user.username, role.name,
+                role.ca.name, role.location.name,
+                role.cluster.name)
         try:
             role.delete()
         except (InvalidCaRoleError,
                 AssociationError) as e:
             flash('Error: %s' % e.message, 'failure')
+            logger.error('usr({}): {}'.format(current_user.username, e.message))
         else:
             flash('role deleted.', 'success')
+            logger.info(msg)
     else:
         flash_errors(form)
 
@@ -486,8 +528,11 @@ def mhpearl_edit(r_id):
                     update_frequency_in_sec=form.update_frequency_in_sec.data)
         except InvalidOperationError as e:
             flash('Error: {}'.format(e.message), 'failure')
+            logger.error('usr({}): {}'.format(current_user.username, e.message))
         else:
             flash('mhpearl config updated.', 'success')
+            logger.info('usr({}): updated mhpearl configs for ca {}'.format(
+                        current_user.username, dce_ca.ca.name))
     else:
         flash_errors(form)
 
@@ -536,8 +581,12 @@ def dce_ca_channel_edit(r_id, c_name):
         except (InvalidOperationError,
                 DuplicateEpiphanChannelIdError) as e:
             flash('Error: {}'.format(e.message))
+            logger.error('usr({}): {}'.format(current_user.username, e.message))
         else:
             flash('channel({}) updated'.format(chan.name), 'success')
+            logger.info('usr({}): updated channel({}) ca({})'.format(
+                        current_user.username, chan.name,
+                        dce_ca.ca.name))
 
         # we go back to the dce ca config page
         dce_form = MhpearlConfigForm(obj=dce_ca.mhpearl)
@@ -579,8 +628,11 @@ def stream_create():
         except (InvalidOperationError,
                 DuplicateAkamaiStreamIdError) as e:
             flash('Error: %s' % e.message, 'failure')
+            logger.error('usr({}): {}'.format(current_user.username, e.message))
         else:
             flash('streaming config created.', 'success')
+            logger.info('usr({}): created stream cfg {}'.format(
+                        current_user.username, form.name.data))
     else:
         flash_errors(form)
 
