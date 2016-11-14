@@ -22,6 +22,12 @@ from tests.factories import MhClusterFactory
 from tests.factories import VendorFactory
 
 
+def pytest_addoption(parser):
+    parser.addoption(
+            "--runlive", action="store_true",
+            help="test with live CAs and LDAP server")
+
+
 @pytest.yield_fixture(scope='function')
 def app():
     """An application for the tests."""
