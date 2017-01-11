@@ -348,6 +348,7 @@ class DceConfigForEpiphanCa(object):
                 'vkeyframeinterval': chan.vkeyframeinterval,
                 'vprofile': chan.vprofile,
                 }
+        live_output_streams = {}  # mhpearl 3.0 prop
         channels = {}
         for chan in self.channels:
             cfg = {}
@@ -377,14 +378,27 @@ class DceConfigForEpiphanCa(object):
                     str_tpl = Template(chan.stream_cfg.primary_url_jinja2_template)
                 else:  # role is secondary or experimental
                     str_tpl = Template(chan.stream_cfg.secondary_url_jinja2_template)
+
+                # TODO: figure a better way to deal with secrets
+                cfg['rtmp_user'] = chan.stream_cfg.stream_user
+                cfg['rtmp_password'] = chan.stream_cfg.stream_password
+
                 cfg['rtmp_url'] = str_tpl.render(
                         stream_id=chan.stream_cfg.stream_id)
                 str_name_tpl = Template(chan.stream_cfg.stream_name_jinja2_template)
                 cfg['stream_name'] = str_name_tpl.render(
                         location_name=self.location.name,
-                        framesize=cfg['encodings']['framesize'],
+                        framesize=chan.framesize,
                         stream_id=chan.stream_cfg.stream_id)
+                str_output_tpl = Template(
+                        chan.stream_cfg.output_stream_jinja2_template)
+                live_output_streams[chan.framesize] = str_output_tpl.render(
+                        stream_user=chan.stream_cfg.stream_user,
+                        stream_id=chan.stream_cfg.stream_id,
+                        location_name=self.location.name,
+                        framesize=chan.framesize)
             channels[chan.name] = cfg
+
         config['channels'] = channels
         config['cluster_env'] = self.cluster.env
         config['cluster_name_id'] = self.cluster.name_id
@@ -400,6 +414,7 @@ class DceConfigForEpiphanCa(object):
         config['mh_ca_name'] = self.location.name
         config['mhpearl_file_search_range'] = self.mhpearl.file_search_range_in_sec
         config['mhpearl_update_frequency'] = self.mhpearl.update_frequency_in_sec
+        config['mhpearl_output_streams'] = live_output_streams
         config['mhpearl_version'] = self.mhpearl.mhpearl_version
         config['role'] = self.role_name
         config['source_deinterlacing'] = \

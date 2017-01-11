@@ -734,6 +734,8 @@ class AkamaiStreamingConfig(SurrogatePK, InventoryModel):
             default='rtmp://b.ep{{stream_id}}.i.akamaientrypoint.net/EntryPoint')
     stream_name_jinja2_template = Column(db.String(128), nullable=False,
             default='{{location_name}}-presenter-delivery.stream-{{framesize}}_1_200@{{stream_id}}')
+    output_stream_jinja2_template = Column(db.String(128), nullable=False,
+            default='rtmp//cp{{stream_user}}.live.edgefcs.net/live/{{location_name}}-presenter-delivery.stream-{{framesize}}_1_200@{{stream_id}}')
 
     def __init__(self, name, stream_id, stream_user, stream_password):
         """create instance."""
